@@ -114,6 +114,16 @@ namespace shard
 		InvokeResult set_property(ObjectInstance obj, PropertySymbol* property, ObjectInstance value);
 
 		DelegateRef wrap_delegate(ObjectInstance delegate);
+
+		// async surface for native libraries: launch managed async work,
+		// poll it, block on it, or settle an externally-created Task
+		ObjectInstance launch_async(MethodSymbol* method, std::span<const ObjectInstance> args);
+		ObjectInstance launch_async(MethodSymbol* method, std::initializer_list<ObjectInstance> args);
+		ObjectInstance await(ObjectInstance task);
+		bool is_task_completed(ObjectInstance task);
+		void complete(ObjectInstance task, ObjectInstance result);
+		void complete(ObjectInstance task);
+		void fail(ObjectInstance task, ObjectInstance exception);
 	};
 }
 

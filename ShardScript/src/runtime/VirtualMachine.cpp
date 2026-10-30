@@ -3,6 +3,8 @@
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 
+#include "AsyncRuntime.hpp"
+
 #include <shard/compilation/ByteCodeDecoder.hpp>
 #include <shard/compilation/VirtualProgramImage.hpp>
 
@@ -163,10 +165,32 @@ VirtualMachine::VirtualMachine(VirtualProgramImage& program, SemanticModel& mode
 	SyntaxSymbol* rangeCurrentGet = table.get_standard_type(StandardTypes::RangeEnumerable_Current_get);
 	if (!(rangeCurrentGet == nullptr) && rangeCurrentGet->is_method())
 		static_cast<MethodSymbol*>(rangeCurrentGet)->set_function_pointer(reinterpret_cast<void*>(&native_range_current_get));
+
+	m_async = gmt::make_unique<AsyncRuntime>(*this);
 }
 
 VirtualMachine::~VirtualMachine()
 {
+	// suspended async frames are not part of the active chain; release them
+	// before the collector and the frame pool die
+	if (m_async)
+	{
+		for (auto& [key, record] : m_async->tasks)
+		{
+			if (record.child == nullptr)
+				continue;
+
+			m_collector.unregister_frame(record.child);
+			CallStackFrame::destroy(record.child, &m_framePool);
+			record.child = nullptr;
+		}
+
+		m_async->tasks.clear();
+		m_async->runnable.clear();
+		m_async->runnableHead = 0;
+		m_async->pendingContinuations.clear();
+	}
+
 	while (m_currentFrame != nullptr)
 		pop_frame();
 }
@@ -228,6 +252,8 @@ void VirtualMachine::pop_frame()
 {
 	CallStackFrame* frame = m_currentFrame;
 	m_currentFrame = frame->get_previous();
+	abandon_children(frame);
+	prune_tasks_for_frame(frame);
 	m_collector.unregister_frame(frame);
 	CallStackFrame::destroy(frame, &m_framePool);
 }
@@ -303,6 +329,11 @@ void VirtualMachine::throw_value(CallStackFrame* frame, ObjectInstance value)
 
 void VirtualMachine::raise_runtime_exception(std::wstring_view message)
 {
+	raise_exception(build_runtime_exception(message));
+}
+
+ObjectInstance VirtualMachine::build_runtime_exception(std::wstring_view message)
+{
 	SymbolTable& table = m_model.get_table();
 	StructSymbol* exceptionType = static_cast<StructSymbol*>(table.get_standard_type(StandardTypes::RuntimeException));
 
@@ -316,7 +347,7 @@ void VirtualMachine::raise_runtime_exception(std::wstring_view message)
 	exception.set_field(messageField, create_string(message));
 	exception.set_field(stackTraceField, create_string(L""));
 
-	raise_exception(exception);
+	return exception;
 }
 
 void VirtualMachine::raise_exception(ObjectInstance exception)
@@ -346,6 +377,15 @@ void VirtualMachine::execute_frame(CallStackFrame* frame)
 {
 	MethodSymbol* method = frame->get_method();
 	std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
+
+	// a resumed frame continues after its suspension point; the first run of
+	// a frame starts at the method entry
+	if (frame->get_instruction_pointer() != 0)
+		start = frame->get_instruction_pointer();
+
+	if (frame->get_interruption() == InterruptionReason::Awaiting)
+		frame->set_interruption(InterruptionReason::None);
+
 	ByteCodeDecoder decoder(m_program.get_text_section(), start);
 
 	while (true)
@@ -360,6 +400,9 @@ void VirtualMachine::execute_frame(CallStackFrame* frame)
 		}
 
 		if (interruption == InterruptionReason::ValueReturned)
+			return;
+
+		if (interruption == InterruptionReason::Awaiting)
 			return;
 
 		if (decoder.is_eof())
@@ -528,6 +571,9 @@ ObjectInstance VirtualMachine::invoke_native(MethodSymbol* method, std::span<con
 
 ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout)
 {
+	if (method->get_is_async() && method->get_calling_convention() == CallingConvention::Managed)
+		return invoke_async_method(method, arguments, layout);
+
 	CallingConvention convention = method->get_calling_convention();
 	switch (convention)
 	{
@@ -899,6 +945,40 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 		case OpCode::RETURN:
 		{
+			if (frame->get_async_state() != nullptr)
+			{
+				if (frame->get_pending_children() > 0)
+				{
+					// async frames keep the plain result in their return slot
+					// and finalize once every child settles
+					if (!is_void_method(frame->get_method()))
+					{
+						ObjectInstance value = frame->pop_entry();
+						write_entry_value(frame->get_return_view(), frame->get_return_payload_bytes(), value);
+					}
+
+					frame->set_instruction_pointer(decoder.get_cursor());
+					frame->set_suspended_at_return(true);
+					frame->set_interruption(InterruptionReason::Awaiting);
+					break;
+				}
+			}
+			else
+			{
+				// non-async callers block on pending children, then surface any
+				// fault the caller never observed
+				if (frame->get_pending_children() > 0)
+					wait_for_children(frame);
+
+				ObjectInstance fault = take_unobserved_fault(frame);
+				if (!(fault == nullptr))
+				{
+					frame->set_current_exception(fault);
+					frame->set_interruption(InterruptionReason::ExceptionRaised);
+					break;
+				}
+			}
+
 			if (!is_void_method(frame->get_method()))
 			{
 				ObjectInstance value = frame->pop_entry();
@@ -911,7 +991,37 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 		case OpCode::RETURN_PLACED:
 		{
+			if (frame->get_async_state() != nullptr)
+			{
+				if (frame->get_pending_children() > 0)
+				{
+					frame->set_instruction_pointer(decoder.get_cursor());
+					frame->set_suspended_at_return(true);
+					frame->set_interruption(InterruptionReason::Awaiting);
+					break;
+				}
+			}
+			else
+			{
+				if (frame->get_pending_children() > 0)
+					wait_for_children(frame);
+
+				ObjectInstance fault = take_unobserved_fault(frame);
+				if (!(fault == nullptr))
+				{
+					frame->set_current_exception(fault);
+					frame->set_interruption(InterruptionReason::ExceptionRaised);
+					break;
+				}
+			}
+
 			frame->set_interruption(InterruptionReason::ValueReturned);
+			break;
+		}
+
+		case OpCode::AWAIT:
+		{
+			execute_await(frame, decoder);
 			break;
 		}
 
@@ -1297,7 +1407,8 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
 				break;
 
-			if (!is_void_method(method))
+			// async calls always yield a Task wrapper, even for void results
+			if (method->get_is_async() || !is_void_method(method))
 				push_instance(frame, result);
 
 			break;
@@ -1445,7 +1556,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
 				break;
 
-			if (!is_void_method(interfaceMethod))
+			if (implementation->get_is_async() || !is_void_method(interfaceMethod))
 				push_instance(frame, result);
 
 			break;

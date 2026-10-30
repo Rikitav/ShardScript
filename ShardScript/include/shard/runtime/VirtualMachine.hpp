@@ -28,6 +28,10 @@
 
 namespace shard
 {
+	struct AsyncRuntime;
+	class EventLoop;
+	struct TaskRuntime;
+
 	class SHARD_API VirtualMachine
 	{
 		VirtualProgramImage& m_program;
@@ -48,6 +52,10 @@ namespace shard
 		CallStackFrame* m_currentFrame = nullptr;
 		FrameBlockPool m_framePool;
 		alignas(8) std::byte m_returnScratch[8] = {};
+
+		// async task table, runnable queue and the libuv loop; declared after
+		// the collector so it is torn down before the collector disappears
+		gmt::unique_ptr<AsyncRuntime> m_async;
 
 		// Interface calls repeat the same (concrete receiver type, interface
 		// method) pair in hot loops. Resolution is content-based and stable
@@ -90,6 +98,25 @@ namespace shard
 		bool is_void_method(MethodSymbol* method) const;
 		bool is_instance_of(const TypeShape* objectShape, StructSymbol* targetType) const;
 
+		// async execution; task bookkeeping lives in the implementation-only
+		// AsyncRuntime owned by m_async
+		ObjectInstance invoke_async_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout);
+		void finish_async_frame(CallStackFrame* frame);
+		void complete_task_status(ObjectInstance state, int status, ObjectInstance result, ObjectInstance exception);
+		void resume_frame(CallStackFrame* frame);
+		bool pump_async_once(bool block);
+		void wait_for_children(CallStackFrame* frame);
+		void wait_for_task(ObjectInstance state);
+		void deliver_await_result(CallStackFrame* frame);
+		void execute_await(CallStackFrame* frame, ByteCodeDecoder& decoder);
+		TaskRuntime& ensure_task_record(ObjectInstance state);
+		ObjectInstance build_runtime_exception(std::wstring_view message);
+		void abandon_children(CallStackFrame* frame);
+		ObjectInstance take_unobserved_fault(CallStackFrame* frame);
+		void prune_tasks_for_frame(CallStackFrame* frame);
+		void enqueue_runnable(CallStackFrame* frame);
+		void run_pending_continuation();
+
 	public:
 		VirtualMachine(VirtualProgramImage& program, SemanticModel& model, PragmaticModel& pragmatic);
 		~VirtualMachine();
@@ -100,6 +127,19 @@ namespace shard
 		void run();
 		ObjectInstance invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr);
 		ObjectInstance try_invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, ObjectInstance& outException);
+
+		// async surface used by native libraries through MethodCallState
+		ObjectInstance launch_async_method(MethodSymbol* method, std::span<const ObjectInstance> arguments);
+		ObjectInstance await_task(ObjectInstance task);
+		bool is_task_completed(ObjectInstance task);
+		void complete_task(ObjectInstance task, ObjectInstance result);
+		void complete_task(ObjectInstance task);
+		void fail_task(ObjectInstance task, ObjectInstance exception);
+		void complete_task_state(ObjectInstance state, ObjectInstance result);
+		void fail_task_state(ObjectInstance state, ObjectInstance exception);
+		ObjectInstance create_task_wrapper(ObjectInstance state);
+		ObjectInstance delay_task(std::int64_t milliseconds);
+		ObjectInstance continue_task(ObjectInstance task, ObjectInstance continuation);
 
 		VirtualProgramImage& get_program() const;
 		SemanticModel& get_model() const;
