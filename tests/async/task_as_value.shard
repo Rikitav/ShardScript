@@ -1,0 +1,23 @@
+using stdio;
+
+struct Holder
+{
+    task: Task<int>;
+}
+
+async func Produce() -> int
+{
+    return 10;
+}
+
+func MakeTask() -> Task<int>
+{
+    return Produce();
+}
+
+func Main() -> void
+{
+    holder := new Holder();
+    holder.task = MakeTask();
+    println(await holder.task);
+}

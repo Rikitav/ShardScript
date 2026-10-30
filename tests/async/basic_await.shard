@@ -1,0 +1,12 @@
+using stdio;
+
+async func Compute(x: int) -> int
+{
+    return x * 2;
+}
+
+func Main() -> void
+{
+    task := Compute(21);
+    println(await task);
+}

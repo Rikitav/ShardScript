@@ -1,0 +1,18 @@
+using stdio;
+
+async func Work() -> int
+{
+    println(1);
+    await Task.Delay(20);
+    println(2);
+    return 5;
+}
+
+func Main() -> void
+{
+    task := Work();
+    println(3);
+    value := await task;
+    println(4);
+    println(value);
+}

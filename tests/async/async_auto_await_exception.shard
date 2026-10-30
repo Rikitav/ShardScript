@@ -1,0 +1,25 @@
+using stdio;
+
+async func Failing() -> void
+{
+    await Task.Delay(5);
+    throw new RuntimeException();
+}
+
+async func FireAndForget() -> int
+{
+    Failing();
+    return 1;
+}
+
+func Main() -> void
+{
+    try
+    {
+        println(await FireAndForget());
+    }
+    catch error: RuntimeException
+    {
+        println(8);
+    }
+}

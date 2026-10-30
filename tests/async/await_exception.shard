@@ -1,0 +1,19 @@
+using stdio;
+
+async func Boom() -> int
+{
+    throw new RuntimeException();
+}
+
+func Main() -> void
+{
+    try
+    {
+        value := await Boom();
+        println(value);
+    }
+    catch error: RuntimeException
+    {
+        println(5);
+    }
+}

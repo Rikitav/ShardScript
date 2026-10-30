@@ -1,0 +1,13 @@
+using stdio;
+
+async func Delayed() -> void
+{
+    await Task.Delay(10);
+    println(1);
+}
+
+func Main() -> void
+{
+    Delayed();
+    println(2);
+}

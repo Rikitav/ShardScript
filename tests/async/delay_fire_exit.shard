@@ -1,0 +1,7 @@
+using stdio;
+
+func Main() -> void
+{
+    await Task.Delay(1);
+    println(1);
+}

@@ -1,0 +1,8 @@
+using stdio;
+
+func Main() -> void
+{
+    source := new TaskCompletionSource<int>();
+    source.SetResult(42);
+    println(await source.task);
+}

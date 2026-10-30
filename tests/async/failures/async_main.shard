@@ -1,0 +1,6 @@
+using stdio;
+
+async func Main() -> void
+{
+    println(1);
+}

@@ -1,0 +1,22 @@
+using stdio;
+
+async func Fails() -> int
+{
+    await Task.Delay(10);
+    throw new RuntimeException();
+}
+
+func Main() -> void
+{
+    task := Fails();
+    println(1);
+    try
+    {
+        await task;
+        println(0);
+    }
+    catch error: RuntimeException
+    {
+        println(2);
+    }
+}
