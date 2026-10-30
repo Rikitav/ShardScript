@@ -305,6 +305,31 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 	SyntaxSymbol* symbol = get_current_scope()->lookup(memberName);
 	if (symbol == nullptr)
 	{
+		// global standard types are visible from every scope, both for type
+		// positions and for static context such as 'Task.Delay(...)'
+		StructSymbol* genericCandidate = nullptr;
+		for (SyntaxSymbol* member : table.get_root_namespace()->members)
+		{
+			if ((member == nullptr) || !member->is_type() || member->get_name() != memberName)
+				continue;
+
+			StructSymbol* type = static_cast<StructSymbol*>(member);
+			if (type->type_parameters.empty())
+			{
+				symbol = member;
+				break;
+			}
+
+			if (genericCandidate == nullptr)
+				genericCandidate = type;
+		}
+
+		if ((symbol == nullptr) && !(genericCandidate == nullptr))
+			symbol = genericCandidate;
+	}
+
+	if (symbol == nullptr)
+	{
 		if (is_ambiguous_name(memberName))
 		{
 			diagnostics.report_error(location, gmt::concat(L"Ambiguous reference: '", memberName, L"' is defined in multiple imported namespaces"));

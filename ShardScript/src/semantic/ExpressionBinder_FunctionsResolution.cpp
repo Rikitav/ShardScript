@@ -782,6 +782,24 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 			addCandidate(static_cast<MethodSymbol*>(overload), asExtension);
 	}
 
+	// the root namespace cannot be imported, so its functions double as
+	// globally visible extension candidates: their first parameter may bind
+	// the receiver exactly like a scope-level extension
+	for (SyntaxSymbol* const& member : get_symbol_table().get_root_namespace()->members)
+	{
+		if ((member == nullptr) || member->get_kind() != SyntaxKind::FunctionDeclaration)
+			continue;
+
+		if (member->get_name() != methodName)
+			continue;
+
+		MethodSymbol* method = static_cast<MethodSymbol*>(member);
+		if (method->get_linking() != LINK_STATIC)
+			continue;
+
+		addCandidate(method, asExtension);
+	}
+
 	if (hasExplicitTypeArgs)
 	{
 		bool arityAccepted = false;
@@ -1218,22 +1236,9 @@ StructSymbol* ExpressionBinder::wrap_async_return_type(MethodSymbol* method, Str
 	if ((method == nullptr) || !method->get_is_async() || (type == nullptr))
 		return type;
 
-	SymbolTable& table = get_symbol_table();
-
-	// async methods declare their plain result type; the Task wrapper is
-	// implied for invokations and materialized by the hoisting pass
-	if (type == table.get_void_primitive())
-	{
-		SyntaxSymbol* task = table.get_standard_type(StandardTypes::Task);
-		return task->get_kind() == SyntaxKind::StructDeclaration ? static_cast<StructSymbol*>(task) : type;
-	}
-
-	SyntaxSymbol* valueTask = table.get_standard_type(StandardTypes::ValueTask);
-	if (valueTask->get_kind() != SyntaxKind::StructDeclaration)
-		return type;
-
-	StructSymbol* const valueTaskArgs[] = { type };
-	return table.find_or_create_generic_type(static_cast<StructSymbol*>(valueTask), std::span(valueTaskArgs));
+	// async methods declare their plain result type; an invokation yields the
+	// Task wrapper that carries the eventual result or fault
+	return get_model().get_async_call_type(type);
 }
 
 void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyntax* node)
