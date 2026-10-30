@@ -48,7 +48,4 @@ void SemanticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model)
 
 	if (m_diagnostics.has_errors())
 		return;
-
-	// TODO: SemanticValidator pass
-	// its responsibilities are being reconsidered
 }
