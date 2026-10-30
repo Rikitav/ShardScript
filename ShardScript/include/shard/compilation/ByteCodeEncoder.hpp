@@ -113,6 +113,7 @@ namespace shard
 		void emit_call_delegate(DelegateTypeSymbol* type);
 		void emit_call_interface(MethodSymbol* interfaceMethod);
 		void emit_return_placed();
+	void emit_await();
 		void emit_is_instance(StructSymbol* type);
 		void emit_cast_as(StructSymbol* type);
 		void emit_cast(StructSymbol* type);
