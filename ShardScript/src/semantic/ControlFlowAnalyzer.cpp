@@ -1179,7 +1179,8 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 		: !calleeEffects.thrownTypes.empty();
 
 	bool throwsUnknown = calleeEffects.mayThrow && !hasKnownThrownTypes;
-	if (!edge.isTryWrapped && throwsUnknown)
+	bool enclosedByCatch = edge.catchesAll || !edge.caughtTypes.empty();
+	if (!edge.isTryWrapped && !enclosedByCatch && throwsUnknown)
 	{
 		gmt::wstring message = callee->get_is_async() && edge.isAwaited
 			? gmt::concat(L"Await on '", callee->get_name(), L"' may throw an exception")
@@ -1320,7 +1321,7 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 			const InvokationExpressionSyntax* invocation = static_cast<const InvokationExpressionSyntax*>(awaited);
 
 			MethodSymbol* callee = lookup_symbol<MethodSymbol>(invocation);
-			bool isTryWrapped = is_try_wrapped(invocation);
+			bool isTryWrapped = is_try_wrapped(invocation) || is_try_wrapped(node);
 
 			bool isAsyncCallee = !(callee == nullptr) && callee->get_is_async();
 			if (isAsyncCallee)

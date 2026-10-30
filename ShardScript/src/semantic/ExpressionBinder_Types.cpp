@@ -104,11 +104,12 @@ StructSymbol* ExpressionBinder::resolve_type_expression(const TypeSyntax* type)
 
 StructSymbol* ExpressionBinder::substitute_type_parameters(StructSymbol* type, GenericTypeSymbol* genericType)
 {
-	if ((type == nullptr) || (genericType == nullptr) || type->get_kind() != SyntaxKind::TypeParameter)
+	if ((type == nullptr) || (genericType == nullptr))
 		return type;
 
-	StructSymbol* substituted = genericType->substitute_type_parameter(static_cast<TypeParameterSymbol*>(type));
-	return !(substituted == nullptr) ? substituted : type;
+	// recursive: properties and fields may mention nested constructions such
+	// as 'Task<T>' whose argument is the receiver's type parameter
+	return get_model().substitute_type(type, genericType);
 }
 
 StructSymbol* ExpressionBinder::substitute_method_type_parameter(StructSymbol* type, MethodSymbol* method, std::span<StructSymbol* const> methodTypeArgs)

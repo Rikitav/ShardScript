@@ -187,31 +187,30 @@ void ExpressionBinder::visit_lambda_expression(const LambdaExpressionSyntax* nod
 
 void ExpressionBinder::visit_await_expression(const AwaitExpressionSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	visit_expression(node->get_expression());
 
 	std::optional<const AwaitExpressionSyntax*> nodeRef = ref_from(node);
-
-	MethodSymbol* hostMethod = find_host_method_symbol();
-	bool hostIsAsync = !(hostMethod == nullptr) && hostMethod->get_is_async();
-	if (!hostIsAsync)
-	{
-		get_diagnostics().report_error(node->get_await_keyword(), L"await can only be used inside async methods");
-		if (nodeRef.has_value())
-			set_expression_type(*nodeRef, nullptr);
-
+	if (!nodeRef.has_value())
 		return;
-	}
 
 	StructSymbol* awaitedType = get_expression_type(node->get_expression());
 	if (awaitedType == nullptr)
 	{
-		if (nodeRef.has_value())
-			set_expression_type(*nodeRef, nullptr);
-
+		set_expression_type(*nodeRef, nullptr);
 		return;
 	}
 
-	// TODO: resolve the awaitable pattern (IAwaitable/IAwaiter) once the async library types exist
-	if (nodeRef.has_value())
+	StructSymbol* resultType = get_model().get_await_result_type(awaitedType);
+	if (resultType == nullptr)
+	{
+		get_diagnostics().report_error(node->get_await_keyword(), L"Expression is not awaitable: expected Task or Task<T>");
 		set_expression_type(*nodeRef, nullptr);
+		return;
+	}
+
+	// awaiting is allowed in any method; a non-async caller simply blocks
+	set_expression_type(*nodeRef, resultType);
 }
