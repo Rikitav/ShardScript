@@ -42,10 +42,10 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party"
-    "${CMAKE_CURRENT_SOURCE_DIR}/third-party/string-intern"
 )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/third-party/string-intern/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party/mimalloc/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party/libuv/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party/libuv/src"

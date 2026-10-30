@@ -673,7 +673,7 @@ bool ByteCodeEmitter::is_extension_call(MethodSymbol* method, const ExpressionSy
 	return method->get_parameters().size() == explicitArguments + 1;
 }
 
-void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst)
+void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, [[maybe_unused]] bool receiverFirst)
 {
 	bool isStatic = method->get_linking() == LINK_STATIC;
 	bool extension = is_extension_call(method, receiver, arguments);

@@ -53,7 +53,13 @@ if(MSVC)
             add_compile_options(
                 "$<$<CONFIG:Release>:-fprofile-use=${SHARD_PGO_PROFILE}>"
                 "$<$<CONFIG:Release>:-Wno-profile-instr-unprofiled>"
-                "$<$<CONFIG:Release>:-Wno-profile-instr-out-of-date>")
+                "$<$<CONFIG:Release>:-Wno-profile-instr-out-of-date>"
+                # ThinLTO reports stale profile hashes through the backend
+                # diagnostic group, both while compiling and at link time
+                "$<$<CONFIG:Release>:-Wno-backend-plugin>")
+            add_link_options(
+                "$<$<CONFIG:Release>:-Wno-backend-plugin>"
+                "$<$<CONFIG:RelWithDebInfo>:-Wno-backend-plugin>")
         endif()
     elseif(SHARD_ENABLE_LTO)
         add_compile_options(

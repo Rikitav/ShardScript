@@ -23,6 +23,7 @@
 **/
 
 #include "string_page_catalog.h"
+#include "string_allocator.h"
 
 #include <algorithm>
 
@@ -83,8 +84,8 @@ rs::stringintern::StringReference rs::stringintern::StringPageCatalog::Find(rowc
     return ref;
 }
 
-std::vector<rs::stringintern::StringPagePtr> rs::stringintern::StringPageCatalog::GetPages(rowcount_t row) const {
-    std::vector<StringPagePtr> rowPages;
+rs::stringintern::StringVector<rs::stringintern::StringPagePtr> rs::stringintern::StringPageCatalog::GetPages(rowcount_t row) const {
+    StringVector<StringPagePtr> rowPages;
     
     if (row < rows_) {
         auto cols = counters_[row].load(std::memory_order_relaxed);

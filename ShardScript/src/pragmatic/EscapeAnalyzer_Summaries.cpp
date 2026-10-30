@@ -113,7 +113,7 @@ gmt::unordered_map<MethodSymbol*, EscapeSummary> EscapeAnalyzer::derive_summarie
 
 	for (const WalkedMethod& walked : m_walked)
 	{
-		if ((walked.method == nullptr))
+		if (walked.method == nullptr)
 			continue;
 
 		result[walked.method].returnDisposition = classify_returns(walked, result);

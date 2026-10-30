@@ -648,7 +648,7 @@ void ExpressionBinder::bind_invocation_type_arguments(const InvokationExpression
 	get_symbol_table().bind_type_arguments(node, combined.get_vector());
 }
 
-DelegateTypeSymbol* ExpressionBinder::try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, SyntaxSymbol* lookup, GenericTypeSymbol*& outInstantiation)
+DelegateTypeSymbol* ExpressionBinder::try_resolve_delegate_invocation([[maybe_unused]] const InvokationExpressionSyntax* node, SyntaxSymbol* lookup, GenericTypeSymbol*& outInstantiation)
 {
 	outInstantiation = nullptr;
 	if (lookup == nullptr)

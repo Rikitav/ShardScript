@@ -25,6 +25,7 @@
 #include "string_page.h"
 
 #include <cstddef>
+#include <new>
 #include <cstring>
 #include <thread>
 #include <chrono>
@@ -36,10 +37,15 @@ rs::stringintern::StringPagePtr rs::stringintern::StringPage::New(std::size_t nu
 
     if (number < StringReference::MaxNumber()) {
         std::uint64_t pageSize = entryCount * entrySize;
-        auto ptr = new char[pageSize];
+        auto ptr = static_cast<bufferptr_t>(Allocate(pageSize));
 
         if (ptr != nullptr) {
-            page = StringPagePtr(new StringPage(number, ptr, entryCount, entrySize, true));
+            auto memory = Allocate(sizeof(StringPage));
+            if (memory != nullptr) {
+                page = StringPagePtr(new (memory) StringPage(number, ptr, entryCount, entrySize, true));
+            } else {
+                Deallocate(ptr);
+            }
         }
     }
 
@@ -50,7 +56,10 @@ rs::stringintern::StringPagePtr rs::stringintern::StringPage::New(std::size_t nu
     StringPagePtr page;
 
     if (number < StringReference::MaxNumber() && !!ptr) {
-        page = StringPagePtr(new StringPage(number, ptr, entryCount, entrySize, false));
+        auto memory = Allocate(sizeof(StringPage));
+        if (memory != nullptr) {
+            page = StringPagePtr(new (memory) StringPage(number, ptr, entryCount, entrySize, false));
+        }
     }
 
     return page;
@@ -63,7 +72,7 @@ rs::stringintern::StringPage::StringPage(pagenumber_t number, bufferptr_t ptr, e
 
 rs::stringintern::StringPage::~StringPage() {
     if (freeBuffer_) {
-        delete[] ptr_;
+        Deallocate(ptr_);
     }
 }
 

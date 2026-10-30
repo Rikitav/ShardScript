@@ -27,6 +27,8 @@
 
 #include <atomic>
 #include <vector>
+
+#include "string_allocator.h"
 #include <cstdint>
 
 #include "string_page.h"
@@ -55,7 +57,7 @@ private:
     
     std::atomic<std::size_t> index_;
     
-    std::vector<StringPagePtr> pages_;        
+    StringVector<StringPagePtr> pages_;        
 
 };
 

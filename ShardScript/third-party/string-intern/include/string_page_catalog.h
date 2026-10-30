@@ -28,6 +28,7 @@
 #include <atomic>
 #include <vector>
 
+#include "string_allocator.h"
 #include "string_page.h"
 #include "string_hash.h"
 #include "string_reference.h"
@@ -56,12 +57,12 @@ public:
     
     inline pagecount_t GetPageCount() const noexcept { return totalPages_.load(std::memory_order_relaxed); }
     
-    std::vector<StringPagePtr> GetPages(rowcount_t) const;
+    StringVector<StringPagePtr> GetPages(rowcount_t) const;
         
 private:
     
-    std::vector<std::atomic<rowcount_t>> counters_;
-    std::vector<StringPagePtr> data_;
+    StringVector<std::atomic<rowcount_t>> counters_;
+    StringVector<StringPagePtr> data_;
 
     const colcount_t cols_;
     const rowcount_t rows_;

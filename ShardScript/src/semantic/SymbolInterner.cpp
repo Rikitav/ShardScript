@@ -66,7 +66,7 @@ void SymbolInterner::grow()
 
 	for (const Entry& entry : old)
 	{
-		if ((entry.symbol == nullptr))
+		if (entry.symbol == nullptr)
 			continue;
 
 		const std::size_t mask = m_slots.size() - 1;
@@ -87,7 +87,7 @@ SyntaxSymbol* SymbolInterner::find(const std::uint64_t* words, std::uint16_t cou
 	while (true)
 	{
 		const Entry& entry = m_slots[slot];
-		if ((entry.symbol == nullptr))
+		if (entry.symbol == nullptr)
 			return nullptr; // insertion-only table: an empty slot ends the probe
 
 		if (same_words(entry, words, count))
