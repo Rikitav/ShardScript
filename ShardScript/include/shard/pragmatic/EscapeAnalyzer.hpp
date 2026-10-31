@@ -168,6 +168,7 @@ namespace shard
 		void visit_function_declaration(const FunctionDeclarationSyntax* node) override;
 		void visit_operator_declaration(const OperatorDeclarationSyntax* node) override;
 		void visit_constructor_declaration(const ConstructorDeclarationSyntax* node) override;
+		void visit_accessor_declaration(const AccessorDeclarationSyntax* node) override;
 		void visit_lambda_expression(const LambdaExpressionSyntax* node) override;
 
 		void visit_variable_statement(const VariableStatementSyntax* node) override;

@@ -14,6 +14,7 @@
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/OperatorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/AccessorDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
@@ -30,6 +31,7 @@
 #include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
 
 #include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
@@ -604,6 +606,22 @@ void EscapeAnalyzer::visit_constructor_declaration(const ConstructorDeclarationS
 		return;
 
 	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
+	if (symbol == nullptr)
+		return;
+
+	analyze_member_body(symbol, node->get_body());
+}
+
+void EscapeAnalyzer::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	auto nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
+		return;
+
+	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
 	if (symbol == nullptr)
 		return;
 

@@ -28,6 +28,7 @@
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/OperatorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/AccessorDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/UnaryExpressionSyntax.hpp>
@@ -143,6 +144,33 @@ void ControlFlowAnalyzer::visit_constructor_declaration(const ConstructorDeclara
 
 	// constructors are not subject to the missing-return check
 	analyze_body(body);
+
+	pop_scope();
+	leave_member_body(symbol);
+}
+
+void ControlFlowAnalyzer::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	auto nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
+		return;
+
+	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
+	if (symbol == nullptr)
+		return;
+
+	const BlockSyntax* body = node->get_body();
+	if (body == nullptr)
+		return;
+
+	enter_member_body(symbol);
+	push_scope(symbol);
+	declare_parameters(symbol);
+
+	analyze_member_body(symbol, body, node->get_location());
 
 	pop_scope();
 	leave_member_body(symbol);
@@ -774,8 +802,9 @@ void ControlFlowAnalyzer::analyze_expression_for_use(const ExpressionSyntax* exp
 			if (symbol == nullptr)
 				break;
 
-			bool isLocal = !(static_cast<VariableSymbol*>(symbol) == nullptr);
-			bool isParameter = !(static_cast<ParameterSymbol*>(symbol) == nullptr);
+			SyntaxKind symbolKind = symbol->get_kind();
+			bool isLocal = symbolKind == SyntaxKind::VariableStatement;
+			bool isParameter = symbolKind == SyntaxKind::Parameter;
 			if (!isLocal && !isParameter)
 				break;
 
