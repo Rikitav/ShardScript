@@ -2,6 +2,7 @@
 
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 
 #include <shard/LibraryMetadata.hpp>
@@ -24,6 +25,13 @@ namespace
 		context.set_return(ObjectInstance(slot.get_shape(), slot.as_pointer()));
 	}
 
+	static void write_reference_field(MethodCallState& context, StandardTypes fieldSlot)
+	{
+		SymbolTable& table = context.get_vm().get_model().get_table();
+		FieldSymbol* field = static_cast<FieldSymbol*>(table.get_standard_type(fieldSlot));
+		context.get_argument(0).set_field(field, context.get_argument(1));
+	}
+
 	static void runtime_exception_message_get(MethodCallState& context)
 	{
 		read_reference_field(context, StandardTypes::RuntimeException_MessageField);
@@ -34,6 +42,11 @@ namespace
 		read_reference_field(context, StandardTypes::RuntimeException_StackTraceField);
 	}
 
+	static void runtime_exception_stack_trace_set(MethodCallState& context)
+	{
+		write_reference_field(context, StandardTypes::RuntimeException_StackTraceField);
+	}
+
 	static void undefined_behaviour_message_get(MethodCallState& context)
 	{
 		read_reference_field(context, StandardTypes::UndefinedBehaviour_MessageField);
@@ -42,6 +55,11 @@ namespace
 	static void undefined_behaviour_stack_trace_get(MethodCallState& context)
 	{
 		read_reference_field(context, StandardTypes::UndefinedBehaviour_StackTraceField);
+	}
+
+	static void undefined_behaviour_stack_trace_set(MethodCallState& context)
+	{
+		write_reference_field(context, StandardTypes::UndefinedBehaviour_StackTraceField);
 	}
 
 	static FieldSymbol* make_backing_field(SymbolTable& table, StructSymbol* owner, const wchar_t* name)
@@ -55,7 +73,7 @@ namespace
 		return field;
 	}
 
-	static void make_throwable_property(SymbolTable& table, StructSymbol* owner, const wchar_t* name, MethodSymbolDelegate getterCallback)
+	static void make_throwable_property(SymbolTable& table, StructSymbol* owner, const wchar_t* name, MethodSymbolDelegate getterCallback, MethodSymbolDelegate setterCallback = nullptr)
 	{
 		PropertySymbol* property = table.emplace<PropertySymbol>(name, SyntaxKind::PropertyDeclaration, owner);
 		property->set_return_type(table.get_string_primitive());
@@ -71,6 +89,24 @@ namespace
 		getter->set_effects_computed(true);
 
 		property->set_getter(getter);
+
+		if (!(setterCallback == nullptr))
+		{
+			AccessorSymbol* setter = table.emplace<AccessorSymbol>(L"set", property);
+			setter->set_return_type(table.get_void_primitive());
+			setter->set_linking(LINK_INSTANCE);
+			setter->set_accesibility(ACS_PUBLIC);
+			setter->set_calling_convention(CallingConvention::ShardDecl);
+			setter->set_function_pointer(reinterpret_cast<void*>(setterCallback));
+			setter->set_effects_computed(true);
+
+			ParameterSymbol* value = table.emplace<ParameterSymbol>(L"value", setter);
+			value->set_type(table.get_string_primitive());
+			setter->on_symbol_declared(value);
+
+			property->set_setter(setter);
+		}
+
 		owner->properties.push_back(property);
 	}
 }
@@ -88,7 +124,7 @@ void SymbolTable::resolve_exceptions()
 		FieldSymbol* stackTraceField = make_backing_field(*this, exception, L"_stackTrace");
 
 		make_throwable_property(*this, exception, L"message", &runtime_exception_message_get);
-		make_throwable_property(*this, exception, L"stack_trace", &runtime_exception_stack_trace_get);
+		make_throwable_property(*this, exception, L"stack_trace", &runtime_exception_stack_trace_get, &runtime_exception_stack_trace_set);
 
 		m_rootNamespace->members.push_back(exception);
 		set_standard_type(StandardTypes::RuntimeException, exception);
@@ -105,7 +141,7 @@ void SymbolTable::resolve_exceptions()
 		FieldSymbol* stackTraceField = make_backing_field(*this, undefined, L"_stackTrace");
 
 		make_throwable_property(*this, undefined, L"message", &undefined_behaviour_message_get);
-		make_throwable_property(*this, undefined, L"stack_trace", &undefined_behaviour_stack_trace_get);
+		make_throwable_property(*this, undefined, L"stack_trace", &undefined_behaviour_stack_trace_get, &undefined_behaviour_stack_trace_set);
 
 		m_rootNamespace->members.push_back(undefined);
 		set_standard_type(StandardTypes::UndefinedBehaviour, undefined);

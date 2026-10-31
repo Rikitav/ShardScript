@@ -80,6 +80,7 @@ namespace shard
 		IThrowable,
 		IThrowable_getMessage,
 		IThrowable_getStackTrace,
+		IThrowable_setStackTrace,
 
 		IDisposable,
 		IDisposable_Dispose,
