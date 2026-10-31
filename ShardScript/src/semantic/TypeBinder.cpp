@@ -641,10 +641,6 @@ void TypeBinder::visit_indexator_declaration(const IndexatorDeclarationSyntax* n
 		AccessorSymbol* getter = symbol->get_getter();
 		if (!(getter == nullptr))
 			getter->set_return_type(propertyType);
-
-		AccessorSymbol* setter = symbol->get_setter();
-		if (!(setter == nullptr) && !setter->get_parameters().empty())
-			setter->get_parameters()[0]->set_type(propertyType);
 	}
 
 	if (!(node->get_parameters_list() == nullptr))
@@ -673,13 +669,19 @@ void TypeBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* nod
 
 	if (parentNode->get_kind() == SyntaxKind::IndexatorDeclaration)
 	{
-		// index parameters join each accessor's own parameter list; the
-		// implicit setter 'value' parameter keeps the leading slot
+		// index parameters join each accessor's own parameter list, followed
+		// by the implicit setter 'value' parameter
 		IndexatorSymbol* indexator = lookup_symbol<IndexatorSymbol>(parentNode);
 		if (!(indexator == nullptr))
 		{
 			for (ParameterSymbol* const& indexParameter : indexator->get_parameters())
 				symbol->on_symbol_declared(indexParameter);
+
+			if (node->get_keyword().get_type() == TokenType::SetKeyword)
+			{
+				ParameterSymbol* value = m_factory.create_parameter(L"value", symbol, indexator->get_return_type());
+				symbol->on_symbol_declared(value);
+			}
 		}
 	}
 	else
@@ -687,6 +689,13 @@ void TypeBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* nod
 		PropertySymbol* property = lookup_symbol<PropertySymbol>(parentNode);
 		if (!(property == nullptr) && node->get_keyword().get_type() == TokenType::GetKeyword)
 			symbol->set_return_type(property->get_return_type());
+	}
+
+	if (!(node->get_body() == nullptr))
+	{
+		push_scope(symbol);
+		node->get_body()->accept(*this);
+		pop_scope();
 	}
 }
 
