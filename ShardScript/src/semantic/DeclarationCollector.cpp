@@ -27,6 +27,11 @@ namespace
 		return symbol->get_kind() == SyntaxKind::NamespaceDirective;
 	}
 
+	inline bool is_interface_scope(const SyntaxSymbol* const symbol)
+	{
+		return (symbol != nullptr) && symbol->get_kind() == SyntaxKind::InterfaceDeclaration;
+	}
+
 	inline bool has_access_operator(StructSymbol* const type)
 	{
 		if (type == nullptr)
@@ -586,11 +591,17 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 		}
 		else
 		{
-			if (ownerType->get_linking() == LINK_STATIC && node->get_operator_token().get_type() != TokenType::Delimeter)
+			if (is_interface_scope(parent))
+			{
+				get_diagnostics().report_error(node->get_location(), L"Operators cannot be declared inside an interface");
+			}
+			else if (ownerType->get_linking() == LINK_STATIC && node->get_operator_token().get_type() != TokenType::Delimeter)
+			{
 				get_diagnostics().report_error(node->get_location(), L"Cannot declare an operator overload in a static Type");
+			}
 		}
 
-		if ((node->get_body() == nullptr))
+		if (!is_interface_scope(parent) && (node->get_body() == nullptr))
 			get_diagnostics().report_error(node->get_location(), L"Operator overload should have a Body");
 	}
 
@@ -672,7 +683,9 @@ void DeclarationCollector::visit_constructor_declaration(const ConstructorDeclar
 			if (symbol->get_linking() == LINK_STATIC)
 				get_diagnostics().report_error(node->get_location(), L"Type Constructors' cannot be static");
 
-			if ((node->get_body() == nullptr))
+			if (is_interface_scope(parent))
+				get_diagnostics().report_error(node->get_location(), L"Constructors cannot be declared inside an interface");
+			else if ((node->get_body() == nullptr))
 				get_diagnostics().report_error(node->get_location(), L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
 		}
 	}
@@ -698,11 +711,24 @@ void DeclarationCollector::visit_property_declaration(const PropertyDeclarationS
 		symbol = m_factory.create_property(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
-		bool isInterfaceProperty = !(symbol->get_parent() == nullptr) && symbol->get_parent()->get_kind() == SyntaxKind::InterfaceDeclaration;
-		bool isAutoProperty = !isInterfaceProperty && (!(node->get_getter() == nullptr) || !(node->get_setter() == nullptr));
+		bool isInterfaceProperty = is_interface_scope(symbol->get_parent());
+
+		bool hasAutoAccessor = false;
+		if (!(node->get_getter() == nullptr) && (node->get_getter()->get_body() == nullptr))
+			hasAutoAccessor = true;
+		if (!(node->get_setter() == nullptr) && (node->get_setter()->get_body() == nullptr))
+			hasAutoAccessor = true;
+
+		bool isAutoProperty = !isInterfaceProperty && hasAutoAccessor;
 
 		if (isAutoProperty)
-			declare(m_factory.create_backing_field(symbol, symbol));
+		{
+			SyntaxSymbol* owner = const_cast<SyntaxSymbol*>(symbol->get_parent());
+			declare(m_factory.create_backing_field(symbol, owner));
+		}
+
+		if (isInterfaceProperty && (node->get_expression() != nullptr))
+			get_diagnostics().report_error(node->get_location(), L"Property should not have an initializer, as it's declared inside interface");
 
 		const SyntaxSymbol* parent = symbol->get_parent();
 		if ((parent == nullptr) || !parent->is_type())
@@ -812,6 +838,9 @@ void DeclarationCollector::visit_accessor_declaration(const AccessorDeclarationS
 	if (propertySymbol == nullptr)
 		return;
 
+	if (is_interface_scope(propertySymbol->get_parent()) && (node->get_body() != nullptr))
+		get_diagnostics().report_error(node->get_location(), L"Accessor should not have a Body, as it's declared inside interface");
+
 	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
 	if (symbol == nullptr)
 	{
@@ -822,13 +851,12 @@ void DeclarationCollector::visit_accessor_declaration(const AccessorDeclarationS
 			get_diagnostics().report_error(node->get_location(), L"Cannot resolve Accessors' owner Type");
 	}
 
-	/* TODO
-	if ((propertySymbol->get_parent() == nullptr) || propertySymbol->get_parent()->get_kind() != SyntaxKind::InterfaceDeclaration)
+	if (!(node->get_body() == nullptr))
 	{
-		if (!(node->get_body() == nullptr))
-			get_diagnostics().report_error(node->get_location(), L"Method should not have a Body, as it's declared inside interface");
+		push_scope(symbol);
+		node->get_body()->accept(*this);
+		pop_scope();
 	}
-	*/
 }
 
 void DeclarationCollector::visit_variable_statement(const VariableStatementSyntax* node)
