@@ -569,7 +569,13 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 				eval_push(sizeof(void*));
 			}
 
-			m_encoder.emit_call_method_symbol(getter);
+			const SyntaxSymbol* owner = property->get_parent();
+			bool interfaceDispatch = !(owner == nullptr) && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
+			if (interfaceDispatch)
+				m_encoder.emit_call_interface(getter);
+			else
+				m_encoder.emit_call_method_symbol(getter);
+
 			eval_pop();
 
 			// the binder's expression type carries the substituted value type;
