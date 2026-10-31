@@ -275,6 +275,10 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 
 		cursor += EntryHeaderSize + gmt::align_up(payload, sizeof(void*));
 
+		std::size_t zeroBytes = mappable ? (std::min)(payload, returnPayload) : payload;
+		if (zeroBytes > 0)
+			std::memset(address + EntryHeaderSize, 0, zeroBytes);
+
 		if (mappable)
 			continue;
 
@@ -286,6 +290,9 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	{
 		std::uintptr_t returnHeader = pack_header(returnShape, returnReference);
 		std::memcpy(frame->m_returnSlot, &returnHeader, EntryHeaderSize);
+
+		if (returnPayload > 0)
+			std::memset(frame->m_returnSlot + EntryHeaderSize, 0, returnPayload);
 	}
 
 	return frame;
