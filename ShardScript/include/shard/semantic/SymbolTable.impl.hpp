@@ -4,7 +4,7 @@
 namespace shard
 {
 	template<typename T, typename... Args> requires std::is_constructible_v<T, Args&&...>
-	T* SymbolTable::bind_symbol(const SyntaxNode* node, Args&&... args)
+	FORCE_INLINE T* SymbolTable::bind_symbol(const SyntaxNode* node, Args&&... args)
 	{
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
 
@@ -15,7 +15,7 @@ namespace shard
 	}
 
 	template<typename T>
-	T* SymbolTable::bind_symbol(const SyntaxNode* node, T* symbol)
+	FORCE_INLINE T* SymbolTable::bind_symbol(const SyntaxNode* node, T* symbol)
 	{
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
 
@@ -25,13 +25,13 @@ namespace shard
 	}
 
 	template<typename T, typename... Args>
-	T* SymbolTable::emplace(Args&&... args)
+	FORCE_INLINE T* SymbolTable::emplace(Args&&... args)
 	{
 		return m_arena.emplace<T>(std::forward<Args>(args)...);
 	}
 
 	template<typename T>
-	std::span<T> SymbolTable::emplace_array(std::size_t count)
+	FORCE_INLINE std::span<T> SymbolTable::emplace_array(std::size_t count)
 	{
 		return m_arena.emplace_array<T>(count);
 	}
