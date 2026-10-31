@@ -1,0 +1,7 @@
+public interface IWidget
+{
+    public static operator +(left: IWidget, right: IWidget) -> int
+    {
+        return 0;
+    }
+}

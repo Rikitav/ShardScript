@@ -1,0 +1,16 @@
+using stdio;
+
+struct Config
+{
+    public static Setting -> int
+    {
+        get { return field; }
+        set { field = value; }
+    }
+}
+
+func Main() -> void
+{
+    Config.Setting = 42;
+    println(Config.Setting);
+}

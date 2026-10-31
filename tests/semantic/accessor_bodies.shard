@@ -1,0 +1,44 @@
+using stdio;
+
+struct Widget
+{
+    public Number -> int { get; set; }
+
+    public Double -> int
+    {
+        get { return field * 2; }
+        set { field = value / 2; }
+    }
+
+    public Triple -> int
+    {
+        get => field * 3;
+        set => field = value / 3;
+    }
+
+    public Mixed -> int
+    {
+        get;
+        set { field = value + 1; }
+    }
+}
+
+func Main() -> void
+{
+    widget := new Widget();
+
+    widget.Number = 5;
+    println(widget.Number);
+
+    println(widget.Double);
+    widget.Double = 10;
+    println(widget.Number);
+    println(widget.Double);
+
+    widget.Triple = 21;
+    println(widget.Number);
+    println(widget.Triple);
+
+    widget.Mixed = 8;
+    println(widget.Mixed);
+}

@@ -1,0 +1,21 @@
+using stdio;
+
+struct Counter
+{
+    private Total: int;
+
+    public Item[index: int] -> int
+    {
+        get { return this.Total + index; }
+        set { this.Total = value - index; }
+    }
+}
+
+func Main() -> void
+{
+    counter := new Counter();
+    println(counter[1]);
+
+    counter[3] = 10;
+    println(counter[3]);
+}
