@@ -501,7 +501,12 @@ StructSymbol* ExpressionBinder::analyze_field_keyword_expression(const SyntaxNod
 	}
 
 	if ((propertySymbol->get_backing_field() == nullptr))
-		propertySymbol->set_backing_field(m_factory.create_backing_field(propertySymbol, propertySymbol));
+	{
+		SyntaxSymbol* owner = const_cast<SyntaxSymbol*>(propertySymbol->get_parent());
+		FieldSymbol* backing = m_factory.create_backing_field(propertySymbol, owner);
+		if (!(owner == nullptr))
+			owner->on_symbol_declared(backing);
+	}
 
 	FieldSymbol* backingField = propertySymbol->get_backing_field();
 	if ((backingField->get_return_type() == nullptr))

@@ -256,9 +256,15 @@ AccessorSymbol* SymbolFactory::create_accessor(const AccessorDeclarationSyntax* 
 
 		case TokenType::SetKeyword:
 		{
-			ParameterSymbol* valueParam = create_parameter(L"value", symbol, property->get_return_type());
-			symbol->on_symbol_declared(valueParam);
-			
+			// indexator setters receive the index parameters first and the
+			// implicit 'value' parameter last, matching the call-site layout;
+			// the type binder appends them in that order
+			if (property->get_kind() != SyntaxKind::IndexatorDeclaration)
+			{
+				ParameterSymbol* valueParam = create_parameter(L"value", symbol, property->get_return_type());
+				symbol->on_symbol_declared(valueParam);
+			}
+
 			symbol->set_return_type(m_table->get_void_primitive());
 			property->set_setter(symbol);
 			break;
