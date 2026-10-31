@@ -1,0 +1,35 @@
+using stdio;
+
+struct CustomError : IThrowable
+{
+    private storedMessage: string;
+    private storedTrace: string;
+
+    public message -> string
+    {
+        get { return storedMessage; }
+    }
+
+    public stack_trace -> string
+    {
+        get { return storedTrace; }
+        set { storedTrace = value; }
+    }
+}
+
+func Thrower() -> void
+{
+    throw new CustomError();
+}
+
+func Main() -> void
+{
+    try
+    {
+        Thrower();
+    }
+    catch error: CustomError
+    {
+        println(error.stack_trace);
+    }
+}

@@ -1,0 +1,20 @@
+using stdio;
+
+func Thrower() -> void
+{
+    throw new RuntimeException();
+}
+
+func Main() -> void
+{
+    try
+    {
+        Thrower();
+    }
+    catch error: IThrowable
+    {
+        println(error.stack_trace);
+        error.stack_trace = "iface";
+        println(error.stack_trace);
+    }
+}
