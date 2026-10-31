@@ -1,0 +1,19 @@
+using stdio;
+
+func Divide() -> int
+{
+    return 1 / 0;
+}
+
+func Main() -> void
+{
+    try
+    {
+        Divide();
+    }
+    catch error: RuntimeException
+    {
+        println(error.message);
+        println(error.stack_trace);
+    }
+}

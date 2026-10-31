@@ -1,0 +1,32 @@
+using stdio;
+
+func Thrower() -> void
+{
+    throw new RuntimeException();
+}
+
+func Middle() -> void
+{
+    try
+    {
+        Thrower();
+    }
+    catch error: RuntimeException
+    {
+        throw;
+    }
+}
+
+func Main() -> void
+{
+    try
+    {
+        Middle();
+    }
+    catch error: RuntimeException
+    {
+        println(error.stack_trace);
+        error.stack_trace = "custom";
+        println(error.stack_trace);
+    }
+}
