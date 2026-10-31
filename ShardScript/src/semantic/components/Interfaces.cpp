@@ -3,6 +3,7 @@
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/InterfaceSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
@@ -22,6 +23,22 @@ namespace
 
 		property->set_getter(getter);
 		return getter;
+	}
+
+	AccessorSymbol* make_virtual_setter(SymbolTable& table, PropertySymbol* property, StructSymbol* type)
+	{
+		AccessorSymbol* setter = table.emplace<AccessorSymbol>(L"set", property);
+		setter->set_return_type(table.get_void_primitive());
+		setter->set_linking(LINK_INSTANCE);
+		setter->set_accesibility(ACS_PUBLIC);
+		setter->set_is_virtual(true);
+
+		ParameterSymbol* value = table.emplace<ParameterSymbol>(L"value", setter);
+		value->set_type(type);
+		setter->on_symbol_declared(value);
+
+		property->set_setter(setter);
+		return setter;
 	}
 
 	MethodSymbol* make_virtual_method(SymbolTable& table, StructSymbol* owner, const wchar_t* name, StructSymbol* returnType)
@@ -55,6 +72,7 @@ void SymbolTable::resolve_interfaces()
 
 		AccessorSymbol* messageGetter = make_virtual_getter(*this, message, m_string);
 		AccessorSymbol* stackTraceGetter = make_virtual_getter(*this, stackTrace, m_string);
+		AccessorSymbol* stackTraceSetter = make_virtual_setter(*this, stackTrace, m_string);
 
 		throwable->properties.push_back(message);
 		throwable->properties.push_back(stackTrace);
@@ -63,6 +81,7 @@ void SymbolTable::resolve_interfaces()
 		set_standard_type(StandardTypes::IThrowable, throwable);
 		set_standard_type(StandardTypes::IThrowable_getMessage, messageGetter);
 		set_standard_type(StandardTypes::IThrowable_getStackTrace, stackTraceGetter);
+		set_standard_type(StandardTypes::IThrowable_setStackTrace, stackTraceSetter);
 	}
 
 	// IDisposable
