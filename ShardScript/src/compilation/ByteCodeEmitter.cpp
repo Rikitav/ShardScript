@@ -724,13 +724,18 @@ void ByteCodeEmitter::visit_accessor_declaration(const AccessorDeclarationSyntax
 		return;
 
 	begin_method(symbol);
-	emit_accessor_body(symbol);
+
+	if (node->get_body() == nullptr)
+		emit_accessor_body(symbol);
+	else
+		emit_body(node->get_body());
+
 	end_method();
 }
 
 void ByteCodeEmitter::emit_accessor_body(AccessorSymbol* symbol)
 {
-	// accessors are semicolon-only: the body is synthesized over the backing field
+	// semicolon-only accessors are synthesized over the backing field
 	const SyntaxSymbol* parent = symbol->get_parent();
 	PropertySymbol* property = (parent == nullptr) ? nullptr : gmt::as<PropertySymbol>(parent);
 	FieldSymbol* backing = (property == nullptr) ? nullptr : property->get_backing_field();
