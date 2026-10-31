@@ -494,7 +494,9 @@ void ExpressionBinder::visit_accessor_declaration(const AccessorDeclarationSynta
 	for (ParameterSymbol* parameter : symbol->get_parameters())
 		get_current_scope()->declare_symbol(parameter);
 
-	// auto-accessors carry no body
+	if (!(node->get_body() == nullptr))
+		node->get_body()->accept(*this);
+
 	pop_scope();
 }
 
