@@ -1,0 +1,7 @@
+public interface IWidget
+{
+    func Name() -> string
+    {
+        return "widget";
+    }
+}

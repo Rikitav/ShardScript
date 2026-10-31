@@ -1,0 +1,14 @@
+struct Box
+{
+    public Number: int;
+
+    public new(number: int)
+    {
+        this.Number = number;
+    }
+
+    public static operator +(left: Box, right: Box) -> int
+    {
+        return left.Number + right.Number;
+    }
+}

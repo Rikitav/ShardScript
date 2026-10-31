@@ -1,0 +1,26 @@
+using stdio;
+
+struct Widget
+{
+    public Value -> int
+    {
+        get
+        {
+            offset := 3;
+            result := field + offset;
+            return result;
+        }
+        set
+        {
+            doubled := value * 2;
+            field = doubled;
+        }
+    }
+}
+
+func Main() -> void
+{
+    widget := new Widget();
+    widget.Value = 5;
+    println(widget.Value);
+}

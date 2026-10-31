@@ -1,0 +1,7 @@
+public interface IWidget
+{
+    Value -> int
+    {
+        get { return 1; }
+    }
+}

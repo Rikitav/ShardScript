@@ -1,0 +1,6 @@
+public interface IWidget
+{
+    func Name() -> string;
+    Count -> int { get; }
+    Item[index: int] -> string { get; }
+}
