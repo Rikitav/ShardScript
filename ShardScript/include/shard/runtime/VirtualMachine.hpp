@@ -93,6 +93,8 @@ namespace shard
 
 		void throw_value(CallStackFrame* frame, ObjectInstance value);
 		void propagate_exception(CallStackFrame* into, ObjectInstance exception);
+		gmt::wstring build_stack_trace(CallStackFrame* frame) const;
+		void inject_stack_trace(ObjectInstance exception, CallStackFrame* frame);
 
 		void push_scalar(CallStackFrame* frame, const ScalarResult& result);
 		bool is_void_method(MethodSymbol* method) const;

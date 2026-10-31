@@ -324,7 +324,116 @@ void VirtualMachine::throw_value(CallStackFrame* frame, ObjectInstance value)
 		std::memcpy(payload.get_memory(), &scratch, shape->get_size());
 	}
 
+	inject_stack_trace(payload, frame);
 	propagate_exception(frame, payload);
+}
+
+gmt::wstring VirtualMachine::build_stack_trace(CallStackFrame* frame) const
+{
+	gmt::wstring trace;
+
+	for (CallStackFrame* current = frame; current != nullptr; current = current->get_previous())
+	{
+		MethodSymbol* method = current->get_method();
+		if (method == nullptr)
+			continue;
+
+		trace.append(L"    at ");
+		trace.append(method->get_full_name());
+		trace.append(L"\n");
+	}
+
+	if (!trace.empty())
+		trace.shrink_to_fit();
+
+	return trace;
+}
+
+void VirtualMachine::inject_stack_trace(ObjectInstance exception, CallStackFrame* frame)
+{
+	if ((exception == nullptr) || (exception.get_shape() == nullptr))
+		return;
+
+	const TypeShape* shape = exception.get_shape();
+	if (!shape->is_reference())
+		return;
+
+	StructSymbol* baseType = shape->get_base_type();
+	if (baseType == nullptr)
+		return;
+
+	SymbolTable& table = m_model.get_table();
+	StructSymbol* throwableType = static_cast<StructSymbol*>(table.get_standard_type(StandardTypes::IThrowable));
+	if (!is_instance_of(shape, throwableType))
+		return;
+
+	gmt::wstring trace = build_stack_trace(frame);
+	if (trace.empty())
+		return;
+
+	// the standard exceptions expose a dedicated backing field; other
+	// implementations are traced through the interface property setter
+	FieldSymbol* stackTraceField = nullptr;
+	if (baseType == table.get_standard_type(StandardTypes::RuntimeException))
+	{
+		stackTraceField = static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RuntimeException_StackTraceField));
+	}
+	else if (baseType == table.get_standard_type(StandardTypes::UndefinedBehaviour))
+	{
+		stackTraceField = static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::UndefinedBehaviour_StackTraceField));
+	}
+	else
+	{
+		for (FieldSymbol* field : baseType->fields)
+		{
+			if (field == nullptr)
+				continue;
+
+			if (field->get_name() == L"_stackTrace")
+			{
+				stackTraceField = field;
+				break;
+			}
+		}
+	}
+
+	AccessorSymbol* setter = nullptr;
+	if (stackTraceField == nullptr)
+	{
+		SyntaxSymbol* interfaceGetter = table.get_standard_type(StandardTypes::IThrowable_getStackTrace);
+		if ((interfaceGetter == nullptr) || !interfaceGetter->is_method())
+			return;
+
+		const SyntaxSymbol* owner = interfaceGetter->get_parent();
+		if ((owner == nullptr) || owner->get_kind() != SyntaxKind::PropertyDeclaration)
+			return;
+
+		PropertySymbol* interfaceProperty = gmt::as<PropertySymbol>(owner);
+		PropertySymbol* concreteProperty = m_model.resolve_virtual_property(baseType, interfaceProperty, nullptr);
+		if (concreteProperty == nullptr)
+			return;
+
+		setter = concreteProperty->get_setter();
+		if (setter == nullptr)
+			return;
+	}
+
+	// the allocations below may trigger a collection; keep the exception alive
+	m_collector.add_root(exception);
+	ObjectInstance traceString = create_string(trace);
+
+	if (!(stackTraceField == nullptr))
+	{
+		exception.set_field(stackTraceField, traceString);
+	}
+	else
+	{
+		ObjectInstance arguments[2] = { exception, traceString };
+		ObjectInstance ignored;
+		try_invoke_method(setter, std::span<const ObjectInstance>(arguments, 2), ignored);
+	}
+
+	m_collector.remove_root(exception);
 }
 
 void VirtualMachine::raise_runtime_exception(std::wstring_view message)
@@ -339,13 +448,16 @@ ObjectInstance VirtualMachine::build_runtime_exception(std::wstring_view message
 
 	const TypeShape* shape = m_pragmatic.find_or_create_type_shape(m_model, exceptionType);
 	ObjectInstance exception = m_collector.allocate_instance(shape);
+	m_collector.add_root(exception);
 
 	FieldSymbol* messageField = static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RuntimeException_MessageField));
 	FieldSymbol* stackTraceField = static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RuntimeException_StackTraceField));
 
-	// TODO: capture the call stack into _stackTrace once the VM grows a trace API
 	exception.set_field(messageField, create_string(message));
 	exception.set_field(stackTraceField, create_string(L""));
+	m_collector.remove_root(exception);
+
+	inject_stack_trace(exception, m_currentFrame);
 
 	return exception;
 }
