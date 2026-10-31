@@ -1112,7 +1112,7 @@ AccessorDeclarationSyntax* SourceParser::read_accessor_declaration(SourceProvide
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<AccessorDeclarationSyntax>(parent);
 
-	// get; / set;
+	// get; | get { ... } | get => expression;
 	TokenType type = reader.current().get_type();
 	if (type != TokenType::GetKeyword && type != TokenType::SetKeyword)
 	{
@@ -1125,7 +1125,31 @@ AccessorDeclarationSyntax* SourceParser::read_accessor_declaration(SourceProvide
 
 	reject_generic_type_parameters(reader, L"Accessors cannot declare generic type parameters");
 
-	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';' after accessor keyword"));
+	if (!reader.can_consume())
+	{
+		m_diagnostics.report_error(syntax->get_keyword(), L"Expected ';', '{' or '=>' after accessor keyword");
+		return syntax;
+	}
+
+	if (reader.current().get_type() == TokenType::Semicolon)
+	{
+		syntax->set_semicolon(reader.current());
+		reader.consume();
+		return syntax;
+	}
+
+	if (reader.current().get_type() != TokenType::OpenBrace && reader.current().get_type() != TokenType::LambdaOperator)
+	{
+		m_diagnostics.report_error(reader.current(), L"Expected ';', '{' or '=>' after accessor keyword");
+		return syntax;
+	}
+
+	syntax->set_body(read_body(reader, syntax));
+
+	// expression-bodied accessors require a trailing semicolon
+	if (!(syntax->get_body() == nullptr) && syntax->get_body()->get_kind() == SyntaxKind::ArrowClause)
+		syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+
 	return syntax;
 }
 

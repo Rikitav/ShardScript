@@ -178,6 +178,9 @@ void SyntaxVisitor::visit_accessor_declaration(const AccessorDeclarationSyntax* 
 
 	if (!(node->get_attributes() == nullptr))
 		visit_attributes_list(node->get_attributes());
+
+	if (!(node->get_body() == nullptr))
+		node->get_body()->accept(*this);
 }
 
 void SyntaxVisitor::visit_constructor_declaration(const ConstructorDeclarationSyntax* node)
