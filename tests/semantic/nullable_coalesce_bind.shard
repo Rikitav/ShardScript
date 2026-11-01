@@ -1,0 +1,7 @@
+func Main() -> void
+{
+    a: int? = 5;
+    b: int = a ?? 0;
+    c: int? = a ?? null;
+    d: int? = a ?? a;
+}

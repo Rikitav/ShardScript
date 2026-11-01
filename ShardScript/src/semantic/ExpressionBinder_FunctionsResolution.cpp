@@ -285,6 +285,60 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 	return true;
 }
 
+void ExpressionBinder::record_conversion(const ExpressionSyntax* expression, StructSymbol* targetType, StructSymbol* sourceType)
+{
+	if ((expression == nullptr) || (targetType == nullptr) || (sourceType == nullptr))
+		return;
+
+	SemanticModel& model = get_model();
+	NullableConversion conversion;
+
+	if (model.is_null_type(sourceType) && targetType->get_kind() == SyntaxKind::NullableType)
+	{
+		conversion.kind = NullableConversionKind::Default;
+		conversion.targetType = targetType;
+	}
+	else if (targetType->get_kind() == SyntaxKind::NullableType && sourceType->get_kind() != SyntaxKind::NullableType)
+	{
+		conversion.kind = NullableConversionKind::Wrap;
+		conversion.targetType = targetType;
+	}
+	else if (targetType->get_kind() != SyntaxKind::NullableType && sourceType->get_kind() == SyntaxKind::NullableType)
+	{
+		conversion.kind = NullableConversionKind::Unwrap;
+		conversion.targetType = targetType;
+	}
+
+	if (conversion.kind != NullableConversionKind::None)
+		model.set_nullable_conversion(expression, conversion);
+}
+
+void ExpressionBinder::record_argument_conversions(MethodSymbol* method, GenericTypeSymbol* genericType, std::span<StructSymbol* const> methodTypeArgs, const ArgumentsListSyntax* arguments, std::size_t parameterOffset)
+{
+	if ((method == nullptr) || (arguments == nullptr))
+		return;
+
+	std::span<ArgumentSyntax* const> list = arguments->get_arguments();
+	const gmt::vector<ParameterSymbol*>& parameters = method->get_parameters();
+	if (parameterOffset > parameters.size())
+		return;
+
+	for (std::size_t i = parameterOffset; i < parameters.size(); ++i)
+	{
+		const std::size_t index = i - parameterOffset;
+		if (index >= list.size())
+			break;
+
+		ArgumentSyntax* argument = list[index];
+		if ((argument == nullptr) || (argument->get_expression() == nullptr))
+			continue;
+
+		StructSymbol* parameterType = substitute_type_parameters(parameters[i]->get_type(), genericType, method, methodTypeArgs);
+		StructSymbol* argumentType = get_expression_type(argument->get_expression());
+		record_conversion(argument->get_expression(), parameterType, argumentType);
+	}
+}
+
 bool ExpressionBinder::try_infer_type_argument(StructSymbol* pattern, StructSymbol* concrete, MethodSymbol* method, GenericTypeSymbol* genericType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs)
 {
 	if ((pattern == nullptr) || (concrete == nullptr))
@@ -1010,6 +1064,7 @@ StructSymbol* ExpressionBinder::analyze_object_expression(const ObjectExpression
 			genericType = static_cast<GenericTypeSymbol*>(createdType);
 
 		match_method_arguments(node->get_new_token(), constructor->get_parameters(), node->get_arguments()->get_arguments(), genericType);
+		record_argument_conversions(constructor, genericType, {}, node->get_arguments());
 	}
 
 	if (nodeRef.has_value())
@@ -1188,7 +1243,18 @@ StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationEx
 			return nullptr;
 
 		if (!(node->get_arguments() == nullptr))
+		{
 			match_method_arguments(node->get_delimeter_token(), delegate->get_parameters(), node->get_arguments()->get_arguments(), delegateInstantiation);
+
+			std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
+			const gmt::vector<ParameterSymbol*>& parameters = delegate->get_parameters();
+			for (std::size_t i = 0; i < parameters.size() && i < arguments.size(); ++i)
+			{
+				StructSymbol* parameterType = substitute_type_parameters(parameters[i]->get_type(), delegateInstantiation);
+				StructSymbol* argumentType = get_expression_type(arguments[i]->get_expression());
+				record_conversion(arguments[i]->get_expression(), parameterType, argumentType);
+			}
+		}
 
 		StructSymbol* delegateReturn = substitute_type_parameters(delegate->get_return_type(), delegateInstantiation);
 		if (nodeRef.has_value())
@@ -1218,6 +1284,16 @@ StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationEx
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' return type not resolved"));
 		return nullptr;
 	}
+
+	std::size_t parameterOffset = 0;
+	if (!(node->get_previous() == nullptr) && method->get_linking() == LINK_STATIC && !(node->get_arguments() == nullptr))
+	{
+		std::size_t explicitArguments = node->get_arguments()->get_arguments().size();
+		if (method->get_parameters().size() == explicitArguments + 1)
+			parameterOffset = 1;
+	}
+
+	record_argument_conversions(method, genericType, methodTypeArgs.get_vector(), node->get_arguments(), parameterOffset);
 
 	StructSymbol* type = substitute_type_parameters(method->get_return_type(), genericType, method, methodTypeArgs.get_vector());
 	return wrap_async_return_type(method, type);
@@ -1261,7 +1337,18 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 			: nullptr;
 
 		if (!(node->get_arguments() == nullptr))
+		{
 			match_method_arguments(node->get_delimeter_token(), delegate->get_parameters(), node->get_arguments()->get_arguments(), delegateInstantiation);
+
+			std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
+			const gmt::vector<ParameterSymbol*>& parameters = delegate->get_parameters();
+			for (std::size_t i = 0; i < parameters.size() && i < arguments.size(); ++i)
+			{
+				StructSymbol* parameterType = substitute_type_parameters(parameters[i]->get_type(), delegateInstantiation);
+				StructSymbol* argumentType = get_expression_type(arguments[i]->get_expression());
+				record_conversion(arguments[i]->get_expression(), parameterType, argumentType);
+			}
+		}
 
 		StructSymbol* delegateReturn = substitute_type_parameters(delegate->get_return_type(), delegateInstantiation);
 		if (nodeRef.has_value())

@@ -26,12 +26,27 @@
 
 namespace shard
 {
+	enum class NullableConversionKind
+	{
+		None,
+		Wrap,
+		Default,
+		Unwrap
+	};
+
+	struct NullableConversion
+	{
+		NullableConversionKind kind = NullableConversionKind::None;
+		StructSymbol* targetType = nullptr;
+	};
+
 	class SHARD_API SemanticModel
 	{
 		shard::SyntaxTree& m_tree;
 		shard::SymbolTable m_table;
 
 		gmt::unordered_map<const ExpressionSyntax*, StructSymbol*> m_expressionTypes;
+		gmt::unordered_map<const ExpressionSyntax*, NullableConversion> m_nullableConversions;
 
 	public:
 		using TypeParameterResolver = std::function<StructSymbol*(TypeParameterSymbol*)>;
@@ -46,6 +61,8 @@ namespace shard
 
 		StructSymbol* get_expression_type(const ExpressionSyntax* expression) const;
 		void set_expression_type(const ExpressionSyntax* expression, StructSymbol* type);
+		void set_nullable_conversion(const ExpressionSyntax* expression, NullableConversion conversion);
+		NullableConversion get_nullable_conversion(const ExpressionSyntax* expression) const;
 
 		static bool are_types_equal(const StructSymbol* left, const StructSymbol* right);
 		bool is_assignable_to(const StructSymbol* target, const StructSymbol* source) const;

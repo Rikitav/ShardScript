@@ -85,6 +85,7 @@ namespace shard
 		SymbolFactory m_factory;
 		gmt::unordered_set<std::wstring_view> m_ambiguousNames;
 		gmt::unordered_set<const ExpressionSyntax*> m_staticContextExpressions;
+		const ExpressionSyntax* m_assignmentTarget = nullptr;
 
 		// lambdas whose parameter types could not be resolved yet; they bind
 		// once an expected delegate type appears (overload resolution picks a
@@ -150,6 +151,8 @@ namespace shard
 		static bool is_assignment_context(const IndexatorExpressionSyntax* expression);
 		
 		bool match_method_arguments(SyntaxToken blameToken, std::span<ParameterSymbol* const> parameters, std::span<ArgumentSyntax* const> arguments, GenericTypeSymbol* genericType, std::size_t parameterOffset = 0);
+		void record_conversion(const ExpressionSyntax* expression, StructSymbol* targetType, StructSymbol* sourceType);
+		void record_argument_conversions(MethodSymbol* method, GenericTypeSymbol* genericType, std::span<StructSymbol* const> methodTypeArgs, const ArgumentsListSyntax* arguments, std::size_t parameterOffset = 0);
 		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes);
 
 		bool is_pending_lambda(const ExpressionSyntax* expression) const;

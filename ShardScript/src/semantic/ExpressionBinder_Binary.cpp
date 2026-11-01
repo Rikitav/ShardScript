@@ -176,7 +176,11 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 	SymbolTable& table = get_symbol_table();
 	SemanticModel& model = get_model();
 
+	const ExpressionSyntax* savedAssignmentTarget = m_assignmentTarget;
+	m_assignmentTarget = is_assignment_operator(op) ? node->get_left() : nullptr;
 	visit_expression(node->get_left());
+	m_assignmentTarget = savedAssignmentTarget;
+
 	StructSymbol* leftType = get_expression_type(node->get_left());
 
 	if ((leftType == nullptr) && op != TokenType::AssignOperator)
@@ -205,6 +209,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 			return leftType;
 		}
 
+		record_conversion(node->get_right(), leftType, rightType);
 		return leftType;
 	}
 
@@ -237,6 +242,41 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 	bool leftIsNull = model.is_null_type(leftType);
 	bool rightIsNull = model.is_null_type(rightType);
+
+	if (op == TokenType::NullCoalescingOperator)
+	{
+		if (leftIsNull || leftType->get_kind() != SyntaxKind::NullableType)
+		{
+			get_diagnostics().report_error(node->get_location(), L"Left operand of ?? must be a nullable value");
+			return leftType;
+		}
+
+		StructSymbol* underlaying = gmt::as<NullableTypeSymbol>(leftType)->get_underlaying_type();
+
+		if (rightIsNull)
+		{
+			record_conversion(node->get_right(), leftType, rightType);
+			return leftType;
+		}
+
+		if (rightType->get_kind() == SyntaxKind::NullableType)
+		{
+			StructSymbol* rightUnderlaying = gmt::as<NullableTypeSymbol>(rightType)->get_underlaying_type();
+			if (!SemanticModel::are_types_equal(underlaying, rightUnderlaying))
+				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in ??: expected '", model.get_type_display_name(leftType), L"' but got '", model.get_type_display_name(rightType), L"'"));
+
+			return leftType;
+		}
+
+		if (!model.is_assignable_to(underlaying, rightType))
+		{
+			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in ??: expected '", model.get_type_display_name(underlaying), L"' but got '", model.get_type_display_name(rightType), L"'"));
+			return leftType;
+		}
+
+		record_conversion(node->get_right(), underlaying, rightType);
+		return underlaying;
+	}
 
 	bool bothPrimitive = false;
 	if (!leftIsNull && !rightIsNull)
