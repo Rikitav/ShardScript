@@ -408,7 +408,10 @@ void ExpressionBinder::visit_field_declaration(const FieldDeclarationSyntax* nod
 	if (!model.is_assignable_to(returnType, initializerType))
 	{
 		get_diagnostics().report_error(location, gmt::concat(L"Field initializer type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(initializerType), L"'"));
+		return;
 	}
+
+	record_conversion(initializer, returnType, initializerType);
 }
 
 void ExpressionBinder::visit_property_declaration(const PropertyDeclarationSyntax* node)
@@ -428,6 +431,13 @@ void ExpressionBinder::visit_property_declaration(const PropertyDeclarationSynta
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Property '", node->get_identifier().get_lexeme(), L"' must have return value"));
 
 	visit_expression(node->get_expression());
+
+	if (!(node->get_expression() == nullptr) && !(symbol->get_return_type() == nullptr))
+	{
+		StructSymbol* initializerType = get_expression_type(node->get_expression());
+		if (!(initializerType == nullptr) && get_model().is_assignable_to(symbol->get_return_type(), initializerType))
+			record_conversion(node->get_expression(), symbol->get_return_type(), initializerType);
+	}
 
 	push_scope(symbol);
 
@@ -540,8 +550,12 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 		}
 
 		if (!model.is_assignable_to(symbolType, expressionType))
+		{
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot assign 'null' to non-nullable type '", model.get_type_display_name(symbolType), L"'"));
+			return;
+		}
 
+		record_conversion(expression, symbolType, expressionType);
 		return;
 	}
 
@@ -552,7 +566,12 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 	}
 
 	if (!model.is_assignable_to(symbolType, expressionType))
+	{
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch: expected '", model.get_type_display_name(symbolType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
+		return;
+	}
+
+	record_conversion(expression, symbolType, expressionType);
 }
 
 StructSymbol* ExpressionBinder::infer_return_type_from_body(const BlockSyntax* body)
@@ -716,9 +735,12 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 	{
 		get_diagnostics().report_error(location, L"Return expression type could not be determined");
 	}
-	else if (returnType->get_kind() != SyntaxKind::TypeParameter && !model.is_assignable_to(returnType, expressionType))
+	else if (returnType->get_kind() != SyntaxKind::TypeParameter)
 	{
-		get_diagnostics().report_error(location, gmt::concat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
+		if (!model.is_assignable_to(returnType, expressionType))
+			get_diagnostics().report_error(location, gmt::concat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
+		else
+			record_conversion(expression, returnType, expressionType);
 	}
 }
 
@@ -1023,4 +1045,13 @@ void ExpressionBinder::visit_if_expression(const IfExpressionSyntax* node)
 	}
 
 	set_expression_type(*nodeRef, type);
+
+	if (type == nullptr)
+		return;
+
+	if (!(thenType == nullptr) && get_model().is_assignable_to(type, thenType))
+		record_conversion(node->get_then_expression(), type, thenType);
+
+	if (!(elseType == nullptr) && get_model().is_assignable_to(type, elseType))
+		record_conversion(node->get_else_expression(), type, elseType);
 }

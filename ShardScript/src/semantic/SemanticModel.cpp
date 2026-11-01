@@ -54,6 +54,21 @@ void SemanticModel::set_expression_type(const ExpressionSyntax* expression, Stru
 		m_expressionTypes[expression] = type;
 }
 
+void SemanticModel::set_nullable_conversion(const ExpressionSyntax* expression, NullableConversion conversion)
+{
+	if (!(expression == nullptr))
+		m_nullableConversions[expression] = conversion;
+}
+
+NullableConversion SemanticModel::get_nullable_conversion(const ExpressionSyntax* expression) const
+{
+	if (expression == nullptr)
+		return {};
+
+	auto it = m_nullableConversions.find(expression);
+	return it != m_nullableConversions.end() ? it->second : NullableConversion{};
+}
+
 bool SemanticModel::are_types_equal(const StructSymbol* left, const StructSymbol* right)
 {
 	if ((left == nullptr) || (right == nullptr))

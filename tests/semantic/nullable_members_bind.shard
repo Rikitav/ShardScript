@@ -1,0 +1,6 @@
+func Main() -> void
+{
+    a: int? = 5;
+    has: bool = a.HasValue;
+    value: int = a.Value;
+}

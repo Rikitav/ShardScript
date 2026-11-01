@@ -347,6 +347,8 @@ void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyn
 		StructSymbol* valueType = get_expression_type(value);
 		if (!(valueType == nullptr) && !SemanticModel::are_types_equal(valueType, elementType))
 			get_diagnostics().report_error(node->get_location(), L"Element have type different from collection's target type");
+		else if (!(valueType == nullptr) && get_model().is_assignable_to(elementType, valueType))
+			record_conversion(value, elementType, valueType);
 	}
 
 	std::optional<const CollectionExpressionSyntax*> nodeRef = ref_from(node);
