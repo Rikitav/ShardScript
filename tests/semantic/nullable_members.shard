@@ -1,0 +1,40 @@
+using stdio;
+
+struct Record
+{
+    public Count: int?;
+    public Tag: string;
+    public Tail: int;
+}
+
+struct Bag
+{
+    public static Slot: int?;
+}
+
+func Main() -> void
+{
+    r: Record = new Record();
+    r.Count = 7;
+    r.Tag = "x";
+    r.Tail = 9;
+    println(r.Count.HasValue);
+    println(r.Count.Value);
+    println(r.Tail);
+    println(r.Tag);
+
+    r.Count = null;
+    println(r.Count.HasValue);
+
+    values: int?[] = new int?[3];
+    values[0] = 1;
+    values[1] = null;
+    values[2] = 3;
+    println(values.Length);
+    println(values[0].Value);
+    println(values[1].HasValue);
+    println(values[2].Value);
+
+    Bag.Slot = 11;
+    println(Bag.Slot.Value);
+}

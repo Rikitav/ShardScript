@@ -1267,6 +1267,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		{
 			StructSymbol* type = decoder.absorb_type_symbol();
 			const TypeShape* shape = resolve_shape(type);
+			frame->pop_entry();
 			std::byte buffer[16] = {};
 			frame->push_entry(shape, false, buffer, shape->get_size());
 			break;
