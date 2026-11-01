@@ -188,11 +188,8 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 		return reference;
 	};
 
-	auto local_payload = [&](std::size_t index, const TypeShape* shape, bool reference) -> std::size_t
+	auto local_payload = [&](const TypeShape* shape, bool reference) -> std::size_t
 	{
-		if (index < argumentCount)
-			return sizeof(void*);
-
 		return !reference && shape != nullptr ? shape->get_size() : sizeof(void*);
 	};
 
@@ -201,7 +198,7 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	{
 		const TypeShape* shape = local_shape(i);
 		const bool reference = local_reference(i, shape);
-		localsBytes += EntryHeaderSize + gmt::align_up(local_payload(i, shape, reference), sizeof(void*));
+		localsBytes += EntryHeaderSize + gmt::align_up(local_payload(shape, reference), sizeof(void*));
 	}
 
 	std::size_t evalSlotPayload = layout != nullptr ? layout->get_eval_slot_payload() : 0;
@@ -258,7 +255,7 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	{
 		const TypeShape* shape = local_shape(i);
 		const bool reference = local_reference(i, shape);
-		const std::size_t payload = local_payload(i, shape, reference);
+		const std::size_t payload = local_payload(shape, reference);
 
 		LocalSlot& localSlot = frame->m_localSlots[i];
 		localSlot.payload = payload;
