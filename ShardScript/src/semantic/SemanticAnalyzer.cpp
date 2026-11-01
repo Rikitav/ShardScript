@@ -6,6 +6,7 @@
 #include <shard/semantic/DeclarationCollector.hpp>
 #include <shard/semantic/TypeBinder.hpp>
 #include <shard/semantic/ExpressionBinder.hpp>
+#include <shard/semantic/NullableFlowAnalyzer.hpp>
 #include <shard/semantic/ControlFlowAnalyzer.hpp>
 
 using namespace shard;
@@ -48,4 +49,7 @@ void SemanticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model)
 
 	if (m_diagnostics.has_errors())
 		return;
+
+	NullableFlowAnalyzer nullableFlowAnalyzer(model, m_diagnostics);
+	nullableFlowAnalyzer.analyze(tree);
 }

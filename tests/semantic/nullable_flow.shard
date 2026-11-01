@@ -1,0 +1,27 @@
+func Read(x: int?) -> int
+{
+    if (x == null)
+    {
+        return 0;
+    }
+
+    a: int = x;
+
+    if (x != null)
+    {
+        b: int = x;
+    }
+
+    if (x.HasValue)
+    {
+        c: int = x;
+    }
+
+    if (x != null and x.Value > 0)
+    {
+        d: int = x;
+    }
+
+    e: int = x ?? 0;
+    return a;
+}
