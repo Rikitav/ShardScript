@@ -459,6 +459,29 @@ void ByteCodeEncoder::emit_store_static_field(FieldSymbol* field)
 	append_symbol_operand(m_image.get_text_section(), field);
 }
 
+void ByteCodeEncoder::emit_nullable_default(StructSymbol* type)
+{
+	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_DEFAULT);
+	append_symbol_operand(m_image.get_text_section(), type);
+}
+
+void ByteCodeEncoder::emit_nullable_wrap(StructSymbol* type)
+{
+	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_WRAP);
+	append_symbol_operand(m_image.get_text_section(), type);
+}
+
+void ByteCodeEncoder::emit_nullable_has_value()
+{
+	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_HAS_VALUE);
+}
+
+void ByteCodeEncoder::emit_nullable_unwrap(StructSymbol* type)
+{
+	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_UNWRAP);
+	append_symbol_operand(m_image.get_text_section(), type);
+}
+
 void ByteCodeEncoder::emit_load_enum_field(FieldSymbol* field)
 {
 	append_data_value(m_image.get_text_section(), OpCode::LOADENUMFIELD);

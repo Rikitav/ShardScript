@@ -1,0 +1,15 @@
+using stdio;
+
+func Pick(value: int?) -> int?
+{
+    return value;
+}
+
+func Main() -> void
+{
+    a: int? = 5;
+    b: int? = Pick(a);
+    c: int? = Pick(b);
+    println(c.Value);
+    println(Pick(11).Value);
+}

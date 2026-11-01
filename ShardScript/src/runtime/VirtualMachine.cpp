@@ -1263,6 +1263,81 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			break;
 		}
 
+		case OpCode::NULLABLE_DEFAULT:
+		{
+			StructSymbol* type = decoder.absorb_type_symbol();
+			const TypeShape* shape = resolve_shape(type);
+			std::byte buffer[16] = {};
+			frame->push_entry(shape, false, buffer, shape->get_size());
+			break;
+		}
+
+		case OpCode::NULLABLE_WRAP:
+		{
+			StructSymbol* type = decoder.absorb_type_symbol();
+			const TypeShape* shape = resolve_shape(type);
+			const TypeShape* valueShape = shape->get_slot(1).fieldShape;
+			ObjectInstance value = frame->pop_entry();
+
+			std::byte buffer[16] = {};
+			bool hasValue = true;
+
+			if (valueShape->is_reference())
+			{
+				std::byte* pointer = value.get_memory();
+				std::memcpy(buffer + 1, &pointer, sizeof(std::byte*));
+				hasValue = pointer != nullptr;
+			}
+			else
+			{
+				std::memcpy(buffer + 1, value.get_memory(), valueShape->get_size());
+			}
+
+			buffer[0] = hasValue ? std::byte{ 1 } : std::byte{ 0 };
+			frame->push_entry(shape, false, buffer, shape->get_size());
+			break;
+		}
+
+		case OpCode::NULLABLE_HAS_VALUE:
+		{
+			ObjectInstance wrapper = frame->pop_entry();
+			unsigned char flag = 0;
+			std::memcpy(&flag, wrapper.get_memory(), sizeof(flag));
+
+			bool hasValue = flag != 0;
+			frame->push_entry(m_primitiveShapes.boolean, false, &hasValue, sizeof(bool));
+			break;
+		}
+
+		case OpCode::NULLABLE_UNWRAP:
+		{
+			StructSymbol* type = decoder.absorb_type_symbol();
+			const TypeShape* shape = resolve_shape(type);
+			const TypeShape* valueShape = shape->get_slot(1).fieldShape;
+			ObjectInstance wrapper = frame->pop_entry();
+
+			unsigned char flag = 0;
+			std::memcpy(&flag, wrapper.get_memory(), sizeof(flag));
+			if (flag == 0)
+			{
+				raise_runtime_exception(L"InvalidOperationException: nullable value is null");
+				break;
+			}
+
+			if (valueShape->is_reference())
+			{
+				std::byte* pointer = nullptr;
+				std::memcpy(&pointer, wrapper.get_memory() + 1, sizeof(std::byte*));
+				frame->push_entry(valueShape, true, &pointer, sizeof(std::byte*));
+				break;
+			}
+
+			std::byte buffer[16] = {};
+			std::memcpy(buffer, wrapper.get_memory() + 1, valueShape->get_size());
+			frame->push_entry(valueShape, false, buffer, valueShape->get_size());
+			break;
+		}
+
 		case OpCode::LOADFIELD:
 		{
 			std::uint32_t slot = decoder.absorb_field_slot();

@@ -1,0 +1,36 @@
+using stdio;
+
+func Echo(value: int?) -> int?
+{
+    return value;
+}
+
+func Unwrap(value: int?) -> int
+{
+    return value.Value;
+}
+
+func Main() -> void
+{
+    a: int? = 5;
+    b: int? = null;
+    println(a.HasValue);
+    println(b.HasValue);
+    println(a.Value);
+    println(Unwrap(7));
+    println(Echo(9).Value);
+
+    c: int? = a;
+    c = null;
+    println(a.HasValue);
+
+    try
+    {
+        v: int = b.Value;
+        println(v);
+    }
+    catch error: RuntimeException
+    {
+        println("caught");
+    }
+}

@@ -36,6 +36,7 @@
 #include <shard/semantic/symbols/IndexatorSymbol.hpp>
 #include <shard/semantic/symbols/LiteralSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/OperatorSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
@@ -455,11 +456,39 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 	if (node == nullptr)
 		return;
 
+	const ExpressionSyntax* previous = node->get_previous();
+	if (!(previous == nullptr))
+	{
+		StructSymbol* receiverType = get_model().get_expression_type(previous);
+		if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::NullableType)
+		{
+			std::wstring_view name = node->get_identifier().get_lexeme();
+			previous->accept(*this);
+
+			if (name == L"HasValue")
+			{
+				m_encoder.emit_nullable_has_value();
+				eval_pop();
+				eval_push(sizeof(bool));
+				return;
+			}
+
+			if (name == L"Value")
+			{
+				StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(receiverType)->get_underlaying_type();
+				m_encoder.emit_nullable_unwrap(receiverType);
+				eval_pop();
+				eval_push_type(underlaying);
+				return;
+			}
+		}
+	}
+
 	std::optional<const MemberAccessExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	emit_identifier_load(*nodeRef, node->get_previous());
+	emit_identifier_load(*nodeRef, previous);
 }
 
 void ByteCodeEmitter::visit_identifier_name_type(const IdentifierNameTypeSyntax* node)
@@ -506,8 +535,14 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 			std::optional<std::uint16_t> slot = slot_of(bound);
 			if (slot.has_value())
 			{
+				StructSymbol* valueType = nullptr;
+				if (kind == SyntaxKind::VariableStatement)
+					valueType = static_cast<VariableSymbol*>(bound)->get_type();
+				else
+					valueType = static_cast<ParameterSymbol*>(bound)->get_type();
+
 				m_encoder.emit_load_local(*slot);
-				eval_push(sizeof(void*));
+				eval_push_type(valueType);
 				return;
 			}
 
@@ -537,7 +572,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 			if (field->get_linking() == LINK_STATIC)
 			{
 				m_encoder.emit_load_static_field(field);
-				eval_push(sizeof(void*));
+				eval_push_type(field->get_return_type());
 				return;
 			}
 
@@ -647,6 +682,42 @@ FieldSymbol* ByteCodeEmitter::capture_field_of(SyntaxSymbol* bound) const
 	return nullptr;
 }
 
+void ByteCodeEmitter::emit_converted(const ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return;
+
+	expression->accept(*this);
+
+	NullableConversion conversion = get_model().get_nullable_conversion(expression);
+	switch (conversion.kind)
+	{
+		case NullableConversionKind::Wrap:
+			m_encoder.emit_nullable_wrap(conversion.targetType);
+			eval_pop();
+			eval_push_type(conversion.targetType);
+			break;
+
+		case NullableConversionKind::Default:
+			m_encoder.emit_nullable_default(conversion.targetType);
+			eval_pop();
+			eval_push_type(conversion.targetType);
+			break;
+
+		case NullableConversionKind::Unwrap:
+		{
+			StructSymbol* sourceType = get_model().get_expression_type(expression);
+			m_encoder.emit_nullable_unwrap(sourceType);
+			eval_pop();
+			eval_push_type(conversion.targetType);
+			break;
+		}
+
+		default:
+			break;
+	}
+}
+
 void ByteCodeEmitter::emit_arguments_reversed(const ArgumentsListSyntax* arguments)
 {
 	if (arguments == nullptr)
@@ -659,7 +730,7 @@ void ByteCodeEmitter::emit_arguments_reversed(const ArgumentsListSyntax* argumen
 		if ((argument->get_expression() == nullptr))
 			continue;
 
-		argument->get_expression()->accept(*this);
+		emit_converted(argument->get_expression());
 	}
 }
 
@@ -1006,7 +1077,38 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 
 	targetType = substitute_type(targetType);
 
+	StructSymbol* sourceType = get_model().get_expression_type(node->get_expression());
+	bool targetNullable = !(targetType == nullptr) && targetType->get_kind() == SyntaxKind::NullableType;
+	bool sourceNullable = !(sourceType == nullptr) && sourceType->get_kind() == SyntaxKind::NullableType;
+
 	node->get_expression()->accept(*this);
+
+	if (targetNullable && sourceNullable)
+	{
+		eval_pop();
+		eval_push_type(targetType);
+		return;
+	}
+
+	if (targetNullable)
+	{
+		if (get_model().is_null_type(sourceType))
+			m_encoder.emit_nullable_default(targetType);
+		else
+			m_encoder.emit_nullable_wrap(targetType);
+
+		eval_pop();
+		eval_push_type(targetType);
+		return;
+	}
+
+	if (sourceNullable)
+	{
+		m_encoder.emit_nullable_unwrap(sourceType);
+		eval_pop();
+		eval_push_type(targetType);
+		return;
+	}
 
 	if (!(targetType == nullptr) && get_model().is_primitive_type(targetType))
 		m_encoder.emit_cast_primitive(targetType);
@@ -1031,7 +1133,7 @@ void ByteCodeEmitter::visit_if_expression(const IfExpressionSyntax* node)
 	m_encoder.emit_jump_false(0);
 
 	std::int32_t armDepth = m_evalDepth;
-	node->get_then_expression()->accept(*this);
+	emit_converted(node->get_then_expression());
 
 	std::size_t endAt = mark_position();
 	m_encoder.emit_jump(0);
@@ -1039,7 +1141,7 @@ void ByteCodeEmitter::visit_if_expression(const IfExpressionSyntax* node)
 	patch_jump(elseAt);
 	m_evalDepth = armDepth;
 
-	node->get_else_expression()->accept(*this);
+	emit_converted(node->get_else_expression());
 	patch_jump(endAt);
 }
 
@@ -1098,7 +1200,7 @@ void ByteCodeEmitter::visit_collection_expression(const CollectionExpressionSynt
 
 	std::span<ExpressionSyntax* const> values = node->get_values();
 	for (ExpressionSyntax* value : values)
-		value->accept(*this);
+		emit_converted(value);
 
 	ArrayTypeSymbol* arrayType = get_symbol_table().find_or_create_array_type(elementType, values.size());
 	m_encoder.emit_new_array(arrayType);

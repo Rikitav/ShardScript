@@ -69,6 +69,7 @@ namespace shard
 		std::int32_t m_evalDepth = 0;
 		std::uint32_t m_maxEvalDepth = 0;
 		std::size_t m_maxEvalPayload = 0;
+		std::size_t m_minEvalPayload = 0;
 		bool m_evalPoisoned = false;
 
 		gmt::vector<MethodSymbol*> m_entryPointCandidates;
@@ -123,6 +124,8 @@ namespace shard
 		void emit_defer_region(const SyntaxNode* bodyNode);
 
 		void emit_condition_jump(const ExpressionSyntax* condition, bool jumpWhenTrue);
+		void emit_converted(const ExpressionSyntax* expression);
+		void update_min_eval_payload();
 		void emit_assignment(const BinaryExpressionSyntax* node);
 		void emit_store_to(const ExpressionSyntax* target);
 		void emit_compound_assignment(const BinaryExpressionSyntax* node, TokenType arithmetic);

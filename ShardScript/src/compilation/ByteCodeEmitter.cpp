@@ -72,9 +72,47 @@ void ByteCodeEmitter::eval_push(std::size_t payload)
 	if (m_evalPoisoned)
 		return;
 
+	if (payload < m_minEvalPayload)
+		payload = m_minEvalPayload;
+
 	++m_evalDepth;
 	m_maxEvalDepth = (std::max)(m_maxEvalDepth, static_cast<std::uint32_t>(m_evalDepth));
 	m_maxEvalPayload = (std::max)(m_maxEvalPayload, payload);
+}
+
+void ByteCodeEmitter::update_min_eval_payload()
+{
+	m_minEvalPayload = 0;
+	if (m_layout == nullptr)
+		return;
+
+	std::size_t nullablePayload = sizeof(bool) + sizeof(void*);
+
+	auto isNullable = [](const TypeShape* shape)
+	{
+		if ((shape == nullptr) || (shape->get_base_type() == nullptr))
+			return false;
+
+		return shape->get_base_type()->get_kind() == SyntaxKind::NullableType;
+	};
+
+	for (std::size_t i = 0; i < m_layout->get_argument_shape_count(); ++i)
+	{
+		if (isNullable(m_layout->get_argument_shape(i)))
+		{
+			m_minEvalPayload = nullablePayload;
+			return;
+		}
+	}
+
+	for (std::size_t i = 0; i < m_layout->get_variable_shape_count(); ++i)
+	{
+		if (isNullable(m_layout->get_variable_shape(i)))
+		{
+			m_minEvalPayload = nullablePayload;
+			return;
+		}
+	}
 }
 
 void ByteCodeEmitter::eval_push_type(StructSymbol* type)
@@ -264,6 +302,7 @@ void ByteCodeEmitter::begin_method(MethodSymbol* method)
 	m_maxEvalDepth = 0;
 	m_maxEvalPayload = 0;
 	m_evalPoisoned = false;
+	update_min_eval_payload();
 }
 
 void ByteCodeEmitter::end_method()
@@ -301,7 +340,7 @@ void ByteCodeEmitter::emit_body(const BlockSyntax* body)
 		const ArrowClauseSyntax* arrow = gmt::as<ArrowClauseSyntax>(body);
 		if (!(arrow->get_expression() == nullptr))
 		{
-			arrow->get_expression()->accept(*this);
+			emit_converted(arrow->get_expression());
 
 			// an expression body yields its value; end_method's RETURN pops it
 			StructSymbol* returnType = (m_generatingFor == nullptr) ? nullptr : m_generatingFor->get_return_type();
@@ -478,6 +517,7 @@ void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation
 	// substitution context come from the instantiation
 	begin_method(open);
 	m_layout = &m_pragmatic.get_or_create_frame_layout(get_model(), instantiation);
+	update_min_eval_payload();
 	m_currentInstantiation = instantiation;
 
 	switch (declarationKind)
@@ -781,7 +821,7 @@ void ByteCodeEmitter::emit_field_initializers(StructSymbol* ownerType)
 		m_encoder.emit_load_arg(0);
 		eval_push(sizeof(void*));
 
-		fieldNode->get_expression()->accept(*this);
+		emit_converted(fieldNode->get_expression());
 
 		m_encoder.emit_store_field(field_slot_index(field));
 		eval_pop(2);

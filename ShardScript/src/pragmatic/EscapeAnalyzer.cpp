@@ -357,6 +357,8 @@ void EscapeAnalyzer::expose_expression(const ExpressionSyntax* expression, Escap
 	if (m_inDefer > 0)
 		return;
 
+	mark_wrap_identity(expression);
+
 	ExpressionRefs refs;
 	collect_expression_refs(expression, refs, includeReceivers);
 
@@ -418,6 +420,17 @@ void EscapeAnalyzer::mark_identity(const ExpressionSyntax* expression, bool incl
 		m_graph.identityExposed[ensure_site_id(site)] = true;
 }
 
+void EscapeAnalyzer::mark_wrap_identity(const ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return;
+
+	if (get_model().get_nullable_conversion(expression).kind != NullableConversionKind::Wrap)
+		return;
+
+	mark_identity(expression, false);
+}
+
 void EscapeAnalyzer::record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver)
 {
 	if ((expression == nullptr) || (callee == nullptr))
@@ -439,6 +452,8 @@ void EscapeAnalyzer::alias_into(SyntaxSymbol* target, const ExpressionSyntax* so
 {
 	if ((target == nullptr) || (sourceExpression == nullptr))
 		return;
+
+	mark_wrap_identity(sourceExpression);
 
 	ExpressionRefs refs;
 	collect_expression_refs(sourceExpression, refs, false);

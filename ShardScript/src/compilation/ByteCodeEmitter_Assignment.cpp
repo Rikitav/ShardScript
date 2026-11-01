@@ -49,7 +49,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			if (setter == nullptr)
 				return;
 
-			node->get_right()->accept(*this);
+			emit_converted(node->get_right());
 			m_encoder.emit_duplicate();
 			eval_push(sizeof(void*));
 
@@ -73,7 +73,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		if (!arguments.empty())
 			arguments.front()->get_expression()->accept(*this);
 
-		node->get_right()->accept(*this);
+		emit_converted(node->get_right());
 
 		StructSymbol* elementType = nullptr;
 		if (!(indexator->get_previous() == nullptr))
@@ -116,7 +116,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		std::optional<std::uint16_t> slot = slot_of(bound);
 		if (slot.has_value())
 		{
-			node->get_right()->accept(*this);
+			emit_converted(node->get_right());
 			m_encoder.emit_duplicate();
 			eval_push(sizeof(void*));
 			m_encoder.emit_store_local(*slot);
@@ -131,7 +131,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			m_encoder.emit_load_local(0);
 			eval_push(sizeof(void*));
 
-			node->get_right()->accept(*this);
+			emit_converted(node->get_right());
 
 			std::uint16_t temp = allocate_temporary(captureField->get_return_type(), PlacementVerdict::Heap);
 			m_encoder.emit_duplicate();
@@ -159,7 +159,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 
 		if (field->get_linking() == LINK_STATIC)
 		{
-			node->get_right()->accept(*this);
+			emit_converted(node->get_right());
 			m_encoder.emit_duplicate();
 			eval_push(sizeof(void*));
 			m_encoder.emit_store_static_field(field);
@@ -175,7 +175,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 				std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
 				if (scalarSlot.has_value())
 				{
-					node->get_right()->accept(*this);
+					emit_converted(node->get_right());
 					m_encoder.emit_duplicate();
 					eval_push(sizeof(void*));
 					m_encoder.emit_store_local(*scalarSlot);
@@ -193,7 +193,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			eval_push(sizeof(void*));
 		}
 
-		node->get_right()->accept(*this);
+		emit_converted(node->get_right());
 
 		std::uint16_t temp = allocate_temporary(field->get_return_type(), PlacementVerdict::Heap);
 		m_encoder.emit_duplicate();
@@ -224,7 +224,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		if (setter == nullptr)
 			return;
 
-		node->get_right()->accept(*this);
+		emit_converted(node->get_right());
 
 		std::uint16_t temp = allocate_temporary(property->get_return_type(), PlacementVerdict::Heap);
 		m_encoder.emit_duplicate();
@@ -285,7 +285,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			m_encoder.emit_load_local(*slot);
 			eval_push(sizeof(void*));
 
-			node->get_right()->accept(*this);
+			emit_converted(node->get_right());
 			emit_arithmetic_op(arithmetic);
 			eval_pop();
 
@@ -308,7 +308,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			eval_push(payload_of(captureField->get_return_type()));
 			eval_pop();
 
-			node->get_right()->accept(*this);
+			emit_converted(node->get_right());
 			emit_arithmetic_op(arithmetic);
 			eval_pop();
 
@@ -338,7 +338,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			m_encoder.emit_load_static_field(field);
 			eval_push(sizeof(void*));
 
-			node->get_right()->accept(*this);
+			emit_converted(node->get_right());
 			emit_arithmetic_op(arithmetic);
 			eval_pop();
 
@@ -364,7 +364,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 		eval_push(payload_of(field->get_return_type()));
 		eval_pop();
 
-		node->get_right()->accept(*this);
+		emit_converted(node->get_right());
 		emit_arithmetic_op(arithmetic);
 		eval_pop();
 
