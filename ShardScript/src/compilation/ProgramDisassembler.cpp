@@ -371,6 +371,33 @@ namespace
 				break;
 			}
 
+			case OpCode::NULLABLE_DEFAULT:
+			{
+				opcode = L"nullable_default";
+				write_symbol_name(args, decoder.absorb_type_symbol());
+				break;
+			}
+
+			case OpCode::NULLABLE_WRAP:
+			{
+				opcode = L"nullable_wrap";
+				write_symbol_name(args, decoder.absorb_type_symbol());
+				break;
+			}
+
+			case OpCode::NULLABLE_HAS_VALUE:
+			{
+				opcode = L"nullable_has_value";
+				break;
+			}
+
+			case OpCode::NULLABLE_UNWRAP:
+			{
+				opcode = L"nullable_unwrap";
+				write_symbol_name(args, decoder.absorb_type_symbol());
+				break;
+			}
+
 			case OpCode::CALLDELEGATE:
 			{
 				opcode = L"calldelegate";

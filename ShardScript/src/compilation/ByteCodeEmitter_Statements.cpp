@@ -164,7 +164,7 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	{
 		if (!(node->get_expression() == nullptr))
 		{
-			node->get_expression()->accept(*this);
+			emit_converted(node->get_expression());
 			eval_pop();
 		}
 
@@ -188,14 +188,15 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	}
 
 	bool stackPlaced = verdict == PlacementVerdict::Stack || verdict == PlacementVerdict::StackReturn;
+	bool hasConversion = get_model().get_nullable_conversion(initializer).kind != NullableConversionKind::None;
 
-	if (stackPlaced && initializer->get_kind() == SyntaxKind::ObjectExpression)
+	if (!hasConversion && stackPlaced && initializer->get_kind() == SyntaxKind::ObjectExpression)
 	{
 		emit_object_construction(gmt::as<ObjectExpressionSyntax>(initializer), *slot);
 		return;
 	}
 
-	if (stackPlaced && initializer->get_kind() == SyntaxKind::RangeExpression)
+	if (!hasConversion && stackPlaced && initializer->get_kind() == SyntaxKind::RangeExpression)
 	{
 		emit_range_cursor(initializer, *slot);
 		return;
@@ -203,7 +204,7 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 
 	// composite-returning calls write straight into the local's slot through
 	// the chained return storage instead of bouncing a pointer off the heap
-	if (stackPlaced && initializer->get_kind() == SyntaxKind::InvokationExpression)
+	if (!hasConversion && stackPlaced && initializer->get_kind() == SyntaxKind::InvokationExpression)
 	{
 		MethodSymbol* intoMethod = into_call_method(initializer);
 		if (!(intoMethod == nullptr))
@@ -214,7 +215,7 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 		}
 	}
 
-	initializer->accept(*this);
+	emit_converted(initializer);
 	m_encoder.emit_store_local(*slot);
 	eval_pop();
 }
@@ -226,9 +227,12 @@ void ByteCodeEmitter::visit_return_statement(const ReturnStatementSyntax* node)
 
 	const ExpressionSyntax* expression = node->get_expression();
 
+	bool hasConversion = !(expression == nullptr);
+	hasConversion = hasConversion && get_model().get_nullable_conversion(expression).kind != NullableConversionKind::None;
+
 	// tail calls forward the current frame's return slot: the callee writes
 	// its result straight into the caller's chained return storage
-	MethodSymbol* intoMethod = into_call_method(expression);
+	MethodSymbol* intoMethod = hasConversion ? nullptr : into_call_method(expression);
 	if (!(expression == nullptr) && !(intoMethod == nullptr))
 	{
 		const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression);
@@ -240,7 +244,7 @@ void ByteCodeEmitter::visit_return_statement(const ReturnStatementSyntax* node)
 	}
 
 	if (!(expression == nullptr))
-		expression->accept(*this);
+		emit_converted(expression);
 
 	emit_all_defers();
 	m_encoder.emit_return();

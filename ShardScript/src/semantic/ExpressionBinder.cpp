@@ -1015,6 +1015,8 @@ void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 	SemanticModel& model = get_model();
 	if (!model.is_assignable_to(returnType, expressionType))
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
+	else
+		record_conversion(node->get_expression(), returnType, expressionType);
 }
 
 
