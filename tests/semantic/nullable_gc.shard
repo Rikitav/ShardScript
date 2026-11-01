@@ -1,0 +1,46 @@
+using stdio;
+
+struct Payload
+{
+    public N: int;
+}
+
+struct Holder
+{
+    public Value: int?;
+    public Ref: Payload?;
+}
+
+func Churn() -> void
+{
+    for i in 0..40000
+    {
+        junk: int[] = new int[256];
+        junk[0] = i;
+    }
+}
+
+func Main() -> void
+{
+    h: Holder = new Holder();
+    h.Value = 123;
+    h.Ref = new Payload();
+    h.Ref.Value.N = 42;
+
+    Churn();
+    println(h.Value.Value);
+    println(h.Ref.Value.N);
+
+    p: Payload? = new Payload();
+    p.Value.N = 7;
+
+    Churn();
+    println(p.Value.N);
+
+    items: Payload?[] = new Payload?[1];
+    items[0] = new Payload();
+    items[0].Value.N = 9;
+
+    Churn();
+    println(items[0].Value.N);
+}
