@@ -373,11 +373,22 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 	{
 		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		const TypeShape* elementShape = m_pragmatic.find_or_create_type_shape(m_model, arrayType->get_underlaying_type());
-		if (!elementShape->is_reference())
-			return;
 
 		std::int64_t length;
 		std::memcpy(&length, payload, sizeof(std::int64_t));
+
+		if (!elementShape->is_reference())
+		{
+			if (elementShape->get_slot_count() == 0)
+				return;
+
+			std::size_t elementSize = elementShape->get_size();
+			std::byte* elements = payload + sizeof(std::int64_t);
+			for (std::int64_t i = 0; i < length; ++i)
+				trace_object_fields(elementShape, elements + static_cast<std::size_t>(i) * elementSize);
+
+			return;
+		}
 
 		std::byte* elements = payload + sizeof(std::int64_t);
 		for (std::int64_t i = 0; i < length; ++i)
@@ -424,7 +435,7 @@ void GarbageCollector::trace_frame(CallStackFrame* frame)
 			return;
 		}
 
-		if (view.shape != nullptr && view.shape->is_reference())
+		if (view.shape != nullptr)
 			trace_object_fields(view.shape, view.payloadAddress);
 	});
 }
@@ -479,14 +490,26 @@ void GarbageCollector::collect()
 
 	for (const ObjectInstance& pinned : m_pinned)
 	{
-		if (pinned.get_shape() != nullptr && pinned.get_shape()->is_reference())
+		const TypeShape* shape = pinned.get_shape();
+		if (shape == nullptr)
+			continue;
+
+		if (shape->is_reference())
 			trace_pointer(pinned.get_memory());
+		else
+			trace_object_fields(shape, pinned.get_memory());
 	}
 
 	for (const ObjectInstance& root : m_roots)
 	{
-		if (root.get_shape() != nullptr && root.get_shape()->is_reference())
+		const TypeShape* shape = root.get_shape();
+		if (shape == nullptr)
+			continue;
+
+		if (shape->is_reference())
 			trace_pointer(root.get_memory());
+		else
+			trace_object_fields(shape, root.get_memory());
 	}
 
 	// roots only enqueue their heap children; drain iteratively instead of
