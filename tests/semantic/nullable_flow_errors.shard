@@ -1,0 +1,37 @@
+func Unproven(x: int?) -> int
+{
+    a: int = x;
+    return a;
+}
+
+func AfterEmptyCheck(x: int?) -> void
+{
+    if (x == null)
+    {
+    }
+
+    b: int = x;
+}
+
+func AfterNullAssignment(x: int?) -> void
+{
+    if (x != null)
+    {
+        x = null;
+        c: int = x;
+    }
+}
+
+func InLoop(x: int?) -> void
+{
+    if (x == null)
+    {
+        return;
+    }
+
+    while (true)
+    {
+        d: int = x;
+        x = null;
+    }
+}
