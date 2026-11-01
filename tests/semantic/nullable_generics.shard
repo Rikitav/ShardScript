@@ -1,0 +1,28 @@
+using stdio;
+
+struct Box<T>
+{
+    public Item: T?;
+}
+
+func Maybe<T>(value: T?) -> T?
+{
+    return value;
+}
+
+func Main() -> void
+{
+    a: int? = Maybe<int>(5);
+    println(a.Value);
+
+    b: int? = Maybe<int>(null);
+    println(b.HasValue);
+
+    box: Box<int> = new Box<int>();
+    box.Item = 9;
+    println(box.Item.Value);
+
+    nested: Box<int?> = new Box<int?>();
+    nested.Item = null;
+    println(nested.Item.HasValue);
+}
