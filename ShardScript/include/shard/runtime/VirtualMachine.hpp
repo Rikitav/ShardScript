@@ -51,7 +51,7 @@ namespace shard
 
 		CallStackFrame* m_currentFrame = nullptr;
 		FrameBlockPool m_framePool;
-		alignas(8) std::byte m_returnScratch[8] = {};
+		alignas(8) std::byte m_returnScratch[16] = {};
 
 		// async task table, runnable queue and the libuv loop; declared after
 		// the collector so it is torn down before the collector disappears

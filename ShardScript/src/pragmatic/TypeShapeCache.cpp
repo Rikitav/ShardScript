@@ -7,6 +7,7 @@
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
@@ -120,6 +121,33 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		return;
 	}
 
+	if (baseType->get_kind() == SyntaxKind::NullableType)
+	{
+		NullableTypeSymbol* nullable = static_cast<NullableTypeSymbol*>(baseType);
+		StructSymbol* underlaying = nullable->get_underlaying_type();
+		if (underlaying == nullptr)
+			throw std::runtime_error("cannot build a type shape for a nullable without an underlying type");
+
+		TypeShape* underlayingShape = find_or_create_type_shape(model, underlaying);
+		TypeShape* booleanShape = find_or_create_type_shape(model, table.get_boolean_primitive());
+
+		shape->m_isReference = false;
+
+		TypeShape::SlotInfo flagSlot{};
+		flagSlot.offset = 0;
+		flagSlot.fieldShape = booleanShape;
+		shape->m_slots.push_back(flagSlot);
+
+		TypeShape::SlotInfo valueSlot{};
+		valueSlot.offset = sizeof(bool);
+		valueSlot.fieldShape = underlayingShape;
+		shape->m_slots.push_back(valueSlot);
+
+		std::size_t underlayingSize = underlayingShape->is_reference() ? sizeof(void*) : underlayingShape->get_size();
+		shape->m_size = sizeof(bool) + underlayingSize;
+		return;
+	}
+
 	// the substitution context for fields: a queried generic instance uses
 	// itself, a generic definition with provided arguments gets one created
 	GenericTypeSymbol* within = nullptr;
@@ -157,8 +185,8 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		slot.offset = offset;
 		slot.fieldShape = find_or_create_type_shape(model, fieldType);
 
-		std::optional<std::size_t> fieldTypeSize = primitive_size(table, fieldType);
-		offset += fieldTypeSize.has_value() ? fieldTypeSize.value() : sizeof(void*);
+		std::size_t fieldSize = slot.fieldShape->is_reference() ? sizeof(void*) : slot.fieldShape->get_size();
+		offset += fieldSize;
 
 		shape->m_slots.push_back(slot);
 	}
