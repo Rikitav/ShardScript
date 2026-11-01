@@ -125,6 +125,8 @@ namespace shard
 
 		void emit_condition_jump(const ExpressionSyntax* condition, bool jumpWhenTrue);
 		void emit_converted(const ExpressionSyntax* expression);
+		void emit_nullable_coalesce(const BinaryExpressionSyntax* node);
+		bool emit_nullable_comparison(const BinaryExpressionSyntax* node, TokenType op);
 		void update_min_eval_payload();
 		void emit_assignment(const BinaryExpressionSyntax* node);
 		void emit_store_to(const ExpressionSyntax* target);

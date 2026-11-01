@@ -101,6 +101,11 @@ namespace
 			return other->get_kind() == SyntaxKind::NullableType || model.is_reference_shaped(other);
 		}
 
+		bool leftNullable = leftType->get_kind() == SyntaxKind::NullableType;
+		bool rightNullable = rightType->get_kind() == SyntaxKind::NullableType;
+		if (leftNullable != rightNullable)
+			return false;
+
 		if (bothTypeParameters)
 			return true;
 

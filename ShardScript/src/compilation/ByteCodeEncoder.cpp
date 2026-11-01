@@ -482,6 +482,12 @@ void ByteCodeEncoder::emit_nullable_unwrap(StructSymbol* type)
 	append_symbol_operand(m_image.get_text_section(), type);
 }
 
+void ByteCodeEncoder::emit_nullable_equal(StructSymbol* type)
+{
+	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_EQUAL);
+	append_symbol_operand(m_image.get_text_section(), type);
+}
+
 void ByteCodeEncoder::emit_load_enum_field(FieldSymbol* field)
 {
 	append_data_value(m_image.get_text_section(), OpCode::LOADENUMFIELD);
