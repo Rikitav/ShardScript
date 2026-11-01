@@ -1010,8 +1010,16 @@ void TypeBinder::visit_nullable_type(const NullableTypeSyntax* node)
 		return;
 
 	StructSymbol* underlaying = resolve_type(node->get_underlaying_type());
-	if (!(underlaying == nullptr))
-		m_factory.create_nullable_type(*nodeRef, underlaying);
+	if (underlaying == nullptr)
+		return;
+
+	if (underlaying->get_kind() == SyntaxKind::NullableType)
+		get_diagnostics().report_error(node->get_question_token().get_location(), L"Nullability cannot be nested");
+
+	if (underlaying == get_symbol_table().get_void_primitive())
+		get_diagnostics().report_error(node->get_question_token().get_location(), L"Nullable of 'void' is not a valid type");
+
+	m_factory.create_nullable_type(*nodeRef, underlaying);
 }
 
 void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)

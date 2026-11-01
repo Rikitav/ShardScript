@@ -1,0 +1,21 @@
+struct Holder
+{
+    public Count: int?;
+    public Name: string?;
+}
+
+func Takes(value: int?) -> int?
+{
+    return value;
+}
+
+func Main() -> void
+{
+    a: int? = 5;
+    b: int? = null;
+    c: int? = a;
+    d: int? = Takes(a);
+    h: Holder = new Holder();
+    h.Count = 7;
+    h.Name = null;
+}

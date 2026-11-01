@@ -224,20 +224,99 @@ static bool is_constructed_interface_implemented(GenericTypeSymbol* targetInterf
 	return false;
 }
 
+bool SemanticModel::is_null_type(const StructSymbol* type) const
+{
+	return !(type == nullptr) && type == m_table.get_null_primitive();
+}
+
+bool SemanticModel::is_reference_shaped(const StructSymbol* type) const
+{
+	if (type == nullptr)
+		return false;
+
+	switch (type->get_kind())
+	{
+		case SyntaxKind::ArrayType:
+		case SyntaxKind::DelegateType:
+		case SyntaxKind::InterfaceDeclaration:
+		case SyntaxKind::NullableType:
+		case SyntaxKind::GenericType:
+			return true;
+
+		case SyntaxKind::StructDeclaration:
+		{
+			if (type == m_table.get_string_primitive())
+				return true;
+
+			if (type == m_table.get_boolean_primitive() || type == m_table.get_integer_primitive())
+				return false;
+
+			if (type == m_table.get_double_primitive() || type == m_table.get_char_primitive())
+				return false;
+
+			if (type == m_table.get_byte_primitive() || type == m_table.get_nint_primitive())
+				return false;
+
+			if (type == m_table.get_void_primitive() || type == m_table.get_null_primitive())
+				return false;
+
+			return true;
+		}
+
+		default:
+			return false;
+	}
+}
+
 bool SemanticModel::is_assignable_to(const StructSymbol* target, const StructSymbol* source) const
 {
 	if ((target == nullptr) || (source == nullptr))
 		return false;
 
+	const bool targetIsNull = is_null_type(target);
+	const bool sourceIsNull = is_null_type(source);
+	if (targetIsNull || sourceIsNull)
+	{
+		if (targetIsNull)
+			return sourceIsNull;
+
+		return target->get_kind() == SyntaxKind::NullableType;
+	}
+
 	if (are_types_equal(target, source))
 		return true;
 
-	// TODO: pragmatic analysis — flow-based null-state checks
-	if (source->get_kind() == SyntaxKind::NullableType && target->get_kind() != SyntaxKind::NullableType)
-		return is_assignable_to(target, gmt::as<NullableTypeSymbol>(source)->get_underlaying_type());
+	const bool targetIsNullable = target->get_kind() == SyntaxKind::NullableType;
+	const bool sourceIsNullable = source->get_kind() == SyntaxKind::NullableType;
 
-	if (source->get_kind() != SyntaxKind::NullableType && target->get_kind() == SyntaxKind::NullableType)
-		return is_assignable_to(gmt::as<NullableTypeSymbol>(target)->get_underlaying_type(), source);
+	if (targetIsNullable && sourceIsNullable)
+	{
+		const StructSymbol* targetUnderlaying = gmt::as<NullableTypeSymbol>(target)->get_underlaying_type();
+		const StructSymbol* sourceUnderlaying = gmt::as<NullableTypeSymbol>(source)->get_underlaying_type();
+		return are_types_equal(targetUnderlaying, sourceUnderlaying);
+	}
+
+	if (targetIsNullable)
+	{
+		StructSymbol* underlaying = gmt::as<NullableTypeSymbol>(target)->get_underlaying_type();
+		if (are_types_equal(underlaying, source))
+			return true;
+
+		bool referenceConversion = is_reference_shaped(underlaying);
+		referenceConversion = referenceConversion && is_reference_shaped(source);
+		return referenceConversion && is_assignable_to(underlaying, source);
+	}
+
+	if (sourceIsNullable)
+	{
+		StructSymbol* underlaying = gmt::as<NullableTypeSymbol>(source)->get_underlaying_type();
+		if (are_types_equal(target, underlaying))
+			return true;
+
+		bool referenceConversion = is_reference_shaped(target);
+		referenceConversion = referenceConversion && is_reference_shaped(underlaying);
+		return referenceConversion && is_assignable_to(target, underlaying);
+	}
 
 	// numeric widening: byte/char/nint convert to int, anything numeric to double
 	bool sourceNumeric = source == m_table.get_double_primitive();

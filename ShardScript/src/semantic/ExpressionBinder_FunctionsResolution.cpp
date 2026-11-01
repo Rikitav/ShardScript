@@ -42,30 +42,6 @@ namespace
 		return -1;
 	}
 
-	bool is_reference_like(const StructSymbol* type)
-	{
-		if (type == nullptr)
-			return false;
-
-		switch (type->get_kind())
-		{
-			case SyntaxKind::ArrayType:
-			case SyntaxKind::DelegateType:
-			case SyntaxKind::InterfaceDeclaration:
-			case SyntaxKind::NullableType:
-				return true;
-
-			case SyntaxKind::GenericType:
-			{
-				StructSymbol* underlaying = gmt::as<GenericTypeSymbol>(type)->get_underlaying_type();
-				return underlaying->get_kind() == SyntaxKind::InterfaceDeclaration;
-			}
-
-			default:
-				return false;
-		}
-	}
-
 	DelegateTypeSymbol* get_delegate_type(const StructSymbol* type)
 	{
 		if (type == nullptr)
@@ -112,14 +88,20 @@ int ExpressionBinder::conversion_score(const StructSymbol* parameter, const Stru
 	if (parameter == nullptr)
 		return -1;
 
-	// null literal assignment
 	if (argument == nullptr)
-		return is_reference_like(parameter) ? 1 : -1;
+		return -1;
+
+	if (get_model().is_null_type(argument))
+		return parameter->get_kind() == SyntaxKind::NullableType ? 1 : -1;
+
+	if (get_model().is_null_type(parameter))
+		return -1;
 
 	if (SemanticModel::are_types_equal(parameter, argument))
 		return 0;
 
 	const SymbolTable& table = get_symbol_table();
+	SemanticModel& model = get_model();
 
 	bool parameterNullable = parameter->get_kind() == SyntaxKind::NullableType;
 	bool argumentNullable = argument->get_kind() == SyntaxKind::NullableType;
@@ -129,12 +111,22 @@ int ExpressionBinder::conversion_score(const StructSymbol* parameter, const Stru
 		StructSymbol* underlaying = gmt::as<NullableTypeSymbol>(parameter)->get_underlaying_type();
 		if (SemanticModel::are_types_equal(underlaying, argument))
 			return 2;
+
+		bool referenceConversion = model.is_reference_shaped(underlaying);
+		referenceConversion = referenceConversion && model.is_reference_shaped(argument);
+		if (referenceConversion && model.is_assignable_to(underlaying, argument))
+			return 2;
 	}
 
 	if (!parameterNullable && argumentNullable)
 	{
 		StructSymbol* underlaying = gmt::as<NullableTypeSymbol>(argument)->get_underlaying_type();
 		if (SemanticModel::are_types_equal(parameter, underlaying))
+			return 3;
+
+		bool referenceConversion = model.is_reference_shaped(parameter);
+		referenceConversion = referenceConversion && model.is_reference_shaped(underlaying);
+		if (referenceConversion && model.is_assignable_to(parameter, underlaying))
 			return 3;
 	}
 

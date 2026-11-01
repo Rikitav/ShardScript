@@ -13,4 +13,5 @@ void SymbolTable::resolve_primitives()
 	m_array = m_arena.emplace<StructSymbol>(L"Array", SyntaxKind::StructDeclaration, m_rootNamespace);
 	m_nativeInteger = m_arena.emplace<StructSymbol>(L"nint", SyntaxKind::StructDeclaration, m_rootNamespace);
 	m_byte = m_arena.emplace<StructSymbol>(L"byte", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_null = m_arena.emplace<StructSymbol>(L"null", SyntaxKind::StructDeclaration, m_rootNamespace);
 }

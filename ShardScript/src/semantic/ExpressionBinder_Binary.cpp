@@ -89,6 +89,18 @@ namespace
 		if ((leftType == nullptr) || (rightType == nullptr))
 			return true;
 
+		bool leftIsNull = model.is_null_type(leftType);
+		bool rightIsNull = model.is_null_type(rightType);
+
+		if (leftIsNull || rightIsNull)
+		{
+			if (leftIsNull && rightIsNull)
+				return true;
+
+			StructSymbol* other = leftIsNull ? rightType : leftType;
+			return other->get_kind() == SyntaxKind::NullableType || model.is_reference_shaped(other);
+		}
+
 		if (bothTypeParameters)
 			return true;
 
@@ -223,8 +235,8 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		return leftType;
 	}
 
-	bool leftIsNull = (leftType == nullptr);
-	bool rightIsNull = (rightType == nullptr);
+	bool leftIsNull = model.is_null_type(leftType);
+	bool rightIsNull = model.is_null_type(rightType);
 
 	bool bothPrimitive = false;
 	if (!leftIsNull && !rightIsNull)

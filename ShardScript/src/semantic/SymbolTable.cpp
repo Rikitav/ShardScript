@@ -220,6 +220,9 @@ NullableTypeSymbol* SymbolTable::find_nullable_type(StructSymbol* underlaying) c
 
 NullableTypeSymbol* SymbolTable::find_or_create_nullable_type(StructSymbol* underlaying)
 {
+	if (!(underlaying == nullptr) && underlaying->get_kind() == SyntaxKind::NullableType)
+		return static_cast<NullableTypeSymbol*>(underlaying);
+
 	NullableTypeSymbol* existing = find_nullable_type(underlaying);
 	if (!(existing == nullptr))
 		return existing;
@@ -274,6 +277,11 @@ StructSymbol* SymbolTable::get_nint_primitive() const
 StructSymbol* SymbolTable::get_byte_primitive() const
 {
 	return m_byte;
+}
+
+StructSymbol* SymbolTable::get_null_primitive() const
+{
+	return m_null;
 }
 
 SyntaxSymbol* SymbolTable::get_standard_type(StandardTypes type)

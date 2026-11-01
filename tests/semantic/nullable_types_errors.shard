@@ -1,0 +1,10 @@
+func Main() -> void
+{
+    a: int? = 5;
+    plain: int = null;
+    nested: int? ? = 5;
+    nothing: void? = null;
+    wide: double? = a;
+    narrow: double = a;
+    inferred := null;
+}

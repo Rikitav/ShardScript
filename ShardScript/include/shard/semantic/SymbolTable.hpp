@@ -39,6 +39,7 @@ namespace shard
 		StructSymbol* m_array = nullptr;
 		StructSymbol* m_nativeInteger = nullptr;
 		StructSymbol* m_byte = nullptr;
+		StructSymbol* m_null = nullptr;
 
 		gmt::unordered_map<const SyntaxNode*, SyntaxSymbol*> m_nodeToSymbolMap;
 		gmt::unordered_map<SyntaxSymbol*, const SyntaxNode*> m_symbolToNodeMap;
@@ -110,6 +111,7 @@ namespace shard
 		StructSymbol* get_array_primitive() const;
 		StructSymbol* get_nint_primitive() const;
 		StructSymbol* get_byte_primitive() const;
+		StructSymbol* get_null_primitive() const;
 
 		SyntaxSymbol* get_standard_type(StandardTypes type);
 		void set_standard_type(StandardTypes type, SyntaxSymbol* symbol);
