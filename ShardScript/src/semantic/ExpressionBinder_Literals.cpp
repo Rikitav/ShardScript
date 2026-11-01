@@ -227,7 +227,7 @@ StructSymbol* ExpressionBinder::analyze_literal_expression(const LiteralExpressi
 	{
 		case TokenType::NullLiteral:
 		{
-			return nullptr;
+			return table.get_null_primitive();
 		}
 
 		case TokenType::BooleanLiteral:

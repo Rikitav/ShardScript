@@ -49,6 +49,8 @@ namespace shard
 
 		static bool are_types_equal(const StructSymbol* left, const StructSymbol* right);
 		bool is_assignable_to(const StructSymbol* target, const StructSymbol* source) const;
+		bool is_null_type(const StructSymbol* type) const;
+		bool is_reference_shaped(const StructSymbol* type) const;
 		bool type_implements_interface(StructSymbol* type, InterfaceSymbol* interface) const;
 		bool type_satisfies_constraint(StructSymbol* typeArgument, StructSymbol* constraint) const;
 		bool is_primitive_type(const StructSymbol* type) const;

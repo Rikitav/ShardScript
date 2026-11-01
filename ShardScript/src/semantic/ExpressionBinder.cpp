@@ -531,6 +531,20 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 	if (expressionType == nullptr)
 		return;
 
+	if (model.is_null_type(expressionType))
+	{
+		if (symbolType == nullptr)
+		{
+			get_diagnostics().report_error(node->get_location(), L"Cannot infer a type from 'null'; annotate the variable");
+			return;
+		}
+
+		if (!model.is_assignable_to(symbolType, expressionType))
+			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot assign 'null' to non-nullable type '", model.get_type_display_name(symbolType), L"'"));
+
+		return;
+	}
+
 	if (symbolType == nullptr)
 	{
 		symbol->set_type(expressionType);
@@ -550,8 +564,10 @@ StructSymbol* ExpressionBinder::infer_return_type_from_body(const BlockSyntax* b
 	for (const ExpressionSyntax* expression : returns.get_vector())
 	{
 		StructSymbol* expressionType = get_expression_type(expression);
-		if (!(expressionType == nullptr))
-			return expressionType;
+		if ((expressionType == nullptr) || get_model().is_null_type(expressionType))
+			continue;
+
+		return expressionType;
 	}
 
 	return nullptr;
