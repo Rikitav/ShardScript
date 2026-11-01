@@ -398,6 +398,13 @@ namespace
 				break;
 			}
 
+			case OpCode::NULLABLE_EQUAL:
+			{
+				opcode = L"nullable_equal";
+				write_symbol_name(args, decoder.absorb_type_symbol());
+				break;
+			}
+
 			case OpCode::CALLDELEGATE:
 			{
 				opcode = L"calldelegate";

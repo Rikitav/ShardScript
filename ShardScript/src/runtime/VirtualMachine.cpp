@@ -1338,6 +1338,53 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			break;
 		}
 
+		case OpCode::NULLABLE_EQUAL:
+		{
+			StructSymbol* type = decoder.absorb_type_symbol();
+			const TypeShape* shape = resolve_shape(type);
+			const TypeShape* valueShape = shape->get_slot(1).fieldShape;
+
+			ObjectInstance right = frame->pop_entry();
+			ObjectInstance left = frame->pop_entry();
+
+			unsigned char leftFlag = 0;
+			unsigned char rightFlag = 0;
+			std::memcpy(&leftFlag, left.get_memory(), sizeof(leftFlag));
+			std::memcpy(&rightFlag, right.get_memory(), sizeof(rightFlag));
+
+			bool equal = false;
+			if (leftFlag == rightFlag)
+			{
+				if (leftFlag == 0)
+				{
+					equal = true;
+				}
+				else if (valueShape->is_reference())
+				{
+					std::byte* leftPointer = nullptr;
+					std::byte* rightPointer = nullptr;
+					std::memcpy(&leftPointer, left.get_memory() + 1, sizeof(std::byte*));
+					std::memcpy(&rightPointer, right.get_memory() + 1, sizeof(std::byte*));
+					equal = leftPointer == rightPointer;
+				}
+				else if (valueShape->get_base_type() == m_model.get_table().get_double_primitive())
+				{
+					double leftValue = 0.0;
+					double rightValue = 0.0;
+					std::memcpy(&leftValue, left.get_memory() + 1, sizeof(double));
+					std::memcpy(&rightValue, right.get_memory() + 1, sizeof(double));
+					equal = leftValue == rightValue;
+				}
+				else
+				{
+					equal = std::memcmp(left.get_memory() + 1, right.get_memory() + 1, valueShape->get_size()) == 0;
+				}
+			}
+
+			frame->push_entry(m_primitiveShapes.boolean, false, &equal, sizeof(bool));
+			break;
+		}
+
 		case OpCode::LOADFIELD:
 		{
 			std::uint32_t slot = decoder.absorb_field_slot();

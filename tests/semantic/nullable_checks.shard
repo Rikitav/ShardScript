@@ -1,0 +1,42 @@
+using stdio;
+
+struct State
+{
+    public static Calls: int;
+
+    public static func Next() -> int?
+    {
+        State.Calls = State.Calls + 1;
+        return 7;
+    }
+}
+
+func Main() -> void
+{
+    State.Calls = 0;
+
+    a: int? = 5;
+    b: int? = null;
+
+    println(a == null);
+    println(a != null);
+    println(b == null);
+    println(b != null);
+    println(a == b);
+
+    c: int? = 5;
+    println(a == c);
+
+    println(b ?? 42);
+    println(a ?? 42);
+
+    d: int? = a ?? null;
+    println(d.HasValue);
+
+    v: int = State.Next() ?? 0;
+    println(v);
+    println(State.Calls);
+
+    plain: string = "x";
+    println(plain != null);
+}

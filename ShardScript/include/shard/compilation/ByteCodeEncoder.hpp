@@ -110,6 +110,7 @@ namespace shard
 		void emit_nullable_wrap(StructSymbol* type);
 		void emit_nullable_has_value();
 		void emit_nullable_unwrap(StructSymbol* type);
+		void emit_nullable_equal(StructSymbol* type);
 		void emit_load_enum_field(FieldSymbol* field);
 
 		void emit_load_type_argument(std::uint16_t index, StructSymbol* type);

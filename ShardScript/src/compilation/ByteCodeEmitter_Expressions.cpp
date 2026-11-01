@@ -263,6 +263,137 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 	}
 }
 
+void ByteCodeEmitter::emit_nullable_coalesce(const BinaryExpressionSyntax* node)
+{
+	SemanticModel& model = get_model();
+	const ExpressionSyntax* left = node->get_left();
+	const ExpressionSyntax* right = node->get_right();
+
+	StructSymbol* leftType = model.get_expression_type(left);
+	if ((leftType == nullptr) || leftType->get_kind() != SyntaxKind::NullableType)
+		return;
+
+	StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(leftType)->get_underlaying_type();
+	StructSymbol* resultType = model.get_expression_type(node);
+	bool resultNullable = !(resultType == nullptr) && resultType->get_kind() == SyntaxKind::NullableType;
+
+	std::int32_t entryDepth = m_evalDepth;
+
+	emit_converted(left);
+	m_encoder.emit_duplicate();
+	eval_push_type(leftType);
+
+	m_encoder.emit_nullable_has_value();
+	eval_pop();
+	eval_push(sizeof(bool));
+
+	std::size_t coalesceAt = mark_position();
+	m_encoder.emit_jump_false(0);
+	eval_pop();
+
+	m_encoder.emit_nullable_unwrap(leftType);
+	eval_pop();
+	eval_push_type(underlaying);
+
+	if (resultNullable)
+	{
+		m_encoder.emit_nullable_wrap(resultType);
+		eval_pop();
+		eval_push_type(resultType);
+	}
+
+	std::size_t endAt = mark_position();
+	m_encoder.emit_jump(0);
+
+	patch_jump(coalesceAt);
+	m_evalDepth = entryDepth + 1;
+	m_encoder.emit_pop();
+	eval_pop();
+
+	emit_converted(right);
+	patch_jump(endAt);
+}
+
+bool ByteCodeEmitter::emit_nullable_comparison(const BinaryExpressionSyntax* node, TokenType op)
+{
+	SemanticModel& model = get_model();
+	const ExpressionSyntax* left = node->get_left();
+	const ExpressionSyntax* right = node->get_right();
+
+	StructSymbol* leftType = model.get_expression_type(left);
+	StructSymbol* rightType = model.get_expression_type(right);
+	bool leftIsNull = model.is_null_type(leftType);
+	bool rightIsNull = model.is_null_type(rightType);
+
+	if (leftIsNull || rightIsNull)
+	{
+		if (leftIsNull && rightIsNull)
+		{
+			m_encoder.emit_load_const_bool(op == TokenType::EqualsOperator);
+			eval_push(sizeof(bool));
+			return true;
+		}
+
+		const ExpressionSyntax* valueSide = leftIsNull ? right : left;
+		StructSymbol* valueType = leftIsNull ? rightType : leftType;
+
+		if (!(valueType == nullptr) && valueType->get_kind() == SyntaxKind::NullableType)
+		{
+			emit_converted(valueSide);
+			m_encoder.emit_nullable_has_value();
+			eval_pop();
+			eval_push(sizeof(bool));
+
+			if (op == TokenType::EqualsOperator)
+				m_encoder.emit_logical_not();
+
+			return true;
+		}
+
+		if ((valueType == nullptr) || !model.is_reference_shaped(valueType))
+			return false;
+
+		std::int32_t entryDepth = m_evalDepth;
+		emit_converted(valueSide);
+
+		std::size_t nullAt = mark_position();
+		m_encoder.emit_branch_null(0);
+		eval_pop();
+
+		m_encoder.emit_load_const_bool(op == TokenType::NotEqualsOperator);
+		eval_push(sizeof(bool));
+
+		std::size_t endAt = mark_position();
+		m_encoder.emit_jump(0);
+
+		patch_jump(nullAt);
+		m_evalDepth = entryDepth;
+		m_encoder.emit_load_const_bool(op == TokenType::EqualsOperator);
+		eval_push(sizeof(bool));
+
+		patch_jump(endAt);
+		return true;
+	}
+
+	bool leftNullable = !(leftType == nullptr) && leftType->get_kind() == SyntaxKind::NullableType;
+	bool rightNullable = !(rightType == nullptr) && rightType->get_kind() == SyntaxKind::NullableType;
+
+	if (!leftNullable || !rightNullable)
+		return false;
+
+	emit_converted(left);
+	emit_converted(right);
+
+	m_encoder.emit_nullable_equal(leftType);
+	eval_pop(2);
+	eval_push(sizeof(bool));
+
+	if (op == TokenType::NotEqualsOperator)
+		m_encoder.emit_logical_not();
+
+	return true;
+}
+
 void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node)
 {
 	if (node == nullptr)
@@ -278,6 +409,15 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 
 		return;
 	}
+
+	if (op == TokenType::NullCoalescingOperator)
+	{
+		emit_nullable_coalesce(node);
+		return;
+	}
+
+	if ((op == TokenType::EqualsOperator || op == TokenType::NotEqualsOperator) && emit_nullable_comparison(node, op))
+		return;
 
 	if (op == TokenType::AndOperator || op == TokenType::OrOperator)
 	{
