@@ -1,0 +1,31 @@
+using stdio;
+
+public interface IWidget
+{
+    func Get() -> int;
+}
+
+struct Widget : IWidget
+{
+    public Marker: int;
+
+    public func Get() -> int
+    {
+        return 5;
+    }
+}
+
+func Main() -> void
+{
+    w: Widget = new Widget();
+    w.Marker = 1;
+    iw: IWidget? = w;
+    println(iw.HasValue);
+    println(iw.Value != null);
+
+    none: IWidget? = null;
+    println(none.HasValue);
+
+    plain: string = "x";
+    println(plain != null);
+}
