@@ -416,7 +416,8 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 		return;
 	}
 
-	if ((op == TokenType::EqualsOperator || op == TokenType::NotEqualsOperator) && emit_nullable_comparison(node, op))
+	bool equality = op == TokenType::EqualsOperator || op == TokenType::NotEqualsOperator;
+	if (equality && emit_nullable_comparison(node, op))
 		return;
 
 	if (op == TokenType::AndOperator || op == TokenType::OrOperator)
@@ -834,19 +835,23 @@ void ByteCodeEmitter::emit_converted(const ExpressionSyntax* expression)
 
 	switch (conversion.kind)
 	{
-		case NullableConversionKind::Wrap:
+		case NullableConversionKind::WRAP:
+		{
 			m_encoder.emit_nullable_wrap(targetType);
 			eval_pop();
 			eval_push_type(targetType);
 			break;
+		}
 
-		case NullableConversionKind::Default:
+		case NullableConversionKind::DEFAULT:
+		{
 			m_encoder.emit_nullable_default(targetType);
 			eval_pop();
 			eval_push_type(targetType);
 			break;
+		}
 
-		case NullableConversionKind::Unwrap:
+		case NullableConversionKind::UNWRAP:
 		{
 			StructSymbol* sourceType = substitute_type(get_model().get_expression_type(expression));
 			m_encoder.emit_nullable_unwrap(sourceType);

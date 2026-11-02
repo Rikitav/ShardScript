@@ -335,6 +335,7 @@ void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyn
 	for (ExpressionSyntax* const& value : values)
 		visit_expression(value);
 
+	// TODO: target-typed or joined element inference
 	StructSymbol* elementType = nullptr;
 	for (ExpressionSyntax* const& value : values)
 	{

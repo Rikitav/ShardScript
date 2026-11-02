@@ -287,29 +287,39 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 
 void ExpressionBinder::record_conversion(const ExpressionSyntax* expression, StructSymbol* targetType, StructSymbol* sourceType)
 {
-	if ((expression == nullptr) || (targetType == nullptr) || (sourceType == nullptr))
+	if (expression == nullptr)
+		return;
+
+	if (targetType == nullptr)
+		return;
+
+	if (sourceType == nullptr)
 		return;
 
 	SemanticModel& model = get_model();
 	NullableConversion conversion;
 
-	if (model.is_null_type(sourceType) && targetType->get_kind() == SyntaxKind::NullableType)
+	bool targetIsNullable = targetType->get_kind() == SyntaxKind::NullableType;
+	bool sourceIsNullable = sourceType->get_kind() == SyntaxKind::NullableType;
+	bool sourceIsNull = model.is_null_type(sourceType);
+
+	if (sourceIsNull && targetIsNullable)
 	{
-		conversion.kind = NullableConversionKind::Default;
+		conversion.kind = NullableConversionKind::DEFAULT;
 		conversion.targetType = targetType;
 	}
-	else if (targetType->get_kind() == SyntaxKind::NullableType && sourceType->get_kind() != SyntaxKind::NullableType)
+	else if (targetIsNullable && !sourceIsNullable)
 	{
-		conversion.kind = NullableConversionKind::Wrap;
+		conversion.kind = NullableConversionKind::WRAP;
 		conversion.targetType = targetType;
 	}
-	else if (targetType->get_kind() != SyntaxKind::NullableType && sourceType->get_kind() == SyntaxKind::NullableType)
+	else if (!targetIsNullable && sourceIsNullable)
 	{
-		conversion.kind = NullableConversionKind::Unwrap;
+		conversion.kind = NullableConversionKind::UNWRAP;
 		conversion.targetType = targetType;
 	}
 
-	if (conversion.kind != NullableConversionKind::None)
+	if (conversion.kind != NullableConversionKind::NONE)
 		model.set_nullable_conversion(expression, conversion);
 }
 
@@ -1285,8 +1295,12 @@ StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationEx
 		return nullptr;
 	}
 
+	bool extensionCandidate = !(node->get_previous() == nullptr);
+	extensionCandidate = extensionCandidate && method->get_linking() == LINK_STATIC;
+	extensionCandidate = extensionCandidate && !(node->get_arguments() == nullptr);
+
 	std::size_t parameterOffset = 0;
-	if (!(node->get_previous() == nullptr) && method->get_linking() == LINK_STATIC && !(node->get_arguments() == nullptr))
+	if (extensionCandidate)
 	{
 		std::size_t explicitArguments = node->get_arguments()->get_arguments().size();
 		if (method->get_parameters().size() == explicitArguments + 1)
