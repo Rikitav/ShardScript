@@ -64,7 +64,7 @@ namespace
 		if (type->get_kind() == shard::SyntaxKind::GenericType)
 		{
 			shard::StructSymbol* underlaying = static_cast<shard::GenericTypeSymbol*>(type)->get_underlaying_type();
-			if (!(underlaying == nullptr) && underlaying->get_kind() == shard::SyntaxKind::DelegateType)
+			if (underlaying != nullptr && underlaying->get_kind() == shard::SyntaxKind::DelegateType)
 				return static_cast<shard::DelegateTypeSymbol*>(underlaying);
 		}
 
@@ -81,7 +81,7 @@ namespace
 			// variable and parameter captures resolve to capture box fields at
 			// emission. Only implicit-'this' members are unsupported: anything
 			// with an explicit receiver expression stays legal
-			if (!(previous == nullptr))
+			if (previous != nullptr)
 				return;
 
 			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
@@ -229,7 +229,7 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 			std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
 			LiteralSymbol* symbol = nodeRef.has_value() ? lookup_symbol<LiteralSymbol>(*nodeRef) : nullptr;
 
-			if (!(symbol == nullptr))
+			if (symbol != nullptr)
 				value = symbol->get_double_value();
 			else
 				value = parse_double(literal.get_lexeme());
@@ -275,7 +275,7 @@ void ByteCodeEmitter::emit_nullable_coalesce(const BinaryExpressionSyntax* node)
 
 	StructSymbol* underlaying = substitute_type(static_cast<NullableTypeSymbol*>(leftType)->get_underlaying_type());
 	StructSymbol* resultType = substitute_type(model.get_expression_type(node));
-	bool resultNullable = !(resultType == nullptr) && resultType->get_kind() == SyntaxKind::NullableType;
+	bool resultNullable = resultType != nullptr && resultType->get_kind() == SyntaxKind::NullableType;
 
 	std::int32_t entryDepth = m_evalDepth;
 
@@ -337,7 +337,7 @@ bool ByteCodeEmitter::emit_nullable_comparison(const BinaryExpressionSyntax* nod
 		const ExpressionSyntax* valueSide = leftIsNull ? right : left;
 		StructSymbol* valueType = leftIsNull ? rightType : leftType;
 
-		if (!(valueType == nullptr) && valueType->get_kind() == SyntaxKind::NullableType)
+		if (valueType != nullptr && valueType->get_kind() == SyntaxKind::NullableType)
 		{
 			emit_converted(valueSide);
 			m_encoder.emit_nullable_has_value();
@@ -375,8 +375,8 @@ bool ByteCodeEmitter::emit_nullable_comparison(const BinaryExpressionSyntax* nod
 		return true;
 	}
 
-	bool leftNullable = !(leftType == nullptr) && leftType->get_kind() == SyntaxKind::NullableType;
-	bool rightNullable = !(rightType == nullptr) && rightType->get_kind() == SyntaxKind::NullableType;
+	bool leftNullable = leftType != nullptr && leftType->get_kind() == SyntaxKind::NullableType;
+	bool rightNullable = rightType != nullptr && rightType->get_kind() == SyntaxKind::NullableType;
 
 	if (!leftNullable || !rightNullable)
 		return false;
@@ -445,7 +445,7 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 	if (nodeRef.has_value())
 	{
 		OperatorSymbol* overload = lookup_symbol<OperatorSymbol>(*nodeRef);
-		if (!(overload == nullptr))
+		if (overload != nullptr)
 		{
 			StructSymbol* receiverType = get_model().get_expression_type(node->get_left());
 			MethodSymbol* target = resolve_call_target(*nodeRef, overload, receiverType);
@@ -549,7 +549,7 @@ void ByteCodeEmitter::visit_unary_expression(const UnaryExpressionSyntax* node)
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_operand());
 
 		std::optional<std::uint16_t> slot;
-		if (!(bound == nullptr) && (bound->get_kind() == SyntaxKind::VariableStatement || bound->get_kind() == SyntaxKind::Parameter))
+		if (bound != nullptr && (bound->get_kind() == SyntaxKind::VariableStatement || bound->get_kind() == SyntaxKind::Parameter))
 			slot = slot_of(bound);
 
 		if (!slot.has_value())
@@ -598,10 +598,10 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 		return;
 
 	const ExpressionSyntax* previous = node->get_previous();
-	if (!(previous == nullptr))
+	if (previous != nullptr)
 	{
 		StructSymbol* receiverType = substitute_type(get_model().get_expression_type(previous));
-		if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::NullableType)
+		if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::NullableType)
 		{
 			std::wstring_view name = node->get_identifier().get_lexeme();
 			previous->accept(*this);
@@ -658,7 +658,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
 	if (bound == nullptr)
 	{
-		if (!(previous == nullptr))
+		if (previous != nullptr)
 			return;
 
 		return;
@@ -690,7 +690,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 			// the slot is absent from this method's frame: the reference
 			// belongs to an enclosing method and resolves to a capture box field
 			FieldSymbol* captureField = capture_field_of(bound);
-			if (!(captureField == nullptr))
+			if (captureField != nullptr)
 			{
 				emit_instance_field_load(captureField, nullptr);
 				return;
@@ -737,7 +737,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 			if (getter == nullptr)
 				return;
 
-			if (!(previous == nullptr))
+			if (previous != nullptr)
 				previous->accept(*this);
 			else
 			{
@@ -746,7 +746,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 			}
 
 			const SyntaxSymbol* owner = property->get_parent();
-			bool interfaceDispatch = !(owner == nullptr) && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
+			bool interfaceDispatch = owner != nullptr && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
 			if (interfaceDispatch)
 				m_encoder.emit_call_interface(getter);
 			else
@@ -772,10 +772,10 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 void ByteCodeEmitter::emit_instance_field_load(FieldSymbol* field, const ExpressionSyntax* previous)
 {
 	// scalar locals are dematerialized: the field is a frame slot of its own
-	if (!(previous == nullptr) && is_identifier_target(previous))
+	if (previous != nullptr && is_identifier_target(previous))
 	{
 		SyntaxSymbol* previousBound = get_symbol_table().lookup_symbol(previous);
-		if (!(previousBound == nullptr) && local_verdict(previousBound) == PlacementVerdict::Scalar)
+		if (previousBound != nullptr && local_verdict(previousBound) == PlacementVerdict::Scalar)
 		{
 			std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
 			if (scalarSlot.has_value())
@@ -787,7 +787,7 @@ void ByteCodeEmitter::emit_instance_field_load(FieldSymbol* field, const Express
 		}
 	}
 
-	if (!(previous == nullptr))
+	if (previous != nullptr)
 		previous->accept(*this);
 	else
 	{
@@ -903,14 +903,14 @@ void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyn
 	bool extension = is_extension_call(method, receiver, arguments);
 
 	const SyntaxSymbol* parent = method->get_parent();
-	bool interfaceDispatch = !(parent == nullptr) && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
+	bool interfaceDispatch = parent != nullptr && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
 
 	emit_arguments_reversed(arguments);
 
 	std::size_t receiverEval = 0;
 	if (!isStatic || extension)
 	{
-		if (!(receiver == nullptr))
+		if (receiver != nullptr)
 			receiver->accept(*this);
 		else
 		{
@@ -936,7 +936,7 @@ void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyn
 	if (isAsync)
 		resultType = get_model().get_async_call_type(resultType);
 
-	if (isAsync || (!(resultType == nullptr) && resultType != get_symbol_table().get_void_primitive()))
+	if (isAsync || (resultType != nullptr && resultType != get_symbol_table().get_void_primitive()))
 		eval_push_type(resultType);
 }
 
@@ -950,7 +950,7 @@ void ByteCodeEmitter::emit_method_call_into(MethodSymbol* method, const Expressi
 	std::size_t receiverEval = 0;
 	if (!isStatic || extension)
 	{
-		if (!(receiver == nullptr))
+		if (receiver != nullptr)
 			receiver->accept(*this);
 		else
 		{
@@ -990,7 +990,7 @@ MethodSymbol* ByteCodeEmitter::into_call_method(const ExpressionSyntax* expressi
 		return nullptr;
 
 	const SyntaxSymbol* parent = method->get_parent();
-	if (!(parent == nullptr) && parent->get_kind() == SyntaxKind::InterfaceDeclaration)
+	if (parent != nullptr && parent->get_kind() == SyntaxKind::InterfaceDeclaration)
 		return nullptr;
 
 	StructSymbol* returnType = method->get_return_type();
@@ -1125,7 +1125,7 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 
 	m_encoder.emit_call_delegate(delegateType);
 
-	GenericTypeSymbol* instantiation = !(holderType == nullptr) && holderType->get_kind() == SyntaxKind::GenericType
+	GenericTypeSymbol* instantiation = holderType != nullptr && holderType->get_kind() == SyntaxKind::GenericType
 		? static_cast<GenericTypeSymbol*>(holderType)
 		: nullptr;
 
@@ -1144,7 +1144,7 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 		return;
 
 	IndexatorSymbol* indexator = lookup_symbol<IndexatorSymbol>(*nodeRef);
-	if (!(indexator == nullptr))
+	if (indexator != nullptr)
 	{
 		MethodSymbol* getter = indexator->get_getter();
 		if (getter == nullptr)
@@ -1197,7 +1197,7 @@ void ByteCodeEmitter::visit_is_expression(const IsExpressionSyntax* node)
 	if (!(node->get_target_type() == nullptr))
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_target_type());
-		if (!(bound == nullptr) && bound->is_type())
+		if (bound != nullptr && bound->is_type())
 			targetType = static_cast<StructSymbol*>(bound);
 	}
 
@@ -1218,15 +1218,15 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 	if (!(node->get_target_type() == nullptr))
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_target_type());
-		if (!(bound == nullptr) && bound->is_type())
+		if (bound != nullptr && bound->is_type())
 			targetType = static_cast<StructSymbol*>(bound);
 	}
 
 	targetType = substitute_type(targetType);
 
 	StructSymbol* sourceType = substitute_type(get_model().get_expression_type(node->get_expression()));
-	bool targetNullable = !(targetType == nullptr) && targetType->get_kind() == SyntaxKind::NullableType;
-	bool sourceNullable = !(sourceType == nullptr) && sourceType->get_kind() == SyntaxKind::NullableType;
+	bool targetNullable = targetType != nullptr && targetType->get_kind() == SyntaxKind::NullableType;
+	bool sourceNullable = sourceType != nullptr && sourceType->get_kind() == SyntaxKind::NullableType;
 
 	node->get_expression()->accept(*this);
 
@@ -1257,7 +1257,7 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 		return;
 	}
 
-	if (!(targetType == nullptr) && get_model().is_primitive_type(targetType))
+	if (targetType != nullptr && get_model().is_primitive_type(targetType))
 		m_encoder.emit_cast_primitive(targetType);
 	else if (node->get_operator_token().get_type() == TokenType::AsOperator)
 		m_encoder.emit_cast_as(targetType);
@@ -1307,7 +1307,7 @@ void ByteCodeEmitter::visit_await_expression(const AwaitExpressionSyntax* node)
 	if (nodeRef.has_value())
 		resultType = get_model().get_expression_type(*nodeRef);
 
-	if (!(resultType == nullptr) && resultType != get_symbol_table().get_void_primitive())
+	if (resultType != nullptr && resultType != get_symbol_table().get_void_primitive())
 		eval_push_type(resultType);
 }
 
@@ -1397,11 +1397,11 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 
 	SyntaxSymbol* boundSymbol = get_symbol_table().lookup_symbol(*nodeRef);
 	ConstructorSymbol* constructor = nullptr;
-	if (!(boundSymbol == nullptr) && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
+	if (boundSymbol != nullptr && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
 		constructor = static_cast<ConstructorSymbol*>(boundSymbol);
 
 	StructSymbol* type = get_model().get_expression_type(*nodeRef);
-	if ((type == nullptr) && !(constructor == nullptr))
+	if ((type == nullptr) && constructor != nullptr)
 		type = gmt::as<StructSymbol>(constructor->get_parent());
 
 	type = substitute_type(type);
@@ -1412,7 +1412,7 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 	}
 
 	MethodSymbol* constructorCall = nullptr;
-	if (!(constructor == nullptr))
+	if (constructor != nullptr)
 	{
 		constructorCall = resolve_call_target(*nodeRef, constructor, type);
 		if (constructorCall == nullptr)
@@ -1431,7 +1431,7 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 		m_encoder.emit_load_slot_addr(slot);
 		eval_push(sizeof(void*));
 
-		if (!(constructorCall == nullptr))
+		if (constructorCall != nullptr)
 		{
 			m_encoder.emit_call_method_symbol(constructorCall);
 			eval_pop(constructorCall->get_parameters().size() + 1);
@@ -1458,7 +1458,7 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 	m_encoder.emit_load_local(temp);
 	eval_push(sizeof(void*));
 
-	if (!(constructorCall == nullptr))
+	if (constructorCall != nullptr)
 	{
 		m_encoder.emit_call_method_symbol(constructorCall);
 		eval_pop(constructorCall->get_parameters().size() + 1);
@@ -1496,7 +1496,7 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	// capture boxes are synthesized once for the open body: a lambda whose
 	// signature or captures mention a type parameter would need its own box
 	// per instantiation, which is out of scope for monomorphization
-	if (!(m_currentInstantiation == nullptr))
+	if (m_currentInstantiation != nullptr)
 	{
 		bool typeParameterBound = substitute_type(anonymousMethod->get_return_type()) != anonymousMethod->get_return_type();
 

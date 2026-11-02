@@ -41,7 +41,7 @@ gmt::wstring NullableTypeSyntax::get_qualifier() const
 
 TextLocation NullableTypeSyntax::get_location() const
 {
-	if (!(m_underlayingType == nullptr))
+	if (m_underlayingType != nullptr)
 		return TextLocation(m_underlayingType->get_location(), m_questionToken);
 
 	return m_questionToken.get_location();

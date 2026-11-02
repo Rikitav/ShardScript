@@ -219,7 +219,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 	}
 
 	bool enumBitwiseContext = false;
-	if (!(leftType == nullptr) && leftType->get_kind() == SyntaxKind::EnumDeclaration)
+	if (leftType != nullptr && leftType->get_kind() == SyntaxKind::EnumDeclaration)
 		enumBitwiseContext = op == TokenType::OrOperator || op == TokenType::AndOperator;
 
 	if (enumBitwiseContext)
@@ -227,7 +227,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		push_scope(nullptr);
 		for (FieldSymbol* field : static_cast<EnumSymbol*>(leftType)->fields)
 		{
-			if (!(field == nullptr) && field->get_is_enum_value())
+			if (field != nullptr && field->get_is_enum_value())
 				get_current_scope()->declare_symbol(field);
 		}
 	}
@@ -303,7 +303,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 	{
 		StructSymbol* parameterTypes[] = { leftType, rightType };
 		OperatorSymbol* operatorMethod = resolve_operator_method(leftType, op, parameterTypes);
-		if (!(operatorMethod == nullptr))
+		if (operatorMethod != nullptr)
 		{
 			std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
 			if (nodeRef.has_value())
@@ -485,7 +485,7 @@ StructSymbol* ExpressionBinder::analyze_unary_expression(const UnaryExpressionSy
 	{
 		StructSymbol* parameterTypes[] = { expressionType };
 		OperatorSymbol* operatorMethod = resolve_operator_method(expressionType, op, parameterTypes);
-		if (!(operatorMethod == nullptr))
+		if (operatorMethod != nullptr)
 		{
 			std::optional<const UnaryExpressionSyntax*> nodeRef = ref_from(node);
 			if (nodeRef.has_value())

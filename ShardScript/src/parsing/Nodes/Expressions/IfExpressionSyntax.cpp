@@ -60,10 +60,10 @@ void IfExpressionSyntax::set_else_expression(ExpressionSyntax* elseExpression)
 
 TextLocation IfExpressionSyntax::get_location() const
 {
-	if (!(m_elseExpression == nullptr))
+	if (m_elseExpression != nullptr)
 		return TextLocation(m_ifKeywordToken, m_elseExpression->get_location());
 
-	if (!(m_thenExpression == nullptr))
+	if (m_thenExpression != nullptr)
 		return TextLocation(m_ifKeywordToken, m_thenExpression->get_location());
 
 	return m_ifKeywordToken.get_location();

@@ -20,7 +20,7 @@ void ArgumentSyntax::set_expression(ExpressionSyntax* expression)
 
 TextLocation ArgumentSyntax::get_location() const
 {
-	if (!(m_expression == nullptr))
+	if (m_expression != nullptr)
 		return m_expression->get_location();
 
 	return TextLocation();

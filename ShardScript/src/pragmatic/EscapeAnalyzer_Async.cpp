@@ -66,7 +66,7 @@ void EscapeAnalyzer::visit_expression_statement(const ExpressionStatementSyntax*
 	{
 		const ExpressionSyntax* expression = node->get_expression();
 
-		bool isInvokation = !(expression == nullptr);
+		bool isInvokation = expression != nullptr;
 		isInvokation = isInvokation && expression->get_kind() == SyntaxKind::InvokationExpression;
 
 		if (isInvokation)
@@ -83,15 +83,15 @@ void EscapeAnalyzer::visit_expression_statement(const ExpressionStatementSyntax*
 				const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression);
 
 				const ExpressionSyntax* receiver = invokation->get_previous();
-				if (!(receiver == nullptr))
+				if (receiver != nullptr)
 					expose_expression(receiver, EscapeLevel::GlobalEscape, publication, true);
 
 				const ArgumentsListSyntax* arguments = invokation->get_arguments();
-				if (!(arguments == nullptr))
+				if (arguments != nullptr)
 				{
 					for (ArgumentSyntax* const& argument : arguments->get_arguments())
 					{
-						if (!(argument == nullptr))
+						if (argument != nullptr)
 							expose_expression(argument->get_expression(), EscapeLevel::GlobalEscape, publication);
 					}
 				}

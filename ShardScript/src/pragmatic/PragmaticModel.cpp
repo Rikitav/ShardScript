@@ -159,7 +159,7 @@ FrameLayout& PragmaticModel::get_or_create_frame_layout(SemanticModel& model, Me
 			if (index < arguments.size())
 				slotType = arguments[index];
 		}
-		else if (!(slotType == nullptr))
+		else if (slotType != nullptr)
 		{
 			slotType = model.substitute_type(slotType, arguments);
 		}

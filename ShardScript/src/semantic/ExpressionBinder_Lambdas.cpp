@@ -30,7 +30,7 @@ namespace
 		{
 			GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(type);
 			StructSymbol* underlaying = generic->get_underlaying_type();
-			if (!(underlaying == nullptr) && underlaying->get_kind() == SyntaxKind::DelegateType)
+			if (underlaying != nullptr && underlaying->get_kind() == SyntaxKind::DelegateType)
 			{
 				outInstantiation = generic;
 				return static_cast<DelegateTypeSymbol*>(underlaying);
@@ -63,13 +63,13 @@ void ExpressionBinder::bind_lambda_body(const LambdaExpressionSyntax* node, cons
 	// value directly, statement bodies return through return statements
 	StructSymbol* returnType = nullptr;
 	const BlockSyntax* body = node->get_body();
-	if (!(body == nullptr) && body->get_kind() == SyntaxKind::ArrowClause)
+	if (body != nullptr && body->get_kind() == SyntaxKind::ArrowClause)
 	{
 		const ExpressionSyntax* arrowExpression = gmt::as<ArrowClauseSyntax>(body)->get_expression();
-		if (!(arrowExpression == nullptr))
+		if (arrowExpression != nullptr)
 			returnType = get_expression_type(arrowExpression);
 	}
-	else if (!(body == nullptr))
+	else if (body != nullptr)
 		returnType = infer_return_type_from_body(body);
 
 	if (returnType == nullptr)
@@ -113,7 +113,7 @@ bool ExpressionBinder::try_bind_pending_lambda(const LambdaExpressionSyntax* nod
 	for (ParameterSymbol* const& expectedParameter : expectedParameters)
 	{
 		StructSymbol* parameterType = expectedParameter->get_type();
-		if (!(instantiation == nullptr))
+		if (instantiation != nullptr)
 			parameterType = substitute_type_parameters(parameterType, instantiation);
 
 		if ((parameterType == nullptr) || parameterType->get_kind() == SyntaxKind::TypeParameter)
@@ -123,7 +123,7 @@ bool ExpressionBinder::try_bind_pending_lambda(const LambdaExpressionSyntax* nod
 	for (std::size_t i = 0; i < parameters.size(); i++)
 	{
 		StructSymbol* parameterType = expectedParameters[i]->get_type();
-		if (!(instantiation == nullptr))
+		if (instantiation != nullptr)
 			parameterType = substitute_type_parameters(parameterType, instantiation);
 
 		parameters[i]->set_type(parameterType);
@@ -172,7 +172,7 @@ void ExpressionBinder::visit_lambda_expression(const LambdaExpressionSyntax* nod
 		// a target type from the denotation channel (a variable or assignment
 		// the lambda initializes directly) binds the signature immediately
 		StructSymbol* expectedType = resolve_left_denotation();
-		if (!(expectedType == nullptr) && try_bind_pending_lambda(*nodeRef, expectedType))
+		if (expectedType != nullptr && try_bind_pending_lambda(*nodeRef, expectedType))
 			return;
 
 		// otherwise the body stays unbound until overload resolution picks a

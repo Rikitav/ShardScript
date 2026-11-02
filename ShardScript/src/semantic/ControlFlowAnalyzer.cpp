@@ -329,7 +329,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(const Stat
 		{
 			const ExpressionStatementSyntax* statement = static_cast<const ExpressionStatementSyntax*>(node);
 			const ExpressionSyntax* expression = statement->get_expression();
-			if (!(expression == nullptr))
+			if (expression != nullptr)
 			{
 				analyze_expression_for_assignment(expression);
 				analyze_expression_for_use(expression);
@@ -371,7 +371,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(const Stat
 		{
 			const DeferStatementSyntax* statement = static_cast<const DeferStatementSyntax*>(node);
 			const ExpressionSyntax* expression = statement->get_expression();
-			if (!(expression == nullptr))
+			if (expression != nullptr)
 			{
 				analyze_expression_for_assignment(expression);
 				analyze_expression_for_use(expression);
@@ -392,7 +392,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(const Stat
 		{
 			const DeferVariableSyntax* statement = static_cast<const DeferVariableSyntax*>(node);
 			const VariableStatementSyntax* variable = statement->get_variable();
-			if (!(variable == nullptr))
+			if (variable != nullptr)
 			{
 				if (!(variable->get_expression() == nullptr))
 					scan_expression(variable->get_expression());
@@ -542,14 +542,14 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(const 
 	const StatementsBlockSyntax* tryBlock = node->get_try_block();
 
 	bool hasCatch = catchClauses.size() > 0;
-	if (hasCatch && !(tryBlock == nullptr))
+	if (hasCatch && tryBlock != nullptr)
 		push_try_catch(catchClauses);
 
 	FlowState tryState = (tryBlock == nullptr)
 		? FlowState::Normal
 		: analyze_statements_block(tryBlock);
 
-	if (hasCatch && !(tryBlock == nullptr))
+	if (hasCatch && tryBlock != nullptr)
 		pop_try_catch();
 
 	if (!hasCatch)
@@ -592,7 +592,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(const 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(const ThrowStatementSyntax* statement)
 {
 	const ExpressionSyntax* expression = statement->get_expression();
-	if (!(expression == nullptr))
+	if (expression != nullptr)
 		scan_expression(expression);
 
 	if (m_currentMethod == nullptr)
@@ -602,7 +602,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(cons
 	effects.mayThrow = true;
 
 	StructSymbol* thrownType = nullptr;
-	if (!(expression == nullptr))
+	if (expression != nullptr)
 	{
 		thrownType = get_model().get_expression_type(expression);
 	}
@@ -747,7 +747,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_loop_body(const Stat
 
 void ControlFlowAnalyzer::mark_assigned(SyntaxSymbol* variable)
 {
-	if (!(variable == nullptr))
+	if (variable != nullptr)
 		m_assignedVariables.insert(variable);
 }
 
@@ -852,13 +852,13 @@ void ControlFlowAnalyzer::enter_member_body(MethodSymbol* method)
 	m_methodStack.push_back(m_currentMethod);
 	m_currentMethod = method;
 
-	if (!(method == nullptr))
+	if (method != nullptr)
 		method->set_effects_computed(false);
 }
 
 void ControlFlowAnalyzer::leave_member_body(MethodSymbol* method)
 {
-	if (!(method == nullptr))
+	if (method != nullptr)
 		method->set_effects_computed(true);
 
 	m_currentMethod = m_methodStack.back();
@@ -917,7 +917,7 @@ bool ControlFlowAnalyzer::is_this_expression(const ExpressionSyntax* expression)
 		return false;
 
 	ParameterSymbol* parameter = lookup_symbol<ParameterSymbol>(expression);
-	return !(parameter == nullptr) && parameter->get_name() == L"this";
+	return parameter != nullptr && parameter->get_name() == L"this";
 }
 
 void ControlFlowAnalyzer::record_field_or_property_write(const MemberAccessExpressionSyntax* node)
@@ -933,9 +933,9 @@ void ControlFlowAnalyzer::record_field_or_property_write(const MemberAccessExpre
 	PropertySymbol* property = static_cast<PropertySymbol*>(bound);
 
 	bool isStatic = false;
-	if (!(field == nullptr))
+	if (field != nullptr)
 		isStatic = field->get_linking() == LINK_STATIC;
-	else if (!(property == nullptr))
+	else if (property != nullptr)
 		isStatic = property->get_linking() == LINK_STATIC;
 
 	bool isThisReceiver = !isStatic;
@@ -943,7 +943,7 @@ void ControlFlowAnalyzer::record_field_or_property_write(const MemberAccessExpre
 
 	MethodEffectSummary& effects = m_currentMethod->get_effect_summary();
 
-	if (!(field == nullptr))
+	if (field != nullptr)
 	{
 		if (isStatic)
 		{
@@ -956,7 +956,7 @@ void ControlFlowAnalyzer::record_field_or_property_write(const MemberAccessExpre
 			effects.mayAssignInstanceFields.insert(field);
 		}
 	}
-	else if (!(property == nullptr))
+	else if (property != nullptr)
 	{
 		// a property write is a call to the setter accessor; record its effects
 		if (isStatic)
@@ -965,7 +965,7 @@ void ControlFlowAnalyzer::record_field_or_property_write(const MemberAccessExpre
 			effects.mutatesInstance = true;
 
 		AccessorSymbol* setter = property->get_setter();
-		if (!(setter == nullptr))
+		if (setter != nullptr)
 			record_callee_effects(setter, node->get_identifier());
 	}
 }
@@ -978,7 +978,7 @@ void ControlFlowAnalyzer::record_indexator_write(const IndexatorExpressionSyntax
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
 	PropertySymbol* property = static_cast<PropertySymbol*>(bound);
 
-	bool isStatic = !(property == nullptr);
+	bool isStatic = property != nullptr;
 	isStatic = isStatic && property->get_linking() == LINK_STATIC;
 
 	bool isThisReceiver = !isStatic;
@@ -992,10 +992,10 @@ void ControlFlowAnalyzer::record_indexator_write(const IndexatorExpressionSyntax
 		effects.mutatesInstance = true;
 
 	// merge setter effects if the indexer symbol is known
-	if (!(property == nullptr))
+	if (property != nullptr)
 	{
 		AccessorSymbol* setter = property->get_setter();
-		if (!(setter == nullptr))
+		if (setter != nullptr)
 			record_callee_effects(setter, node->get_delimeter_token());
 	}
 }
@@ -1225,7 +1225,7 @@ void ControlFlowAnalyzer::visit_binary_expression(const BinaryExpressionSyntax* 
 		return;
 
 	bool isAssignment = is_assignment_operator(node->get_operator_token().get_type());
-	if (!(m_currentMethod == nullptr) && isAssignment && !(node->get_left() == nullptr))
+	if (m_currentMethod != nullptr && isAssignment && !(node->get_left() == nullptr))
 	{
 		const ExpressionSyntax* left = node->get_left();
 		if (left->get_kind() == SyntaxKind::MemberAccessExpression)
@@ -1248,7 +1248,7 @@ void ControlFlowAnalyzer::visit_unary_expression(const UnaryExpressionSyntax* no
 		m_tryWrappedExpressions.insert(node->get_operand());
 
 	bool isIncrement = is_increment_decrement_operator(node->get_operator_token().get_type());
-	if (!(m_currentMethod == nullptr) && isIncrement && !(node->get_operand() == nullptr))
+	if (m_currentMethod != nullptr && isIncrement && !(node->get_operand() == nullptr))
 	{
 		const ExpressionSyntax* operand = node->get_operand();
 		if (operand->get_kind() == SyntaxKind::MemberAccessExpression)
@@ -1265,7 +1265,7 @@ void ControlFlowAnalyzer::visit_invokation_expression(const InvokationExpression
 	if (node == nullptr)
 		return;
 
-	if (!(m_currentMethod == nullptr))
+	if (m_currentMethod != nullptr)
 	{
 		MethodSymbol* callee = nullptr;
 		bool isTryWrapped = false;
@@ -1276,13 +1276,13 @@ void ControlFlowAnalyzer::visit_invokation_expression(const InvokationExpression
 			// delegate invokations bind the callee variable or field rather
 			// than a method; those flow through the unknown-callee path below
 			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
-			if (!(bound == nullptr) && bound->is_method())
+			if (bound != nullptr && bound->is_method())
 				callee = static_cast<MethodSymbol*>(bound);
 
 			isTryWrapped = is_try_wrapped(*nodeRef);
 		}
 
-		if (!(callee == nullptr))
+		if (callee != nullptr)
 		{
 			// async callees defer exceptions into the returned task; those are
 			// surfaced only when the call is awaited (handled in visit_await_expression)
@@ -1314,7 +1314,7 @@ void ControlFlowAnalyzer::visit_object_creation_expression(const ObjectExpressio
 	if (node == nullptr)
 		return;
 
-	if (!(m_currentMethod == nullptr))
+	if (m_currentMethod != nullptr)
 	{
 		ConstructorSymbol* ctor = nullptr;
 		auto nodeRef = ref_from(node);
@@ -1323,11 +1323,11 @@ void ControlFlowAnalyzer::visit_object_creation_expression(const ObjectExpressio
 			// an unresolved constructor (value-initialization) leaves the created
 			// type bound to the node; only real constructors record a call edge
 			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
-			if (!(bound == nullptr) && bound->is_method())
+			if (bound != nullptr && bound->is_method())
 				ctor = static_cast<ConstructorSymbol*>(bound);
 		}
 
-		if (!(ctor == nullptr))
+		if (ctor != nullptr)
 			record_callee_effects(ctor, node->get_new_token());
 	}
 
@@ -1339,7 +1339,7 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 	if (node == nullptr)
 		return;
 
-	if (!(m_currentMethod == nullptr) && !(node->get_expression() == nullptr))
+	if (m_currentMethod != nullptr && !(node->get_expression() == nullptr))
 	{
 		const ExpressionSyntax* awaited = node->get_expression();
 
@@ -1352,7 +1352,7 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 			MethodSymbol* callee = lookup_symbol<MethodSymbol>(invocation);
 			bool isTryWrapped = is_try_wrapped(invocation) || is_try_wrapped(node);
 
-			bool isAsyncCallee = !(callee == nullptr) && callee->get_is_async();
+			bool isAsyncCallee = callee != nullptr && callee->get_is_async();
 			if (isAsyncCallee)
 				record_callee_effects(callee, invocation->get_identifier(), true, isTryWrapped);
 		}
@@ -1360,7 +1360,7 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 		// awaiting an unknown or non-async expression that could hold a faulted task
 		// is treated conservatively as a potential throw
 		StructSymbol* awaitedType = get_model().get_expression_type(awaited);
-		if (!(awaitedType == nullptr) && get_model().is_task_or_task_like(awaitedType))
+		if (awaitedType != nullptr && get_model().is_task_or_task_like(awaitedType))
 		{
 			if (awaited->get_kind() != SyntaxKind::InvokationExpression)
 				m_currentMethod->get_effect_summary().mayThrow = true;

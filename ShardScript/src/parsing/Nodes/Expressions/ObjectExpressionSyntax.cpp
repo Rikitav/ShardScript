@@ -45,7 +45,7 @@ const ExpressionSyntax* ObjectExpressionSyntax::get_array_size() const
 
 bool ObjectExpressionSyntax::is_array_creation() const
 {
-	return !(m_arraySize == nullptr);
+	return m_arraySize != nullptr;
 }
 
 void ObjectExpressionSyntax::set_array_size(ExpressionSyntax* arraySize)
@@ -55,13 +55,13 @@ void ObjectExpressionSyntax::set_array_size(ExpressionSyntax* arraySize)
 
 TextLocation ObjectExpressionSyntax::get_location() const
 {
-	if (!(m_arguments == nullptr))
+	if (m_arguments != nullptr)
 		return TextLocation(m_newToken, m_arguments->get_close_token());
 
-	if (!(m_arraySize == nullptr))
+	if (m_arraySize != nullptr)
 		return TextLocation(m_newToken, m_arraySize->get_location());
 
-	if (!(m_type == nullptr))
+	if (m_type != nullptr)
 		return TextLocation(m_newToken, m_type->get_location());
 
 	return m_newToken.get_location();

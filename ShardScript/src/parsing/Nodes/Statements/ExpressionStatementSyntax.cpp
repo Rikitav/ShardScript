@@ -30,7 +30,7 @@ void ExpressionStatementSyntax::set_semicolon(const SyntaxToken& token)
 
 TextLocation ExpressionStatementSyntax::get_location() const
 {
-	if (!(m_expression == nullptr))
+	if (m_expression != nullptr)
 		return TextLocation(m_expression->get_location(), m_semicolonToken);
 
 	return m_semicolonToken.get_location();

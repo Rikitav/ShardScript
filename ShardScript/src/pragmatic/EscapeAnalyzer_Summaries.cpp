@@ -288,14 +288,14 @@ int EscapeAnalyzer::classify_return_expression(MethodSymbol* method, const Expre
 		// transitive return-slot chaining (2.1e): a call to a Fresh-summary
 		// callee hands the caller a caller-placeable value without a local site
 		MethodSymbol* callee = nullptr;
-		if (!(expression == nullptr))
+		if (expression != nullptr)
 		{
 			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(expression);
-			if (!(bound == nullptr) && bound->is_method())
+			if (bound != nullptr && bound->is_method())
 				callee = static_cast<MethodSymbol*>(bound);
 		}
 
-		if (!(callee == nullptr))
+		if (callee != nullptr)
 		{
 			auto it = summaries.find(callee);
 			if (it != summaries.end() && it->second.returnDisposition == ReturnDisposition::Fresh)
@@ -417,7 +417,7 @@ bool EscapeAnalyzer::is_scalar_eligible(StructSymbol* type)
 	for (FieldSymbol* field : type->fields)
 	{
 		StructSymbol* fieldType = field->get_return_type();
-		bool nullableField = !(fieldType == nullptr);
+		bool nullableField = fieldType != nullptr;
 		nullableField = nullableField && fieldType->get_kind() == SyntaxKind::NullableType;
 
 		if (nullableField)

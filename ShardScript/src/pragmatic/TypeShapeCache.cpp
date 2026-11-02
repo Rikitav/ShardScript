@@ -175,7 +175,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		// full recursive substitution matters for nested constructions such
 		// as '__TaskState<T>' fields quoted by 'Task<T>'
 		StructSymbol* fieldType = field->get_return_type();
-		if (!(within == nullptr))
+		if (within != nullptr)
 			fieldType = model.substitute_type(fieldType, within);
 
 		if (fieldType == nullptr)

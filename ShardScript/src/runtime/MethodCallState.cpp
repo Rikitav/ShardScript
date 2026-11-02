@@ -27,7 +27,7 @@ namespace
 {
 	StructSymbol* constructed_definition(StructSymbol* type)
 	{
-		if (!(type == nullptr) && type->get_kind() == SyntaxKind::GenericType)
+		if (type != nullptr && type->get_kind() == SyntaxKind::GenericType)
 			return static_cast<GenericTypeSymbol*>(type)->get_underlaying_type();
 
 		return type;
@@ -69,7 +69,7 @@ DelegateRef::DelegateRef(VirtualMachine& vm, ObjectInstance delegate)
 	: m_vm(&vm)
 	, m_delegate(delegate)
 {
-	if (!(m_delegate == nullptr))
+	if (m_delegate != nullptr)
 	{
 		m_vm->get_collector().pin(m_delegate);
 		m_pinned = true;
@@ -112,7 +112,7 @@ DelegateRef& DelegateRef::operator=(DelegateRef&& other) noexcept
 
 bool DelegateRef::is_valid() const
 {
-	return m_vm != nullptr && !(m_delegate == nullptr);
+	return m_vm != nullptr && m_delegate != nullptr;
 }
 
 ObjectInstance DelegateRef::get_instance() const
@@ -312,7 +312,7 @@ InvokeResult MethodCallState::new_object(StructSymbol* type, ConstructorSymbol* 
 	ObjectInstance exception = ObjectInstance::null();
 	m_vm.try_invoke_method(ctor, fullArgs.get_vector(), exception);
 
-	if (!(exception == nullptr))
+	if (exception != nullptr)
 		return InvokeResult(ObjectInstance::null(), exception);
 
 	return InvokeResult(instance, ObjectInstance::null());

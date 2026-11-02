@@ -30,7 +30,7 @@ void LambdaExpressionSyntax::set_body(BlockSyntax* body)
 
 TextLocation LambdaExpressionSyntax::get_location() const
 {
-	if (!(m_body == nullptr))
+	if (m_body != nullptr)
 		return TextLocation(m_parameters->get_open_token(), m_body->get_location());
 
 	return m_parameters->get_location();

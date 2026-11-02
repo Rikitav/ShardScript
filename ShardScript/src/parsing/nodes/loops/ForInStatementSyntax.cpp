@@ -60,7 +60,7 @@ void ForInStatementSyntax::set_block(StatementsBlockSyntax* block)
 
 TextLocation ForInStatementSyntax::get_location() const
 {
-	if (!(m_block == nullptr))
+	if (m_block != nullptr)
 		return TextLocation(m_forKeywordToken, m_block->get_location());
 
 	return m_forKeywordToken.get_location();

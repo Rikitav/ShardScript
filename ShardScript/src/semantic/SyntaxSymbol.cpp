@@ -39,7 +39,7 @@ gmt::wstring SyntaxSymbol::get_full_name() const
 	gmt::inline_vector<const SyntaxSymbol*, 8> chain;
 	const SyntaxSymbol* current = m_parent;
 
-	while (!(current == nullptr))
+	while (current != nullptr)
 	{
 		chain.push_back(current);
 		current = current->get_parent();

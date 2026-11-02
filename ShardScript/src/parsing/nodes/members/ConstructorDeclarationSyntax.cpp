@@ -45,10 +45,10 @@ TextLocation ConstructorDeclarationSyntax::get_location() const
 	if (!m_semicolonToken.is_missing())
 		return TextLocation(location, m_semicolonToken.get_location());
 
-	if (!(m_body == nullptr))
+	if (m_body != nullptr)
 		return TextLocation(location, m_body->get_location());
 
-	if (!(m_parametersList == nullptr))
+	if (m_parametersList != nullptr)
 		return TextLocation(location, m_parametersList->get_location());
 
 	return location;

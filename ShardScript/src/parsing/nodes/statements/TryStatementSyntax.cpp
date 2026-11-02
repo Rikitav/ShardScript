@@ -43,7 +43,7 @@ TextLocation TryStatementSyntax::get_location() const
 	if (m_catchClauses.size() > 0 && !(m_catchClauses.back() == nullptr))
 		return TextLocation(m_tryKeywordToken, m_catchClauses.back()->get_location());
 
-	if (!(m_tryBlock == nullptr))
+	if (m_tryBlock != nullptr)
 		return TextLocation(m_tryKeywordToken, m_tryBlock->get_location());
 
 	return m_tryKeywordToken.get_location();

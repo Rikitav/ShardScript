@@ -53,7 +53,7 @@ namespace
 		if (type->get_kind() == SyntaxKind::GenericType)
 		{
 			StructSymbol* underlaying = gmt::as<GenericTypeSymbol>(type)->get_underlaying_type();
-			if (!(underlaying == nullptr) && underlaying->get_kind() == SyntaxKind::DelegateType)
+			if (underlaying != nullptr && underlaying->get_kind() == SyntaxKind::DelegateType)
 				return static_cast<DelegateTypeSymbol*>(underlaying);
 		}
 
@@ -179,7 +179,7 @@ void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionS
 	bool hasPendingArgument = false;
 	for (ArgumentSyntax* const& argument : arguments)
 	{
-		if (!(argument == nullptr) && is_pending_lambda(argument->get_expression()))
+		if (argument != nullptr && is_pending_lambda(argument->get_expression()))
 		{
 			hasPendingArgument = true;
 			break;
@@ -354,10 +354,10 @@ bool ExpressionBinder::try_infer_type_argument(StructSymbol* pattern, StructSymb
 	if ((pattern == nullptr) || (concrete == nullptr))
 		return true;
 
-	if (!(genericType == nullptr) && pattern->get_kind() == SyntaxKind::TypeParameter)
+	if (genericType != nullptr && pattern->get_kind() == SyntaxKind::TypeParameter)
 	{
 		StructSymbol* substituted = genericType->substitute_type_parameter(static_cast<TypeParameterSymbol*>(pattern));
-		if (!(substituted == nullptr))
+		if (substituted != nullptr)
 			pattern = substituted;
 	}
 
@@ -675,7 +675,7 @@ bool ExpressionBinder::collect_explicit_type_arguments(const InvokationExpressio
 	for (TypeSyntax* const& argumentNode : list->get_types())
 	{
 		StructSymbol* type = resolve_type_expression(argumentNode);
-		if (!(type == nullptr))
+		if (type != nullptr)
 			outTypeArgs.push_back(type);
 	}
 
@@ -684,7 +684,7 @@ bool ExpressionBinder::collect_explicit_type_arguments(const InvokationExpressio
 
 void ExpressionBinder::bind_invocation_type_arguments(const InvokationExpressionSyntax* node, MethodSymbol* method, GenericTypeSymbol* genericType, std::span<StructSymbol* const> methodTypeArgs)
 {
-	bool genericReceiver = !(genericType == nullptr);
+	bool genericReceiver = genericType != nullptr;
 	bool genericMethod = !method->get_type_parameters().empty();
 	if (!genericReceiver && !genericMethod)
 		return;
@@ -731,7 +731,7 @@ DelegateTypeSymbol* ExpressionBinder::try_resolve_delegate_invocation([[maybe_un
 
 	// a generic delegate instantiation substitutes the delegate's own type
 	// parameters with the holder's type arguments
-	if (!(delegateHolderType == nullptr) && delegateHolderType->get_kind() == SyntaxKind::GenericType)
+	if (delegateHolderType != nullptr && delegateHolderType->get_kind() == SyntaxKind::GenericType)
 		outInstantiation = static_cast<GenericTypeSymbol*>(delegateHolderType);
 
 	return get_delegate_type(delegateHolderType);
@@ -762,14 +762,14 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 	}
 
 	GenericTypeSymbol* genericType = nullptr;
-	if (!(currentType == nullptr) && currentType->get_kind() == SyntaxKind::GenericType)
+	if (currentType != nullptr && currentType->get_kind() == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
 	outGenericType = nullptr;
 
 	// extension shape carries the receiver type as the first argument
 	gmt::inline_vector<StructSymbol*, 8> extensionArgs;
-	if (!(currentType == nullptr) && !staticContext)
+	if (currentType != nullptr && !staticContext)
 	{
 		extensionArgs.get_vector().reserve(argTypes.get_vector().size() + 1);
 		extensionArgs.push_back(currentType);
@@ -796,10 +796,10 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 
 	// instance and static methods declared on the receiver type
 	StructSymbol* receiverType = currentType;
-	if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::GenericType)
+	if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::GenericType)
 		receiverType = static_cast<GenericTypeSymbol*>(receiverType)->get_underlaying_type();
 
-	if (!(receiverType == nullptr))
+	if (receiverType != nullptr)
 	{
 		if (receiverType->get_kind() == SyntaxKind::TypeParameter)
 		{
@@ -810,7 +810,7 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 
 				for (MethodSymbol* method : constraint->methods)
 				{
-					if (!(method == nullptr) && method->get_name() == methodName)
+					if (method != nullptr && method->get_name() == methodName)
 						addCandidate(method, false);
 				}
 			}
@@ -819,7 +819,7 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 		{
 			for (MethodSymbol* method : receiverType->methods)
 			{
-				if (!(method == nullptr) && method->get_name() == methodName)
+				if (method != nullptr && method->get_name() == methodName)
 					addCandidate(method, false);
 			}
 		}
@@ -827,14 +827,14 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 
 	// functions declared in the current scope: locals, top-level functions
 	// and members of imported namespaces
-	bool asExtension = !staticContext && !(currentType == nullptr);
+	bool asExtension = !staticContext && currentType != nullptr;
 	SyntaxSymbol* scopeLookup = get_current_scope()->lookup(methodName);
-	if (!(scopeLookup == nullptr) && scopeLookup->get_kind() == SyntaxKind::FunctionDeclaration)
+	if (scopeLookup != nullptr && scopeLookup->get_kind() == SyntaxKind::FunctionDeclaration)
 		addCandidate(static_cast<MethodSymbol*>(scopeLookup), asExtension);
 
 	for (SyntaxSymbol* const& overload : get_current_scope()->find_overloads(methodName))
 	{
-		if (!(overload == nullptr) && overload->get_kind() == SyntaxKind::FunctionDeclaration)
+		if (overload != nullptr && overload->get_kind() == SyntaxKind::FunctionDeclaration)
 			addCandidate(static_cast<MethodSymbol*>(overload), asExtension);
 	}
 
@@ -1014,7 +1014,7 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 		for (std::size_t i = 0; i < parameters.size(); i++)
 		{
 			StructSymbol* parameterType = parameters[i]->get_type();
-			if (!(construction == nullptr))
+			if (construction != nullptr)
 				parameterType = substitute_type_parameters(parameterType, construction);
 
 			int score = conversion_score(parameterType, argTypes.get_vector()[i]);
@@ -1055,7 +1055,7 @@ StructSymbol* ExpressionBinder::analyze_object_expression(const ObjectExpression
 	if (nodeRef.has_value())
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
-		if (!(bound == nullptr) && bound->get_kind() == SyntaxKind::ConstructorDeclaration)
+		if (bound != nullptr && bound->get_kind() == SyntaxKind::ConstructorDeclaration)
 			return get_expression_type(*nodeRef);
 	}
 
@@ -1101,7 +1101,7 @@ void ExpressionBinder::visit_object_creation_expression(const ObjectExpressionSy
 		if (!(node->get_array_size() == nullptr))
 		{
 			StructSymbol* sizeType = get_expression_type(node->get_array_size());
-			bool sizeIsInteger = !(sizeType == nullptr) && sizeType == get_symbol_table().get_integer_primitive();
+			bool sizeIsInteger = sizeType != nullptr && sizeType == get_symbol_table().get_integer_primitive();
 			if (!sizeIsInteger)
 				get_diagnostics().report_error(node->get_new_token(), L"Array size must be an integer");
 		}
@@ -1128,7 +1128,7 @@ NamespaceSymbol* ExpressionBinder::resolve_namespace_qualifier(const ExpressionS
 	if ((member->get_previous() == nullptr))
 	{
 		SyntaxSymbol* symbol = get_current_scope()->lookup(member->get_identifier().get_lexeme());
-		if (!(symbol == nullptr) && symbol->get_kind() == SyntaxKind::NamespaceDirective)
+		if (symbol != nullptr && symbol->get_kind() == SyntaxKind::NamespaceDirective)
 			return static_cast<NamespaceSymbol*>(symbol);
 
 		return get_symbol_table().get_root_namespace()->lookup(member->get_identifier().get_lexeme());
@@ -1191,7 +1191,7 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 	{
 		for (SyntaxSymbol* member : namespaceSymbol->members)
 		{
-			if (!(member == nullptr) && member->get_name() == methodName && member->is_type())
+			if (member != nullptr && member->get_name() == methodName && member->is_type())
 			{
 				get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Use 'new ", methodName, L"()' instead of '", methodName, L"()' to construct a type"));
 				return nullptr;
@@ -1329,7 +1329,7 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 	const ExpressionSyntax* previous = node->get_previous();
 
 	// call of a direct callee expression: (callee)(arguments)
-	if (node->get_identifier().get_type() == TokenType::Unknown && !(previous == nullptr))
+	if (node->get_identifier().get_type() == TokenType::Unknown && previous != nullptr)
 	{
 		visit_expression(previous);
 		StructSymbol* calleeType = get_expression_type(previous);
@@ -1346,7 +1346,7 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 			return;
 		}
 
-		GenericTypeSymbol* delegateInstantiation = !(calleeType == nullptr) && calleeType->get_kind() == SyntaxKind::GenericType
+		GenericTypeSymbol* delegateInstantiation = calleeType != nullptr && calleeType->get_kind() == SyntaxKind::GenericType
 			? static_cast<GenericTypeSymbol*>(calleeType)
 			: nullptr;
 
@@ -1377,7 +1377,7 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 	// namespace-qualified invocation: Foo::Bar(); namespaces are not
 	// expression values, so the qualifier chain resolves without visiting it
 	NamespaceSymbol* namespaceQualifier = resolve_namespace_qualifier(previous);
-	if (!(namespaceQualifier == nullptr))
+	if (namespaceQualifier != nullptr)
 	{
 		StructSymbol* type = analyze_qualified_invokation_expression(node, namespaceQualifier);
 		if (nodeRef.has_value())
@@ -1386,7 +1386,7 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 		return;
 	}
 
-	if (!(previous == nullptr))
+	if (previous != nullptr)
 		visit_expression(previous);
 
 	StructSymbol* currentType = (previous == nullptr) ? get_owner_type() : get_expression_type(previous);

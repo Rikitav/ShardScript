@@ -51,10 +51,10 @@ namespace
 	bool is_interface_accessor(MethodSymbol* accessor)
 	{
 		const SyntaxSymbol* owner = accessor->get_parent();
-		if (!(owner == nullptr) && (owner->get_kind() == SyntaxKind::PropertyDeclaration || owner->get_kind() == SyntaxKind::IndexatorDeclaration))
+		if (owner != nullptr && (owner->get_kind() == SyntaxKind::PropertyDeclaration || owner->get_kind() == SyntaxKind::IndexatorDeclaration))
 			owner = owner->get_parent();
 
-		return !(owner == nullptr) && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
+		return owner != nullptr && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
 	}
 }
 
@@ -144,7 +144,7 @@ void ByteCodeEmitter::visit_expression_statement(const ExpressionStatementSyntax
 	std::optional<const ExpressionSyntax*> expressionRef = ref_from(node->get_expression());
 	StructSymbol* type = expressionRef.has_value() ? get_model().get_expression_type(*expressionRef) : nullptr;
 
-	bool discardable = !(type == nullptr) && type != get_symbol_table().get_void_primitive();
+	bool discardable = type != nullptr && type != get_symbol_table().get_void_primitive();
 	if (discardable)
 	{
 		m_encoder.emit_pop();
@@ -208,7 +208,7 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	if (specialPlacement && initializer->get_kind() == SyntaxKind::InvokationExpression)
 	{
 		MethodSymbol* intoMethod = into_call_method(initializer);
-		if (!(intoMethod == nullptr))
+		if (intoMethod != nullptr)
 		{
 			const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(initializer);
 			emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments(), *slot);
@@ -228,14 +228,14 @@ void ByteCodeEmitter::visit_return_statement(const ReturnStatementSyntax* node)
 
 	const ExpressionSyntax* expression = node->get_expression();
 
-	bool hasConversion = !(expression == nullptr);
+	bool hasConversion = expression != nullptr;
 	if (hasConversion)
 		hasConversion = get_model().get_nullable_conversion(expression).kind != NullableConversionKind::NONE;
 
 	// tail calls forward the current frame's return slot: the callee writes
 	// its result straight into the caller's chained return storage
 	MethodSymbol* intoMethod = hasConversion ? nullptr : into_call_method(expression);
-	if (!(expression == nullptr) && !(intoMethod == nullptr))
+	if (expression != nullptr && intoMethod != nullptr)
 	{
 		const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression);
 		emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments(), ReturnSlotSentinel);
@@ -245,13 +245,13 @@ void ByteCodeEmitter::visit_return_statement(const ReturnStatementSyntax* node)
 		return;
 	}
 
-	if (!(expression == nullptr))
+	if (expression != nullptr)
 		emit_converted(expression);
 
 	emit_all_defers();
 	m_encoder.emit_return();
 
-	if (!(expression == nullptr))
+	if (expression != nullptr)
 		eval_pop();
 }
 
@@ -468,7 +468,7 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	StructSymbol* loopVariableType = (loopVariable == nullptr) ? nullptr : loopVariable->get_type();
 
 	std::optional<std::uint16_t> loopSlot;
-	if (!(loopVariable == nullptr))
+	if (loopVariable != nullptr)
 		loopSlot = slot_of(loopVariable);
 
 	if (!loopSlot.has_value())
@@ -481,8 +481,8 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	StructSymbol* rangeType = rangeRef.has_value() ? get_model().get_expression_type(*rangeRef) : nullptr;
 
 	SymbolTable& table = get_symbol_table();
-	bool isLazyRange = !(rangeType == nullptr) && rangeType == table.get_standard_type(StandardTypes::RangeEnumerable);
-	bool isArray = !(rangeType == nullptr) && rangeType->get_kind() == SyntaxKind::ArrayType;
+	bool isLazyRange = rangeType != nullptr && rangeType == table.get_standard_type(StandardTypes::RangeEnumerable);
+	bool isArray = rangeType != nullptr && rangeType->get_kind() == SyntaxKind::ArrayType;
 
 	PropertySymbol* countProperty = nullptr;
 	IndexatorSymbol* indexator = nullptr;
@@ -510,7 +510,7 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	else
 	{
 		MethodSymbol* intoMethod = into_call_method(node->get_range_expression());
-		if (isIndexable && !(intoMethod == nullptr))
+		if (isIndexable && intoMethod != nullptr)
 		{
 			// the collection constructs straight into the loop's stack temp
 			rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Stack);
@@ -761,7 +761,7 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 		{
 			const TypeSyntax* typeNode = clause->get_exception_type();
 			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(typeNode);
-			if (!(bound == nullptr) && bound->is_type())
+			if (bound != nullptr && bound->is_type())
 				exceptionType = static_cast<StructSymbol*>(bound);
 		}
 
@@ -784,7 +784,7 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 		VariableSymbol* variable = clauseNodeRef.has_value() ? lookup_symbol<VariableSymbol>(*clauseNodeRef) : nullptr;
 
 		std::optional<std::uint16_t> slot;
-		if (!(variable == nullptr))
+		if (variable != nullptr)
 			slot = slot_of(variable);
 
 		if (slot.has_value())
@@ -837,7 +837,7 @@ void ByteCodeEmitter::visit_defer_statement(const DeferStatementSyntax* node)
 	std::optional<const ExpressionSyntax*> expressionRef = ref_from(node->get_expression());
 	StructSymbol* type = expressionRef.has_value() ? get_model().get_expression_type(*expressionRef) : nullptr;
 
-	bool discardable = !(type == nullptr) && type != get_symbol_table().get_void_primitive();
+	bool discardable = type != nullptr && type != get_symbol_table().get_void_primitive();
 	if (discardable)
 	{
 		m_encoder.emit_pop();

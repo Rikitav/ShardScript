@@ -41,7 +41,7 @@ bool ExpressionBinder::get_is_static_context(const ExpressionSyntax* expression)
 
 static StructSymbol* unwrap_nullable(StructSymbol* type)
 {
-	while (!(type == nullptr) && type->get_kind() == SyntaxKind::NullableType)
+	while (type != nullptr && type->get_kind() == SyntaxKind::NullableType)
 		type = static_cast<NullableTypeSymbol*>(type)->get_underlaying_type();
 
 	return type;
@@ -66,7 +66,7 @@ static PropertySymbol* find_property_on(SymbolTable& table, StructSymbol* type, 
 {
 	for (PropertySymbol* property : search_type_of(table, type)->properties)
 	{
-		if (!(property == nullptr) && property->get_name() == name)
+		if (property != nullptr && property->get_name() == name)
 			return property;
 	}
 
@@ -77,7 +77,7 @@ static FieldSymbol* find_field_on(SymbolTable& table, StructSymbol* type, std::w
 {
 	for (FieldSymbol* field : search_type_of(table, type)->fields)
 	{
-		if (!(field == nullptr) && field->get_name() == name)
+		if (field != nullptr && field->get_name() == name)
 			return field;
 	}
 
@@ -88,7 +88,7 @@ static MethodSymbol* find_method_on(SymbolTable& table, StructSymbol* type, std:
 {
 	for (MethodSymbol* method : search_type_of(table, type)->methods)
 	{
-		if (!(method == nullptr) && method->get_name() == name)
+		if (method != nullptr && method->get_name() == name)
 			return method;
 	}
 
@@ -157,7 +157,7 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 			if (symbol == nullptr)
 				symbol = find_method_on(table, constraint, memberName);
 
-			if (!(symbol == nullptr))
+			if (symbol != nullptr)
 			{
 				currentType = constraint;
 				break;
@@ -178,7 +178,7 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 		{
 			StructSymbol* accessParameters[] = { table.get_string_primitive() };
 			OperatorSymbol* accessOperator = resolve_operator_method(currentType, TokenType::Delimeter, accessParameters);
-			if (!(accessOperator == nullptr))
+			if (accessOperator != nullptr)
 			{
 				if (nodeRef.has_value())
 					table.bind_symbol<OperatorSymbol>(*nodeRef, accessOperator);
@@ -205,7 +205,7 @@ StructSymbol* ExpressionBinder::resolve_symbol_type(SyntaxSymbol* symbol, Syntax
 	{
 		const SyntaxNode* syntaxNode = *nodeRef;
 		const SyntaxNode* parent = syntaxNode->get_parent();
-		if (!(parent == nullptr) && parent->get_kind() == SyntaxKind::BinaryExpression)
+		if (parent != nullptr && parent->get_kind() == SyntaxKind::BinaryExpression)
 		{
 			const BinaryExpressionSyntax* binary = gmt::as<BinaryExpressionSyntax>(parent);
 			assignmentContext = is_assignment_operator(binary->get_operator_token().get_type()) && binary->get_left() == syntaxNode;
@@ -243,7 +243,7 @@ StructSymbol* ExpressionBinder::resolve_symbol_type(SyntaxSymbol* symbol, Syntax
 				return nullptr;
 			}
 
-			if (!(currentType == nullptr) && currentType->get_kind() == SyntaxKind::GenericType)
+			if (currentType != nullptr && currentType->get_kind() == SyntaxKind::GenericType)
 				fieldType = substitute_type_parameters(fieldType, static_cast<GenericTypeSymbol*>(currentType));
 
 			if (nodeRef.has_value())
@@ -347,7 +347,7 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 				genericCandidate = type;
 		}
 
-		if ((symbol == nullptr) && !(genericCandidate == nullptr))
+		if ((symbol == nullptr) && genericCandidate != nullptr)
 			symbol = genericCandidate;
 	}
 
@@ -360,12 +360,12 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 		}
 
 		StructSymbol* expectedType = unwrap_nullable(resolve_left_denotation());
-		if (!(expectedType == nullptr) && expectedType->get_kind() == SyntaxKind::EnumDeclaration)
+		if (expectedType != nullptr && expectedType->get_kind() == SyntaxKind::EnumDeclaration)
 		{
 			EnumSymbol* enumType = static_cast<EnumSymbol*>(expectedType);
 			for (FieldSymbol* field : enumType->fields)
 			{
-				if (!(field == nullptr))
+				if (field != nullptr)
 				{
 					bool matchingEnumValue = field->get_is_enum_value() && field->get_name() == memberName;
 					if (matchingEnumValue)
@@ -409,7 +409,7 @@ void ExpressionBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax
 	// identifiers the binder itself bound (variables, parameters, fields)
 	// resolve through the scope instead
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
-	if (!(bound == nullptr) && bound->is_type())
+	if (bound != nullptr && bound->is_type())
 	{
 		m_staticContextExpressions.insert(*nodeRef);
 		set_expression_type(*nodeRef, static_cast<StructSymbol*>(bound));
@@ -492,7 +492,7 @@ StructSymbol* ExpressionBinder::analyze_property_access_expression(SyntaxToken i
 
 	StructSymbol* propertyType = property->get_return_type();
 
-	if (currentType->get_kind() == SyntaxKind::GenericType && !(propertyType == nullptr))
+	if (currentType->get_kind() == SyntaxKind::GenericType && propertyType != nullptr)
 		propertyType = substitute_type_parameters(propertyType, static_cast<GenericTypeSymbol*>(currentType));
 
 	return propertyType;
@@ -527,7 +527,7 @@ StructSymbol* ExpressionBinder::analyze_field_keyword_expression(const SyntaxNod
 	{
 		SyntaxSymbol* owner = const_cast<SyntaxSymbol*>(propertySymbol->get_parent());
 		FieldSymbol* backing = m_factory.create_backing_field(propertySymbol, owner);
-		if (!(owner == nullptr))
+		if (owner != nullptr)
 			owner->on_symbol_declared(backing);
 	}
 
@@ -567,13 +567,13 @@ StructSymbol* ExpressionBinder::analyze_indexator_expression(const IndexatorExpr
 	{
 		StructSymbol* elementType = static_cast<ArrayTypeSymbol*>(currentType)->get_underlaying_type();
 
-		if (!(arguments == nullptr))
+		if (arguments != nullptr)
 		{
 			for (ArgumentSyntax* const& argument : arguments->get_arguments())
 			{
 				visit_expression(argument->get_expression());
 				StructSymbol* argumentType = get_expression_type(argument->get_expression());
-				if (!(argumentType == nullptr) && argumentType != get_symbol_table().get_integer_primitive())
+				if (argumentType != nullptr && argumentType != get_symbol_table().get_integer_primitive())
 					get_diagnostics().report_error(node->get_location(), L"Array index must be an integer");
 			}
 		}
@@ -592,7 +592,7 @@ StructSymbol* ExpressionBinder::analyze_indexator_expression(const IndexatorExpr
 		return nullptr;
 
 	AccessorSymbol* accessor = is_assignment_context(node) ? indexator->get_setter() : indexator->get_getter();
-	if (!(accessor == nullptr) && !(arguments == nullptr))
+	if (accessor != nullptr && arguments != nullptr)
 	{
 		GenericTypeSymbol* genericType = nullptr;
 		if (currentType->get_kind() == SyntaxKind::GenericType)
@@ -698,7 +698,7 @@ IndexatorSymbol* ExpressionBinder::resolve_indexator(const IndexatorExpressionSy
 void ExpressionBinder::visit_member_access_expression(const MemberAccessExpressionSyntax* node)
 {
 	const ExpressionSyntax* previous = node->get_previous();
-	if (!(previous == nullptr))
+	if (previous != nullptr)
 		visit_expression(previous);
 
 	StructSymbol* currentType = (previous == nullptr) ? get_owner_type() : get_expression_type(previous);
@@ -712,7 +712,7 @@ void ExpressionBinder::visit_member_access_expression(const MemberAccessExpressi
 void ExpressionBinder::visit_indexator_expression(const IndexatorExpressionSyntax* node)
 {
 	const ExpressionSyntax* previous = node->get_previous();
-	if (!(previous == nullptr))
+	if (previous != nullptr)
 		visit_expression(previous);
 
 	StructSymbol* currentType = (previous == nullptr) ? get_owner_type() : get_expression_type(previous);

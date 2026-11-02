@@ -510,7 +510,7 @@ void ProgramDisassembler::disassemble(std::wostream& out)
 	}
 
 	MethodSymbol* entryPoint = m_domain.get_program().get_entry_point();
-	if (!(entryPoint == nullptr))
+	if (entryPoint != nullptr)
 	{
 		disassemble_method(out, entryPoint);
 	}
@@ -536,7 +536,7 @@ ProgramDisassembler::ProgramDisassembler(const ApplicationDomain& domain)
 void ProgramDisassembler::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
 	MethodSymbol* method = lookup_symbol<MethodSymbol>(node);
-	if (!(method == nullptr) && method != m_domain.get_program().get_entry_point())
+	if (method != nullptr && method != m_domain.get_program().get_entry_point())
 	{
 		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
 		auto it = std::lower_bound(

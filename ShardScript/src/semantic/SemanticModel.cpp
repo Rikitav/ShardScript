@@ -50,13 +50,13 @@ StructSymbol* SemanticModel::get_expression_type(const ExpressionSyntax* express
 
 void SemanticModel::set_expression_type(const ExpressionSyntax* expression, StructSymbol* type)
 {
-	if (!(expression == nullptr))
+	if (expression != nullptr)
 		m_expressionTypes[expression] = type;
 }
 
 void SemanticModel::set_nullable_conversion(const ExpressionSyntax* expression, NullableConversion conversion)
 {
-	if (!(expression == nullptr))
+	if (expression != nullptr)
 		m_nullableConversions[expression] = conversion;
 }
 
@@ -203,7 +203,7 @@ static bool is_constructed_interface_implemented(GenericTypeSymbol* targetInterf
 			StructSymbol* targetArgument = targetInterface->substitute_type_parameter(parameter);
 			StructSymbol* sourceArgument = candidateInterface->substitute_type_parameter(parameter);
 
-			if (!(sourceArgument == nullptr) && sourceArgument->get_kind() == SyntaxKind::TypeParameter && !(sourceType == nullptr) && sourceType->get_kind() == SyntaxKind::GenericType)
+			if (sourceArgument != nullptr && sourceArgument->get_kind() == SyntaxKind::TypeParameter && sourceType != nullptr && sourceType->get_kind() == SyntaxKind::GenericType)
 				sourceArgument = gmt::as<GenericTypeSymbol>(sourceType)->substitute_type_parameter(static_cast<TypeParameterSymbol*>(sourceArgument));
 
 			if (!SemanticModel::are_types_equal(targetArgument, sourceArgument))
@@ -241,7 +241,7 @@ static bool is_constructed_interface_implemented(GenericTypeSymbol* targetInterf
 
 bool SemanticModel::is_null_type(const StructSymbol* type) const
 {
-	return !(type == nullptr) && type == m_table.get_null_primitive();
+	return type != nullptr && type == m_table.get_null_primitive();
 }
 
 bool SemanticModel::is_reference_shaped(const StructSymbol* type) const
@@ -386,7 +386,7 @@ bool SemanticModel::is_assignable_to(const StructSymbol* target, const StructSym
 			if (targetReturn->get_kind() == SyntaxKind::TypeParameter)
 			{
 				StructSymbol* substituted = targetGeneric->substitute_type_parameter(static_cast<TypeParameterSymbol*>(targetReturn));
-				if (!(substituted == nullptr))
+				if (substituted != nullptr)
 					targetReturn = substituted;
 			}
 
@@ -402,7 +402,7 @@ bool SemanticModel::is_assignable_to(const StructSymbol* target, const StructSym
 				if (targetParameter->get_kind() == SyntaxKind::TypeParameter)
 				{
 					StructSymbol* substituted = targetGeneric->substitute_type_parameter(static_cast<TypeParameterSymbol*>(targetParameter));
-					if (!(substituted == nullptr))
+					if (substituted != nullptr)
 						targetParameter = substituted;
 				}
 
@@ -450,7 +450,7 @@ gmt::wstring SemanticModel::get_type_display_name(const StructSymbol* type) cons
 		gmt::wstring result = (underlaying == nullptr) ? L"<error>" : gmt::wstring(underlaying->get_name());
 		result += L'<';
 
-		if (!(underlaying == nullptr))
+		if (underlaying != nullptr)
 		{
 			bool first = true;
 			for (TypeParameterSymbol* parameter : underlaying->type_parameters)
@@ -535,7 +535,7 @@ bool SemanticModel::is_task_or_task_like(StructSymbol* type)
 		return false;
 
 	SyntaxSymbol* task = m_table.get_standard_type(StandardTypes::Task);
-	if (!(task == nullptr) && type == task)
+	if (task != nullptr && type == task)
 		return true;
 
 	if (type->get_kind() != SyntaxKind::GenericType)
@@ -577,7 +577,7 @@ StructSymbol* SemanticModel::get_await_result_type(StructSymbol* type)
 		return nullptr;
 
 	SyntaxSymbol* task = m_table.get_standard_type(StandardTypes::Task);
-	if (!(task == nullptr) && type == task)
+	if (task != nullptr && type == task)
 		return m_table.get_void_primitive();
 
 	if (type->get_kind() != SyntaxKind::GenericType)
@@ -649,14 +649,14 @@ static StructSymbol* find_type_in_namespace(NamespaceSymbol* scope, std::wstring
 
 	for (SyntaxSymbol* member : scope->members)
 	{
-		if (!(member == nullptr) && member->is_type() && member->get_name() == name)
+		if (member != nullptr && member->is_type() && member->get_name() == name)
 			return static_cast<StructSymbol*>(member);
 	}
 
 	for (const auto& child : scope->get_children())
 	{
 		StructSymbol* result = find_type_in_namespace(child.second, name);
-		if (!(result == nullptr))
+		if (result != nullptr)
 			return result;
 	}
 
@@ -682,7 +682,7 @@ StructSymbol* SemanticModel::find_type_by_name(std::wstring_view fullName)
 	{
 		for (StructSymbol* primitive : primitives)
 		{
-			if (!(primitive == nullptr) && primitive->get_name() == fullName)
+			if (primitive != nullptr && primitive->get_name() == fullName)
 				return primitive;
 		}
 
@@ -693,14 +693,14 @@ StructSymbol* SemanticModel::find_type_by_name(std::wstring_view fullName)
 	std::size_t start = 0;
 	std::size_t end = fullName.find(L'.');
 
-	while (!(node == nullptr) && end != std::wstring_view::npos)
+	while (node != nullptr && end != std::wstring_view::npos)
 	{
 		node = node->lookup(fullName.substr(start, end - start));
 		start = end + 1;
 		end = fullName.find(L'.', start);
 	}
 
-	if (!(node == nullptr))
+	if (node != nullptr)
 	{
 		std::wstring_view typeName = fullName.substr(start);
 		for (SyntaxSymbol* member : node->members)
@@ -835,7 +835,7 @@ StructSymbol* SemanticModel::resolve_runtime_type_argument(StructSymbol* type, c
 	if (type->get_kind() == SyntaxKind::TypeParameter)
 	{
 		StructSymbol* resolved = resolveParameter(static_cast<TypeParameterSymbol*>(type));
-		return !(resolved == nullptr) ? resolved : type;
+		return resolved != nullptr ? resolved : type;
 	}
 
 	if (type->get_kind() == SyntaxKind::ArrayType)
@@ -914,7 +914,7 @@ bool SemanticModel::try_resolve_generic_arguments(StructSymbol* type, const Type
 	if (type->get_kind() == SyntaxKind::TypeParameter)
 	{
 		StructSymbol* resolved = resolveParameter(static_cast<TypeParameterSymbol*>(type));
-		if (!(resolved == nullptr) && resolved != type)
+		if (resolved != nullptr && resolved != type)
 			return try_resolve_generic_arguments(resolved, resolveParameter, baseType, genericArgs);
 
 		return false;
@@ -931,7 +931,7 @@ bool SemanticModel::try_resolve_generic_arguments(StructSymbol* type, const Type
 		{
 			StructSymbol* argument = generic->substitute_type_parameter(parameter);
 			StructSymbol* resolvedArgument = resolve_runtime_type_argument(argument, resolveParameter);
-			genericArgs.push_back(!(resolvedArgument == nullptr) ? resolvedArgument : argument);
+			genericArgs.push_back(resolvedArgument != nullptr ? resolvedArgument : argument);
 		}
 
 		return true;

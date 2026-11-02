@@ -8,7 +8,7 @@ TranslationUnitSyntax::TranslationUnitSyntax()
 
 bool TranslationUnitSyntax::has_namespace() const
 {
-	return !(m_namespace == nullptr);
+	return m_namespace != nullptr;
 }
 
 const NamespaceDirectiveSyntax* TranslationUnitSyntax::get_namespace() const

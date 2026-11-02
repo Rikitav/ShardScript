@@ -30,7 +30,7 @@ void AwaitExpressionSyntax::set_expression(ExpressionSyntax* expression)
 
 TextLocation AwaitExpressionSyntax::get_location() const
 {
-	if (!(m_expression == nullptr))
+	if (m_expression != nullptr)
 		return TextLocation(m_awaitKeywordToken, m_expression->get_location());
 
 	return m_awaitKeywordToken.get_location();

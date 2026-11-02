@@ -30,7 +30,7 @@ void DeferVariableSyntax::set_variable(VariableStatementSyntax* variable)
 
 TextLocation DeferVariableSyntax::get_location() const
 {
-	if (!(m_variable == nullptr))
+	if (m_variable != nullptr)
 		return TextLocation(m_deferKeywordToken, m_variable->get_location());
 
 	return m_deferKeywordToken.get_location();

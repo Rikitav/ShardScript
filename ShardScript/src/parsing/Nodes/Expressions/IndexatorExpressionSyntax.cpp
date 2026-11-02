@@ -40,15 +40,15 @@ void IndexatorExpressionSyntax::set_arguments(ArgumentsListSyntax* arguments)
 
 TextLocation IndexatorExpressionSyntax::get_location() const
 {
-	if (!(m_previous == nullptr))
+	if (m_previous != nullptr)
 	{
-		if (!(m_arguments == nullptr))
+		if (m_arguments != nullptr)
 			return TextLocation(m_previous->get_location(), m_arguments->get_close_token());
 
 		return TextLocation(m_previous->get_location(), m_delimeterToken);
 	}
 
-	if (!(m_arguments == nullptr))
+	if (m_arguments != nullptr)
 		return m_arguments->get_location();
 
 	return m_delimeterToken.get_location();

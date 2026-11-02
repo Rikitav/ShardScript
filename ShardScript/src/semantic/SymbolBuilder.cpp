@@ -77,7 +77,7 @@ SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view
 	m_symbol = m_factory.create_struct(name, parent);
 	m_symbol->set_accesibility(ACS_PUBLIC);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -145,7 +145,7 @@ SymbolBuilder<InterfaceSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_v
 {
 	m_symbol = m_factory.create_interface(name, parent, ACS_PUBLIC);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -194,7 +194,7 @@ SymbolBuilder<EnumSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view n
 	m_symbol = m_factory.create_enum(name, parent, isFlags);
 	m_symbol->set_accesibility(ACS_PUBLIC);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -233,7 +233,7 @@ SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view 
 	m_symbol = m_factory.create_field(name, parent, type, linking);
 	m_symbol->set_accesibility(access);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -259,7 +259,7 @@ SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view
 	m_symbol = m_factory.create_method(name, parent, returnType, linking);
 	m_symbol->set_accesibility(access);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -303,7 +303,7 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_may_throw(bool val
 
 SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!(type == nullptr))
+	if (type != nullptr)
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -346,7 +346,7 @@ SymbolBuilder<ConstructorSymbol>::SymbolBuilder(SymbolTable& table, SymbolAccesi
 {
 	m_symbol = m_factory.create_constructor(parent, access);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -379,7 +379,7 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_may_thro
 
 SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!(type == nullptr))
+	if (type != nullptr)
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -425,7 +425,7 @@ SymbolBuilder<OperatorSymbol>::SymbolBuilder(SymbolTable& table, TokenType opera
 	m_symbol->set_linking(linking);
 	m_symbol->set_accesibility(access);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -458,7 +458,7 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_may_throw(bool
 
 SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!(type == nullptr))
+	if (type != nullptr)
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -502,7 +502,7 @@ SymbolBuilder<PropertySymbol>::SymbolBuilder(SymbolTable& table, std::wstring_vi
 	m_symbol = m_factory.create_property(name, parent, type, linking);
 	m_symbol->set_accesibility(access);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -542,7 +542,7 @@ SymbolBuilder<IndexatorSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_v
 	m_symbol->set_linking(linking);
 	m_symbol->set_accesibility(access);
 
-	if (!(parent == nullptr))
+	if (parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -645,7 +645,7 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_may_throw(bool
 
 SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!(type == nullptr))
+	if (type != nullptr)
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -686,15 +686,15 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_has_unknown_si
 SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
-	bool isMethodParent = !(parent == nullptr) && parent->get_kind() == SyntaxKind::FunctionDeclaration;
-	bool isTypeParent = !(parent == nullptr) && parent->is_type();
+	bool isMethodParent = parent != nullptr && parent->get_kind() == SyntaxKind::FunctionDeclaration;
+	bool isTypeParent = parent != nullptr && parent->is_type();
 
 	if (isMethodParent)
 		m_symbol = m_factory.create_type_parameter(name, static_cast<MethodSymbol*>(parent));
 	else if (isTypeParent)
 		m_symbol = m_factory.create_type_parameter(name, static_cast<StructSymbol*>(parent));
 
-	if (!(m_symbol == nullptr) && !(parent == nullptr))
+	if (m_symbol != nullptr && parent != nullptr)
 		parent->on_symbol_declared(m_symbol);
 }
 
@@ -703,7 +703,7 @@ SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& context, s
 
 SymbolBuilder<TypeParameterSymbol>& SymbolBuilder<TypeParameterSymbol>::add_constraint(StructSymbol* constraint)
 {
-	if (!(constraint == nullptr))
+	if (constraint != nullptr)
 		m_symbol->add_constraint(constraint);
 
 	return *this;

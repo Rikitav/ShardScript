@@ -81,7 +81,7 @@ namespace
 
 	bool is_nullable(StructSymbol* type)
 	{
-		return !(type == nullptr) && type->get_kind() == SyntaxKind::NullableType;
+		return type != nullptr && type->get_kind() == SyntaxKind::NullableType;
 	}
 }
 
@@ -315,7 +315,7 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 			{
 				for (ArgumentSyntax* const& argument : invocation->get_arguments()->get_arguments())
 				{
-					if (!(argument == nullptr))
+					if (argument != nullptr)
 						analyze_expression(argument->get_expression());
 				}
 			}
@@ -332,7 +332,7 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 			{
 				for (ArgumentSyntax* const& argument : indexator->get_arguments()->get_arguments())
 				{
-					if (!(argument == nullptr))
+					if (argument != nullptr)
 						analyze_expression(argument->get_expression());
 				}
 			}
@@ -388,7 +388,7 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 			{
 				for (ArgumentSyntax* const& argument : object->get_arguments()->get_arguments())
 				{
-					if (!(argument == nullptr))
+					if (argument != nullptr)
 						analyze_expression(argument->get_expression());
 				}
 			}
@@ -448,7 +448,7 @@ NullableFlowAnalyzer::ConditionalStates NullableFlowAnalyzer::analyze_condition(
 				valueSide = right;
 
 			SyntaxSymbol* local = tracked_root(valueSide);
-			if (!(local == nullptr))
+			if (local != nullptr)
 			{
 				analyze_expression(valueSide);
 
@@ -498,7 +498,7 @@ NullableFlowAnalyzer::ConditionalStates NullableFlowAnalyzer::analyze_condition(
 		if (member->get_identifier().get_lexeme() == L"HasValue")
 		{
 			SyntaxSymbol* local = tracked_root(member->get_previous());
-			if (!(local == nullptr))
+			if (local != nullptr)
 			{
 				analyze_expression(member->get_previous());
 
@@ -588,7 +588,7 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 			analyze_expression(initializer);
 
 			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(statement);
-			if ((!(symbol == nullptr)) && is_nullable(symbol_type(symbol)))
+			if ((symbol != nullptr) && is_nullable(symbol_type(symbol)))
 			{
 				if (initializer == nullptr)
 					m_state[symbol] = NullState::DEFINITELY_NULL;
@@ -787,7 +787,7 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 			if (is_assignment_token(binary->get_operator_token().get_type()))
 			{
 				SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(binary->get_left());
-				if ((!(symbol == nullptr)) && is_nullable(symbol_type(symbol)))
+				if ((symbol != nullptr) && is_nullable(symbol_type(symbol)))
 					assigned.insert(symbol);
 			}
 
@@ -816,7 +816,7 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 			{
 				for (ArgumentSyntax* const& argument : invocation->get_arguments()->get_arguments())
 				{
-					if (!(argument == nullptr))
+					if (argument != nullptr)
 						collect_assigned_expression(argument->get_expression(), assigned);
 				}
 			}
@@ -832,7 +832,7 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 			{
 				for (ArgumentSyntax* const& argument : indexator->get_arguments()->get_arguments())
 				{
-					if (!(argument == nullptr))
+					if (argument != nullptr)
 						collect_assigned_expression(argument->get_expression(), assigned);
 				}
 			}
@@ -896,7 +896,7 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 		case SyntaxKind::VariableStatement:
 		{
 			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(node);
-			if ((!(symbol == nullptr)) && is_nullable(symbol_type(symbol)))
+			if ((symbol != nullptr) && is_nullable(symbol_type(symbol)))
 				assigned.insert(symbol);
 
 			collect_assigned_expression(gmt::as<VariableStatementSyntax>(node)->get_expression(), assigned);
@@ -968,7 +968,7 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 
 			for (CatchClauseSyntax* const& clause : tryStatement->get_catch_clauses())
 			{
-				if (!(clause == nullptr))
+				if (clause != nullptr)
 					collect_assigned(clause->get_body(), assigned);
 			}
 
@@ -1009,7 +1009,7 @@ void NullableFlowAnalyzer::declare_parameters(MethodSymbol* method)
 
 	for (ParameterSymbol* const& parameter : method->get_parameters())
 	{
-		if (!(parameter == nullptr) && is_nullable(parameter->get_type()))
+		if (parameter != nullptr && is_nullable(parameter->get_type()))
 			m_state[parameter] = NullState::MAYBE_NULL;
 	}
 }
@@ -1033,7 +1033,7 @@ void NullableFlowAnalyzer::analyze_lambda(const LambdaExpressionSyntax* node)
 	if (!(node->get_parameters() == nullptr))
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_parameters());
-		if ((!(bound == nullptr)) && bound->is_method())
+		if ((bound != nullptr) && bound->is_method())
 			method = static_cast<MethodSymbol*>(bound);
 	}
 

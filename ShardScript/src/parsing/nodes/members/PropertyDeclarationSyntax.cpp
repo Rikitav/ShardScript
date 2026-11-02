@@ -108,7 +108,7 @@ TextLocation PropertyDeclarationSyntax::get_location() const
 	if (!m_closeBracketToken.is_missing())
 		return TextLocation(identifierToken, m_closeBracketToken);
 
-	if (!(m_type == nullptr))
+	if (m_type != nullptr)
 		return TextLocation(identifierToken, m_type->get_location());
 
 	return identifierToken.get_location();

@@ -162,7 +162,7 @@ void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	if (!(node->get_parameters() == nullptr))
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_parameters());
-		if (!(bound == nullptr) && bound->is_method())
+		if (bound != nullptr && bound->is_method())
 			symbol = static_cast<MethodSymbol*>(bound);
 	}
 
@@ -175,7 +175,7 @@ void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	declare_parameters(symbol);
 
 	const BlockSyntax* body = node->get_body();
-	if (!(body == nullptr))
+	if (body != nullptr)
 		body->accept(*this);
 
 	leave_frame();

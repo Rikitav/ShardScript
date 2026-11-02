@@ -17,7 +17,7 @@ FrameSlotRecipe FrameLayout::make_recipe(StructSymbol* type)
 	// type parameters resolve through the instantiation's combined type
 	// arguments (owner arguments first, then the method's own) when a
 	// concrete frame is materialized for a generic method instantiation
-	if (!(type == nullptr) && type->get_kind() == SyntaxKind::TypeParameter)
+	if (type != nullptr && type->get_kind() == SyntaxKind::TypeParameter)
 	{
 		recipe.typeParameterIndex = static_cast<std::int16_t>(static_cast<TypeParameterSymbol*>(type)->get_type_argument_index());
 		return recipe;

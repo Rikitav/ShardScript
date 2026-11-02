@@ -159,11 +159,11 @@ VirtualMachine::VirtualMachine(VirtualProgramImage& program, SemanticModel& mode
 	}
 
 	SyntaxSymbol* rangeMoveNext = table.get_standard_type(StandardTypes::RangeEnumerable_MoveNext);
-	if (!(rangeMoveNext == nullptr) && rangeMoveNext->is_method())
+	if (rangeMoveNext != nullptr && rangeMoveNext->is_method())
 		static_cast<MethodSymbol*>(rangeMoveNext)->set_function_pointer(reinterpret_cast<void*>(&native_range_move_next));
 
 	SyntaxSymbol* rangeCurrentGet = table.get_standard_type(StandardTypes::RangeEnumerable_Current_get);
-	if (!(rangeCurrentGet == nullptr) && rangeCurrentGet->is_method())
+	if (rangeCurrentGet != nullptr && rangeCurrentGet->is_method())
 		static_cast<MethodSymbol*>(rangeCurrentGet)->set_function_pointer(reinterpret_cast<void*>(&native_range_current_get));
 
 	m_async = gmt::make_unique<AsyncRuntime>(*this);
@@ -422,7 +422,7 @@ void VirtualMachine::inject_stack_trace(ObjectInstance exception, CallStackFrame
 	m_collector.add_root(exception);
 	ObjectInstance traceString = create_string(trace);
 
-	if (!(stackTraceField == nullptr))
+	if (stackTraceField != nullptr)
 	{
 		exception.set_field(stackTraceField, traceString);
 	}
@@ -672,7 +672,7 @@ ObjectInstance VirtualMachine::invoke_native(MethodSymbol* method, std::span<con
 
 	ObjectInstance result = state.get_return_value();
 	const TypeShape* returnShape = result.get_shape();
-	if (returnShape != nullptr && !returnShape->is_reference() && !(result == nullptr))
+	if (returnShape != nullptr && !returnShape->is_reference() && result != nullptr)
 	{
 		std::memcpy(m_returnScratch, result.get_memory(), returnShape->get_size());
 		result = ObjectInstance(returnShape, m_returnScratch);
@@ -711,7 +711,7 @@ ObjectInstance VirtualMachine::try_invoke_method(MethodSymbol* method, std::span
 	ObjectInstance result = invoke_method(method, arguments);
 
 	m_exceptionCapture = previousCapture;
-	if (!(capture == nullptr))
+	if (capture != nullptr)
 	{
 		outException = capture;
 		return ObjectInstance::null();
@@ -863,7 +863,7 @@ gmt::wstring VirtualMachine::get_unhandled_message() const
 		// reference payload before reading the string
 		ObjectInstance slot = m_unhandledException.get_field(messageField);
 		ObjectInstance message(slot.get_shape(), slot.as_pointer());
-		if (!(message == nullptr))
+		if (message != nullptr)
 			return PrimitiveMath::to_display_string(m_primitiveShapes, message);
 	}
 
@@ -1083,7 +1083,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 					wait_for_children(frame);
 
 				ObjectInstance fault = take_unobserved_fault(frame);
-				if (!(fault == nullptr))
+				if (fault != nullptr)
 				{
 					frame->set_current_exception(fault);
 					frame->set_interruption(InterruptionReason::ExceptionRaised);
@@ -1119,7 +1119,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 					wait_for_children(frame);
 
 				ObjectInstance fault = take_unobserved_fault(frame);
-				if (!(fault == nullptr))
+				if (fault != nullptr)
 				{
 					frame->set_current_exception(fault);
 					frame->set_interruption(InterruptionReason::ExceptionRaised);
@@ -1704,7 +1704,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				receiverShape = GarbageCollector::get_header(receiver.get_memory())->shape;
 
 			StructSymbol* receiverType = receiverShape->get_base_type();
-			if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::GenericType)
+			if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::GenericType)
 				receiverType = static_cast<GenericTypeSymbol*>(receiverType)->get_underlaying_type();
 
 			// the invoked implementation sees the receiver's concrete shape,
@@ -1773,7 +1773,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 					}
 				}
 
-				if (!(implementation == nullptr))
+				if (implementation != nullptr)
 				{
 					dispatch.receiverType = receiverType;
 					dispatch.interfaceMethod = interfaceMethod;
@@ -1854,7 +1854,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 
 			StructSymbol* returnType = delegateType->get_return_type();
-			if (!(returnType == nullptr) && returnType != m_model.get_table().get_void_primitive())
+			if (returnType != nullptr && returnType != m_model.get_table().get_void_primitive())
 				push_instance(frame, result);
 
 			break;
@@ -1865,7 +1865,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			StructSymbol* type = decoder.absorb_type_symbol();
 			ObjectInstance instance = frame->pop_entry();
 
-			bool outcome = !(instance == nullptr) && is_instance_of(instance.get_shape(), type);
+			bool outcome = instance != nullptr && is_instance_of(instance.get_shape(), type);
 			frame->push_entry(m_primitiveShapes.boolean, false, &outcome, sizeof(bool));
 			break;
 		}
@@ -1875,7 +1875,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			StructSymbol* type = decoder.absorb_type_symbol();
 			ObjectInstance instance = frame->pop_entry();
 
-			if (!(instance == nullptr) && is_instance_of(instance.get_shape(), type))
+			if (instance != nullptr && is_instance_of(instance.get_shape(), type))
 			{
 				push_instance(frame, instance);
 				break;

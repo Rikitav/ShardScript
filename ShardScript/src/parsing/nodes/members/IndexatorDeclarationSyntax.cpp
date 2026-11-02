@@ -85,10 +85,10 @@ TextLocation IndexatorDeclarationSyntax::get_location() const
 	if (!m_closeBracketToken.is_missing())
 		return TextLocation(identifierToken, m_closeBracketToken.get_location());
 
-	if (!(m_type == nullptr))
+	if (m_type != nullptr)
 		return TextLocation(identifierToken, m_type->get_location());
 
-	if (!(m_parametersList == nullptr))
+	if (m_parametersList != nullptr)
 		return TextLocation(identifierToken, m_parametersList->get_location());
 
 	return identifierToken.get_location();

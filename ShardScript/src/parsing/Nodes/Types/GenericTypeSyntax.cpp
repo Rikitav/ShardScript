@@ -54,9 +54,9 @@ gmt::wstring GenericTypeSyntax::get_qualifier() const
 
 TextLocation GenericTypeSyntax::get_location() const
 {
-	if (!(m_underlayingType == nullptr))
+	if (m_underlayingType != nullptr)
 	{
-		if (!(m_typeArguments == nullptr))
+		if (m_typeArguments != nullptr)
 			return TextLocation(m_underlayingType->get_location(), m_typeArguments->get_close_token());
 
 		return m_underlayingType->get_location();

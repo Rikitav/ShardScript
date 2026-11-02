@@ -65,10 +65,10 @@ TextLocation OperatorDeclarationSyntax::get_location() const
 	if (!m_semicolonToken.is_missing())
 		return TextLocation(location, m_semicolonToken.get_location());
 
-	if (!(m_body == nullptr))
+	if (m_body != nullptr)
 		return TextLocation(location, m_body->get_location());
 
-	if (!(m_returnType == nullptr))
+	if (m_returnType != nullptr)
 		return TextLocation(location, m_returnType->get_location());
 
 	return location;

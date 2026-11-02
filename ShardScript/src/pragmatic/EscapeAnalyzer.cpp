@@ -389,10 +389,10 @@ bool EscapeAnalyzer::is_fresh_invokation(const ExpressionSyntax* expression)
 		return false;
 
 	MethodSymbol* callee = nullptr;
-	if (!(expression == nullptr))
+	if (expression != nullptr)
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(expression);
-		if (!(bound == nullptr) && bound->is_method())
+		if (bound != nullptr && bound->is_method())
 			callee = static_cast<MethodSymbol*>(bound);
 	}
 
@@ -718,15 +718,15 @@ void EscapeAnalyzer::visit_binary_expression(const BinaryExpressionSyntax* node)
 	const ExpressionSyntax* left = node->get_left();
 	const ExpressionSyntax* right = node->get_right();
 
-	if (operatorType == TokenType::AssignOperator && !(left == nullptr) && !(right == nullptr))
+	if (operatorType == TokenType::AssignOperator && left != nullptr && right != nullptr)
 	{
 		if (left->get_kind() == SyntaxKind::IdentifierNameType)
 		{
 			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(left);
 
-			bool isLocal = !(symbol == nullptr);
+			bool isLocal = symbol != nullptr;
 			isLocal = isLocal && symbol->get_kind() == SyntaxKind::VariableStatement;
-			bool isParameter = !(symbol == nullptr);
+			bool isParameter = symbol != nullptr;
 			isParameter = isParameter && symbol->get_kind() == SyntaxKind::Parameter;
 
 			if (isLocal || isParameter)
@@ -740,7 +740,7 @@ void EscapeAnalyzer::visit_binary_expression(const BinaryExpressionSyntax* node)
 			expose_expression(right, EscapeLevel::GlobalEscape, EscapeChannel::Store);
 		}
 	}
-	else if (is_assignment_operator(operatorType) && !(right == nullptr))
+	else if (is_assignment_operator(operatorType) && right != nullptr)
 	{
 		expose_expression(right, EscapeLevel::GlobalEscape, EscapeChannel::Store);
 	}
@@ -760,23 +760,23 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 		if (nodeRef.has_value())
 		{
 			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
-			if (!(bound == nullptr) && bound->is_method())
+			if (bound != nullptr && bound->is_method())
 				callee = static_cast<MethodSymbol*>(bound);
 		}
 
 		// a statically known, concrete callee only exposes its arguments downward (ArgEscape);
 		// anything dispatched or unknown is an identity use escaping upward (E5)
 		bool calleeIsInterfaceMember = false;
-		if (!(callee == nullptr) && !(callee->get_parent() == nullptr))
+		if (callee != nullptr && !(callee->get_parent() == nullptr))
 			calleeIsInterfaceMember = callee->get_parent()->get_kind() == SyntaxKind::InterfaceDeclaration;
 
-		bool knownConcrete = !(callee == nullptr);
+		bool knownConcrete = callee != nullptr;
 		knownConcrete = knownConcrete && !callee->get_is_virtual();
 		knownConcrete = knownConcrete && !calleeIsInterfaceMember;
 
 		EscapeLevel argumentLevel = knownConcrete ? EscapeLevel::ArgEscape : EscapeLevel::GlobalEscape;
 
-		bool instanceCallee = !(callee == nullptr);
+		bool instanceCallee = callee != nullptr;
 		instanceCallee = instanceCallee && callee->get_linking() == LINK_INSTANCE;
 
 		const ExpressionSyntax* receiver = node->get_previous();
@@ -784,18 +784,18 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 
 		// extension shape: a bound static callee with one more parameter than
 		// explicit arguments consumes the receiver as its first parameter
-		bool extensionCallee = !(callee == nullptr);
+		bool extensionCallee = callee != nullptr;
 		extensionCallee = extensionCallee && callee->get_linking() == LINK_STATIC;
-		extensionCallee = extensionCallee && !(receiver == nullptr);
+		extensionCallee = extensionCallee && receiver != nullptr;
 		if (extensionCallee)
 		{
 			StructSymbol* receiverType = get_model().get_expression_type(receiver);
 			std::size_t explicitArguments = (arguments == nullptr) ? 0 : arguments->get_arguments().size();
-			extensionCallee = !(receiverType == nullptr);
+			extensionCallee = receiverType != nullptr;
 			extensionCallee = extensionCallee && callee->get_parameters().size() == explicitArguments + 1;
 		}
 
-		if (!(receiver == nullptr))
+		if (receiver != nullptr)
 		{
 			expose_expression(receiver, argumentLevel, EscapeChannel::UnknownCallee, true);
 
@@ -814,7 +814,7 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 			// a bare identifier call invokes a local (lambda or delegate variable);
 			// the identifier is a token, not a receiver expression
 			SyntaxSymbol* local = find_declared_local(node->get_identifier().get_lexeme());
-			if (!(local == nullptr))
+			if (local != nullptr)
 			{
 				add_event(ensure_local_id(local), argumentLevel, EscapeChannel::UnknownCallee);
 
@@ -823,7 +823,7 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 			}
 		}
 
-		if (!(arguments == nullptr))
+		if (arguments != nullptr)
 		{
 			const std::uint16_t parameterOffset = (instanceCallee || extensionCallee) ? 1 : 0;
 			const auto argumentNodes = arguments->get_arguments();
@@ -859,7 +859,7 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 	if (!node->is_array_creation() && nodeRef.has_value())
 	{
 		StructSymbol* type = get_model().get_expression_type(*nodeRef);
-		if (!(type == nullptr) && get_model().is_primitive_type(type))
+		if (type != nullptr && get_model().is_primitive_type(type))
 			isSite = false;
 	}
 
@@ -872,14 +872,14 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 		if (nodeRef.has_value())
 		{
 			SyntaxSymbol* boundSymbol = get_symbol_table().lookup_symbol(*nodeRef);
-			if (!(boundSymbol == nullptr) && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
+			if (boundSymbol != nullptr && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
 				constructor = static_cast<ConstructorSymbol*>(boundSymbol);
 		}
 
-		bool hasKnownConstructor = !(constructor == nullptr);
+		bool hasKnownConstructor = constructor != nullptr;
 
 		const ArgumentsListSyntax* arguments = node->get_arguments();
-		if (!(arguments == nullptr))
+		if (arguments != nullptr)
 		{
 			int siteId = isSite && nodeRef.has_value() ? ensure_site_id(*nodeRef) : -1;
 
@@ -896,7 +896,7 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 				const ExpressionSyntax* argumentExpression = argument->get_expression();
 
 				// constructor arguments are stored into the new object (E2): they escape wherever the object escapes
-				if (siteId >= 0 && !(argumentExpression == nullptr))
+				if (siteId >= 0 && argumentExpression != nullptr)
 				{
 					ExpressionRefs refs;
 					collect_expression_refs(argumentExpression, refs, false);
