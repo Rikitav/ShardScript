@@ -155,7 +155,7 @@ namespace
 			{
 				StructSymbol* argument = construction->substitute_type_parameter(underlaying->type_parameters.front());
 				bool hasArgument = argument != nullptr;
-				bool hasGenericTask = !(genericTask == nullptr) && genericTask->is_type();
+				bool hasGenericTask = genericTask != nullptr && genericTask->is_type();
 				if (hasArgument && hasGenericTask)
 				{
 					StructSymbol* arguments[1] = { argument };
@@ -499,7 +499,7 @@ void VirtualMachine::finish_async_frame(CallStackFrame* frame)
 
 	bool faulted = raised;
 	ObjectInstance fault = raised ? exception : take_unobserved_fault(frame);
-	if (!(fault == nullptr))
+	if (fault != nullptr)
 	{
 		faulted = true;
 		exception = fault;
@@ -510,7 +510,7 @@ void VirtualMachine::finish_async_frame(CallStackFrame* frame)
 	m_collector.unregister_frame(frame);
 	CallStackFrame::destroy(frame, &m_framePool);
 
-	if (!(ownState == nullptr))
+	if (ownState != nullptr)
 	{
 		// the frame block is recycled now; clear the record before anything
 		// walks the child frames again
@@ -548,7 +548,7 @@ void VirtualMachine::resume_frame(CallStackFrame* frame)
 		frame->set_suspended_at_return(false);
 
 		ObjectInstance fault = take_unobserved_fault(frame);
-		if (!(fault == nullptr))
+		if (fault != nullptr)
 		{
 			frame->set_current_exception(fault);
 			frame->set_interruption(InterruptionReason::ExceptionRaised);
@@ -872,7 +872,7 @@ void VirtualMachine::run_pending_continuation()
 		}
 	}
 
-	if (!(thrown == nullptr))
+	if (thrown != nullptr)
 		fail_task_state(job.resultState, thrown);
 	else if (status == static_cast<int>(TaskStatus::Faulted))
 		fail_task_state(job.resultState, sourceException);

@@ -433,7 +433,7 @@ void SyntaxVisitor::visit_try_statement(const TryStatementSyntax* node)
 
 	for (CatchClauseSyntax* const& clause : node->get_catch_clauses())
 	{
-		if (!(clause == nullptr))
+		if (clause != nullptr)
 			clause->accept(*this);
 	}
 }

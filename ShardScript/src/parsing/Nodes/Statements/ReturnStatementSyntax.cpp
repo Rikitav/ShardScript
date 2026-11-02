@@ -40,7 +40,7 @@ void ReturnStatementSyntax::set_semicolon(const SyntaxToken& token)
 
 TextLocation ReturnStatementSyntax::get_location() const
 {
-	if (!(m_expression == nullptr))
+	if (m_expression != nullptr)
 		return TextLocation(m_returnKeywordToken, m_expression->get_location());
 
 	return TextLocation(m_returnKeywordToken, m_semicolonToken);

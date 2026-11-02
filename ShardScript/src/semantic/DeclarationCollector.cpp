@@ -244,7 +244,7 @@ void DeclarationCollector::visit_struct_declaration(const StructDeclarationSynta
 		declare(symbol);
 
 		const SyntaxSymbol* parent = symbol->get_parent();
-		if (!(parent == nullptr) && !is_namespace_scope(parent))
+		if (parent != nullptr && !is_namespace_scope(parent))
 		{
 			get_diagnostics().report_error(node->get_location(), L"Structs can only be declared inside Namespace");
 		}
@@ -275,7 +275,7 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 		declare(symbol);
 
 		const SyntaxSymbol* parent = symbol->get_parent();
-		if (!(parent == nullptr) && !is_namespace_scope(parent))
+		if (parent != nullptr && !is_namespace_scope(parent))
 		{
 			get_diagnostics().report_error(node->get_location(), L"Interfaces can only be declared inside Namespace");
 		}
@@ -310,11 +310,11 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 			PropertySymbol* property = static_cast<PropertySymbol*>(memberSymbol);
 
 			AccessorSymbol* getter = property->get_getter();
-			if (!(getter == nullptr))
+			if (getter != nullptr)
 				getter->set_is_virtual(true);
 
 			AccessorSymbol* setter = property->get_setter();
-			if (!(setter == nullptr))
+			if (setter != nullptr)
 				setter->set_is_virtual(true);
 		}
 	}
@@ -335,7 +335,7 @@ void DeclarationCollector::visit_delegate_declaration(const DelegateDeclarationS
 		declare(symbol);
 
 		const SyntaxSymbol* parent = symbol->get_parent();
-		if (!(parent == nullptr) && !is_namespace_scope(parent))
+		if (parent != nullptr && !is_namespace_scope(parent))
 		{
 			get_diagnostics().report_error(node->get_location(), L"Delegates can only be declared inside Namespace");
 		}
@@ -366,7 +366,7 @@ void DeclarationCollector::visit_enum_declaration(const EnumDeclarationSyntax* n
 		declare(symbol);
 
 		const SyntaxSymbol* parent = symbol->get_parent();
-		if (!(parent == nullptr) && !is_namespace_scope(parent))
+		if (parent != nullptr && !is_namespace_scope(parent))
 		{
 			get_diagnostics().report_error(node->get_location(), L"Enums can only be declared inside Namespace");
 		}
@@ -519,7 +519,7 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 
 	if ((node->get_body() == nullptr))
 	{
-		bool parentIsInterface = !(parent == nullptr);
+		bool parentIsInterface = parent != nullptr;
 		parentIsInterface = parentIsInterface && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
 
 		if (!parentIsInterface)
@@ -527,7 +527,7 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 	}
 	else
 	{
-		bool parentIsInterface = !(parent == nullptr);
+		bool parentIsInterface = parent != nullptr;
 		parentIsInterface = parentIsInterface && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
 
 		if (parentIsInterface)
@@ -611,7 +611,7 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 	if (!(node->get_parameters_list() == nullptr))
 		node->get_parameters_list()->accept(*this);
 
-	if (!(ownerType == nullptr) && node->get_operator_token().get_type() == TokenType::Delimeter)
+	if (ownerType != nullptr && node->get_operator_token().get_type() == TokenType::Delimeter)
 	{
 		std::size_t dotCount = 0;
 		for (OperatorSymbol* const& op : ownerType->operators)
@@ -831,7 +831,7 @@ void DeclarationCollector::visit_accessor_declaration(const AccessorDeclarationS
 	else
 	{
 		IndexatorSymbol* indexator = lookup_symbol<IndexatorSymbol>(parentNode);
-		if (!(indexator == nullptr))
+		if (indexator != nullptr)
 			propertySymbol = indexator;
 	}
 

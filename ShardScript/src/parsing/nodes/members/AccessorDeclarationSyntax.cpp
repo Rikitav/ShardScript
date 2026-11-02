@@ -40,7 +40,7 @@ void AccessorDeclarationSyntax::set_body(BlockSyntax* body)
 
 TextLocation AccessorDeclarationSyntax::get_location() const
 {
-	if (!(m_body == nullptr))
+	if (m_body != nullptr)
 		return TextLocation(m_keywordToken, m_body->get_location());
 
 	if (!m_semicolonToken.is_missing())

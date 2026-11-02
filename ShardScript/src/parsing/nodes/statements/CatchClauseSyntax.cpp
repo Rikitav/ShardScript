@@ -60,10 +60,10 @@ void CatchClauseSyntax::set_body(StatementsBlockSyntax* body)
 
 TextLocation CatchClauseSyntax::get_location() const
 {
-	if (!(m_body == nullptr))
+	if (m_body != nullptr)
 		return TextLocation(m_catchKeywordToken, m_body->get_location());
 
-	if (!(m_exceptionType == nullptr))
+	if (m_exceptionType != nullptr)
 		return TextLocation(m_catchKeywordToken, m_exceptionType->get_location());
 
 	return m_catchKeywordToken.get_location();

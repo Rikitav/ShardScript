@@ -51,7 +51,7 @@ gmt::wstring QualifiedNameTypeSyntax::get_qualifier() const
 
 TextLocation QualifiedNameTypeSyntax::get_location() const
 {
-	if (!(m_left == nullptr))
+	if (m_left != nullptr)
 		return TextLocation(m_left->get_location(), m_identifierToken);
 
 	return m_identifierToken.get_location();

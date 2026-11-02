@@ -40,10 +40,10 @@ void BinaryExpressionSyntax::set_right(ExpressionSyntax* right)
 
 TextLocation BinaryExpressionSyntax::get_location() const
 {
-	if (!(m_left == nullptr) && !(m_right == nullptr))
+	if (m_left != nullptr && m_right != nullptr)
 		return TextLocation(m_left->get_location(), m_right->get_location());
 
-	if (!(m_left == nullptr))
+	if (m_left != nullptr)
 		return m_left->get_location();
 
 	return m_operatorToken.get_location();

@@ -60,15 +60,15 @@ void InvokationExpressionSyntax::set_arguments(ArgumentsListSyntax* arguments)
 
 TextLocation InvokationExpressionSyntax::get_location() const
 {
-	if (!(m_previous == nullptr))
+	if (m_previous != nullptr)
 	{
-		if (!(m_arguments == nullptr))
+		if (m_arguments != nullptr)
 			return TextLocation(m_previous->get_location(), m_arguments->get_close_token());
 
 		return TextLocation(m_previous->get_location(), m_identifierToken);
 	}
 
-	if (!(m_arguments == nullptr))
+	if (m_arguments != nullptr)
 		return TextLocation(m_identifierToken, m_arguments->get_location());
 
 	return m_identifierToken.get_location();

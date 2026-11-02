@@ -166,7 +166,7 @@ void TypeBinder::bind_expression(const ExpressionSyntax* expression)
 			bind_expression(invocation->get_previous());
 
 			const TypeArgumentsListSyntax* typeArguments = invocation->get_type_arguments();
-			if (!(typeArguments == nullptr))
+			if (typeArguments != nullptr)
 			{
 				for (TypeSyntax* const& argument : typeArguments->get_types())
 					argument->accept(*this);
@@ -218,7 +218,7 @@ void TypeBinder::import_namespace(const UsingDirectiveSyntax* node, NamespaceSym
 			continue;
 
 		SyntaxSymbol* existing = current->find_local(member->get_name());
-		if (!(existing == nullptr))
+		if (existing != nullptr)
 		{
 			if (existing != member)
 			{
@@ -256,7 +256,7 @@ void TypeBinder::bind_where_clauses(const WhereClausesListSyntax* clauses, const
 		TypeParameterSymbol* typeParameter = nullptr;
 		for (TypeParameterSymbol* const& candidate : typeParameters)
 		{
-			if (!(candidate == nullptr) && candidate->get_name() == parameterName)
+			if (candidate != nullptr && candidate->get_name() == parameterName)
 			{
 				typeParameter = candidate;
 				break;
@@ -303,7 +303,7 @@ void TypeBinder::bind_base_types(StructSymbol* symbol, const BaseTypesListSyntax
 		if (baseSymbol->get_kind() == SyntaxKind::GenericType)
 		{
 			StructSymbol* underlaying = static_cast<GenericTypeSymbol*>(baseSymbol)->get_underlaying_type();
-			if (!(underlaying == nullptr) && underlaying->get_kind() == SyntaxKind::InterfaceDeclaration)
+			if (underlaying != nullptr && underlaying->get_kind() == SyntaxKind::InterfaceDeclaration)
 			{
 				symbol->interfaces.push_back(baseSymbol);
 				continue;
@@ -340,7 +340,7 @@ void TypeBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 	for (MemberDeclarationSyntax* const& member : node->get_members())
 	{
 		SyntaxSymbol* memberSymbol = lookup_symbol<SyntaxSymbol>(member);
-		if (!(memberSymbol == nullptr))
+		if (memberSymbol != nullptr)
 			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
@@ -399,7 +399,7 @@ void TypeBinder::visit_struct_declaration(const StructDeclarationSyntax* node)
 	for (MemberDeclarationSyntax* const& member : node->get_members())
 	{
 		SyntaxSymbol* memberSymbol = lookup_symbol<SyntaxSymbol>(member);
-		if (!(memberSymbol == nullptr))
+		if (memberSymbol != nullptr)
 			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
@@ -429,7 +429,7 @@ void TypeBinder::visit_interface_declaration(const InterfaceDeclarationSyntax* n
 	for (MemberDeclarationSyntax* const& member : node->get_members())
 	{
 		SyntaxSymbol* memberSymbol = lookup_symbol<SyntaxSymbol>(member);
-		if (!(memberSymbol == nullptr))
+		if (memberSymbol != nullptr)
 			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
@@ -599,15 +599,15 @@ void TypeBinder::visit_property_declaration(const PropertyDeclarationSyntax* nod
 	symbol->set_return_type(propertyType);
 
 	FieldSymbol* backingField = symbol->get_backing_field();
-	if (!(backingField == nullptr))
+	if (backingField != nullptr)
 		backingField->set_return_type(propertyType);
 
 	AccessorSymbol* getter = symbol->get_getter();
-	if (!(getter == nullptr))
+	if (getter != nullptr)
 		getter->set_return_type(propertyType);
 
 	AccessorSymbol* setter = symbol->get_setter();
-	if (!(setter == nullptr) && !setter->get_parameters().empty())
+	if (setter != nullptr && !setter->get_parameters().empty())
 		setter->get_parameters()[0]->set_type(propertyType);
 
 	bind_expression(node->get_expression());
@@ -639,7 +639,7 @@ void TypeBinder::visit_indexator_declaration(const IndexatorDeclarationSyntax* n
 		symbol->set_return_type(propertyType);
 
 		AccessorSymbol* getter = symbol->get_getter();
-		if (!(getter == nullptr))
+		if (getter != nullptr)
 			getter->set_return_type(propertyType);
 	}
 
@@ -672,7 +672,7 @@ void TypeBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* nod
 		// index parameters join each accessor's own parameter list, followed
 		// by the implicit setter 'value' parameter
 		IndexatorSymbol* indexator = lookup_symbol<IndexatorSymbol>(parentNode);
-		if (!(indexator == nullptr))
+		if (indexator != nullptr)
 		{
 			for (ParameterSymbol* const& indexParameter : indexator->get_parameters())
 				symbol->on_symbol_declared(indexParameter);
@@ -687,7 +687,7 @@ void TypeBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* nod
 	else
 	{
 		PropertySymbol* property = lookup_symbol<PropertySymbol>(parentNode);
-		if (!(property == nullptr) && node->get_keyword().get_type() == TokenType::GetKeyword)
+		if (property != nullptr && node->get_keyword().get_type() == TokenType::GetKeyword)
 			symbol->set_return_type(property->get_return_type());
 	}
 
@@ -728,7 +728,7 @@ void TypeBinder::visit_try_statement(const TryStatementSyntax* node)
 		StructSymbol* exceptionType = nullptr;		if (!(clause->get_exception_type() == nullptr))
 			exceptionType = resolve_type(clause->get_exception_type());
 
-		if (!(exceptionType == nullptr))
+		if (exceptionType != nullptr)
 		{
 			StructSymbol* throwable = static_cast<StructSymbol*>(get_symbol_table().get_standard_type(StandardTypes::IThrowable));
 			if (!get_model().is_assignable_to(throwable, exceptionType))
@@ -736,7 +736,7 @@ void TypeBinder::visit_try_statement(const TryStatementSyntax* node)
 		}
 
 		VariableSymbol* catchVariable = lookup_symbol<VariableSymbol>(clause);
-		if (!(catchVariable == nullptr))
+		if (catchVariable != nullptr)
 			catchVariable->set_type(exceptionType);
 
 		if (!(clause->get_body() == nullptr))
@@ -893,7 +893,7 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 	{
 		for (SyntaxSymbol* member : get_symbol_table().get_root_namespace()->members)
 		{
-			if (!(member == nullptr) && member->is_type() && member->get_name() == name)
+			if (member != nullptr && member->is_type() && member->get_name() == name)
 			{
 				symbol = member;
 				break;
@@ -1046,7 +1046,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 	if (underlaying->type_parameters.size() != argumentCount)
 	{
 		StructSymbol* alternative = find_type_with_arity(get_symbol_table(), underlaying, argumentCount);
-		if (!(alternative == nullptr))
+		if (alternative != nullptr)
 		{
 			underlaying = alternative;
 			if (!(node->get_underlaying_type() == nullptr))

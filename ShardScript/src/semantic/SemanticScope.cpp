@@ -85,7 +85,7 @@ SyntaxSymbol* SemanticScope::lookup(gmt::StringReference name) const
 SyntaxSymbol* SemanticScope::lookup(std::wstring_view name) const
 {
 	SyntaxSymbol* local = find_local(name);
-	if (!(local == nullptr))
+	if (local != nullptr)
 		return local;
 
 	if (m_parent != nullptr)

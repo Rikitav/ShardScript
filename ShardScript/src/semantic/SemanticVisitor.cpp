@@ -11,7 +11,7 @@ namespace
 {
 	const SyntaxNode* get_compilation_unit(const SyntaxNode* node)
 	{
-		while (!(node == nullptr) && node->get_kind() != SyntaxKind::CompilationUnit)
+		while (node != nullptr && node->get_kind() != SyntaxKind::CompilationUnit)
 			node = node->get_parent();
 
 		return node;
@@ -92,7 +92,7 @@ void SemanticVisitor::declare(SyntaxSymbol* symbol)
 	if (owner == nullptr) // Top-level scopes carry a nullref owner (the compilation unit is not a symbol)
 		owner = scope->get_namespace();
 
-	if (!(owner == nullptr))
+	if (owner != nullptr)
 		owner->on_symbol_declared(symbol);
 }
 
@@ -112,7 +112,7 @@ bool SemanticVisitor::check_name_declared(SyntaxSymbol* const symbol)
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
 		SyntaxSymbol* local = scope->find_local(symbol->get_name_reference());
-		if (!(local == nullptr) && local != symbol)
+		if (local != nullptr && local != symbol)
 			return true;
 	}
 
@@ -192,7 +192,7 @@ bool SemanticVisitor::is_symbol_accessible(SyntaxSymbol* symbol, const SyntaxNod
 
 		const SyntaxNode* declarationFile = get_compilation_unit(symbolDeclaringNode);
 		const SyntaxNode* currentFile = get_compilation_unit(callSiteNode);
-		return !(declarationFile == nullptr) && declarationFile == currentFile;
+		return declarationFile != nullptr && declarationFile == currentFile;
 	}
 
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())

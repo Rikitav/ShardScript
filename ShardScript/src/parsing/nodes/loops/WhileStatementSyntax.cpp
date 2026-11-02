@@ -40,7 +40,7 @@ void WhileStatementSyntax::set_block(StatementsBlockSyntax* block)
 
 TextLocation WhileStatementSyntax::get_location() const
 {
-	if (!(m_block == nullptr))
+	if (m_block != nullptr)
 		return TextLocation(m_whileKeywordToken, m_block->get_location());
 
 	return m_whileKeywordToken.get_location();

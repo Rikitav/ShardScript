@@ -302,7 +302,7 @@ StructSymbol* ExpressionBinder::analyze_number_literal(const LiteralExpressionSy
 	bool expectedIsByte = expectedType == table.get_byte_primitive();
 	bool expectedIsNint = expectedType == table.get_nint_primitive();
 	bool matchesExpectedType = expectedIsByte || expectedIsNint;
-	if (!(expectedType == nullptr) && matchesExpectedType)
+	if (expectedType != nullptr && matchesExpectedType)
 	{
 		symbol->set_bound_type(expectedType);
 		return expectedType;
@@ -346,9 +346,9 @@ void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyn
 	for (ExpressionSyntax* const& value : values)
 	{
 		StructSymbol* valueType = get_expression_type(value);
-		if (!(valueType == nullptr) && !SemanticModel::are_types_equal(valueType, elementType))
+		if (valueType != nullptr && !SemanticModel::are_types_equal(valueType, elementType))
 			get_diagnostics().report_error(node->get_location(), L"Element have type different from collection's target type");
-		else if (!(valueType == nullptr) && get_model().is_assignable_to(elementType, valueType))
+		else if (valueType != nullptr && get_model().is_assignable_to(elementType, valueType))
 			record_conversion(value, elementType, valueType);
 	}
 

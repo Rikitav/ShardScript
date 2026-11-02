@@ -65,7 +65,7 @@ TextLocation FieldDeclarationSyntax::get_location() const
 	if (!m_semicolonToken.is_missing())
 		return TextLocation(identifierToken, m_semicolonToken);
 
-	if (!(m_type == nullptr))
+	if (m_type != nullptr)
 		return TextLocation(identifierToken, m_type->get_location());
 
 	return identifierToken.get_location();

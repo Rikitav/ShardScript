@@ -148,7 +148,7 @@ ArrayTypeSymbol* SymbolTable::find_or_create_array_type(StructSymbol* underlayin
 ArrayTypeSymbol* SymbolTable::find_or_create_array_type(StructSymbol* underlaying, std::size_t size)
 {
 	ArrayTypeSymbol* existing = find_array_type(underlaying, size);
-	if (!(existing == nullptr))
+	if (existing != nullptr)
 		return existing;
 
 	ArrayTypeSymbol* symbol = m_arena.emplace<ArrayTypeSymbol>(underlaying, m_rootNamespace);
@@ -162,7 +162,7 @@ ArrayTypeSymbol* SymbolTable::find_or_create_array_type(StructSymbol* underlayin
 GenericTypeSymbol* SymbolTable::find_or_create_generic_type(StructSymbol* underlaying, std::span<StructSymbol* const> typeArguments)
 {
 	GenericTypeSymbol* existing = find_generic_type(underlaying, typeArguments);
-	if (!(existing == nullptr))
+	if (existing != nullptr)
 		return existing;
 
 	GenericTypeSymbol* symbol = m_arena.emplace<GenericTypeSymbol>(underlaying, m_rootNamespace);
@@ -182,7 +182,7 @@ GenericTypeSymbol* SymbolTable::find_or_create_generic_type(StructSymbol* underl
 GenericMethodSymbol* SymbolTable::find_or_create_generic_method(MethodSymbol* underlaying, std::span<StructSymbol* const> typeArguments, StructSymbol* returnType)
 {
 	GenericMethodSymbol* existing = find_generic_method(underlaying, typeArguments);
-	if (!(existing == nullptr))
+	if (existing != nullptr)
 		return existing;
 
 	const SyntaxSymbol* parent = underlaying->get_parent();
@@ -220,11 +220,11 @@ NullableTypeSymbol* SymbolTable::find_nullable_type(StructSymbol* underlaying) c
 
 NullableTypeSymbol* SymbolTable::find_or_create_nullable_type(StructSymbol* underlaying)
 {
-	if (!(underlaying == nullptr) && underlaying->get_kind() == SyntaxKind::NullableType)
+	if (underlaying != nullptr && underlaying->get_kind() == SyntaxKind::NullableType)
 		return static_cast<NullableTypeSymbol*>(underlaying);
 
 	NullableTypeSymbol* existing = find_nullable_type(underlaying);
-	if (!(existing == nullptr))
+	if (existing != nullptr)
 		return existing;
 
 	NullableTypeSymbol* symbol = m_arena.emplace<NullableTypeSymbol>(underlaying, m_rootNamespace);

@@ -378,7 +378,7 @@ StructSymbol* ByteCodeEmitter::owner_type_of(MethodSymbol* method)
 {
 	// accessors are parented to their property, so walk to the enclosing type
 	const SyntaxSymbol* current = method->get_parent();
-	while (!(current == nullptr))
+	while (current != nullptr)
 	{
 		if (current->is_type())
 			return gmt::as<StructSymbol>(current);
@@ -398,7 +398,7 @@ bool ByteCodeEmitter::is_generic_definition(MethodSymbol* method)
 		return true;
 
 	StructSymbol* ownerType = owner_type_of(method);
-	return !(ownerType == nullptr) && !ownerType->type_parameters.empty();
+	return ownerType != nullptr && !ownerType->type_parameters.empty();
 }
 
 MethodSymbol* ByteCodeEmitter::resolve_call_target(const SyntaxNode* node, MethodSymbol* method, StructSymbol* receiverType)
@@ -410,13 +410,13 @@ MethodSymbol* ByteCodeEmitter::resolve_call_target(const SyntaxNode* node, Metho
 		return method;
 
 	StructSymbol* ownerType = owner_type_of(method);
-	const bool ownerGeneric = !(ownerType == nullptr) && !ownerType->type_parameters.empty();
+	const bool ownerGeneric = ownerType != nullptr && !ownerType->type_parameters.empty();
 	const bool methodGeneric = !method->get_type_parameters().empty();
 
 	if (!ownerGeneric && !methodGeneric)
 		return method;
 
-	bool interfaceOwner = !(ownerType == nullptr) && ownerType->get_kind() == SyntaxKind::InterfaceDeclaration;
+	bool interfaceOwner = ownerType != nullptr && ownerType->get_kind() == SyntaxKind::InterfaceDeclaration;
 	if (interfaceOwner || method->get_is_virtual())
 	{
 		unsupported(node, L"virtual generic method invokations");
@@ -438,7 +438,7 @@ MethodSymbol* ByteCodeEmitter::resolve_call_target(const SyntaxNode* node, Metho
 		// no inference site reached the emitter; the binder already reported it
 		return nullptr;
 	}
-	else if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::GenericType)
+	else if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::GenericType)
 	{
 		GenericTypeSymbol* constructed = static_cast<GenericTypeSymbol*>(receiverType);
 		for (TypeParameterSymbol* parameter : ownerType->type_parameters)
@@ -544,7 +544,7 @@ void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation
 		{
 			const ConstructorDeclarationSyntax* node = gmt::as<ConstructorDeclarationSyntax>(declaration);
 			const SyntaxSymbol* parent = open->get_parent();
-			if (!(parent == nullptr) && parent->is_type())
+			if (parent != nullptr && parent->is_type())
 				emit_field_initializers(gmt::as<StructSymbol>(parent));
 
 			emit_body(node->get_body());
@@ -554,7 +554,7 @@ void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation
 		case SyntaxKind::AccessorDeclaration:
 		{
 			AccessorSymbol* accessor = static_cast<AccessorSymbol*>(open);
-			if (!(accessor == nullptr))
+			if (accessor != nullptr)
 				emit_accessor_body(accessor);
 
 			break;
@@ -566,7 +566,7 @@ void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation
 			if (open->get_kind() == SyntaxKind::ConstructorDeclaration)
 			{
 				const SyntaxSymbol* parent = open->get_parent();
-				if (!(parent == nullptr) && parent->is_type())
+				if (parent != nullptr && parent->is_type())
 					emit_field_initializers(gmt::as<StructSymbol>(parent));
 			}
 
@@ -582,7 +582,7 @@ void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation
 void ByteCodeEmitter::unsupported(const SyntaxNode* blame, const wchar_t* feature)
 {
 	TextLocation location;
-	if (!(blame == nullptr))
+	if (blame != nullptr)
 		location = blame->get_location();
 
 	get_diagnostics().report_error(location, gmt::concat(feature, L" is not yet supported by the code generator"));
@@ -709,7 +709,7 @@ void ByteCodeEmitter::visit_constructor_declaration(const ConstructorDeclaration
 	begin_method(symbol);
 
 	const SyntaxSymbol* parent = symbol->get_parent();
-	if (!(parent == nullptr) && parent->is_type())
+	if (parent != nullptr && parent->is_type())
 		emit_field_initializers(gmt::as<StructSymbol>(parent));
 
 	emit_body(node->get_body());
@@ -728,7 +728,7 @@ void ByteCodeEmitter::visit_struct_declaration(const StructDeclarationSyntax* no
 	// own no ConstructorDeclaration node, so their body is field initializers
 	// only. The symbol-to-node map keeps the first binding, which for them is
 	// an arbitrary construction site, not a declaration
-	if (!(symbol == nullptr) && symbol->type_parameters.empty())
+	if (symbol != nullptr && symbol->type_parameters.empty())
 	{
 		for (ConstructorSymbol* constructor : symbol->constructors)
 		{
@@ -736,7 +736,7 @@ void ByteCodeEmitter::visit_struct_declaration(const StructDeclarationSyntax* no
 				continue;
 
 			const SyntaxNode* declaration = get_symbol_table().lookup_node(constructor);
-			if (!(declaration == nullptr) && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
+			if (declaration != nullptr && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
 				continue;
 
 			begin_method(constructor);
@@ -784,7 +784,7 @@ void ByteCodeEmitter::emit_accessor_body(AccessorSymbol* symbol)
 	PropertySymbol* property = (parent == nullptr) ? nullptr : gmt::as<PropertySymbol>(parent);
 	FieldSymbol* backing = (property == nullptr) ? nullptr : property->get_backing_field();
 
-	if (!(backing == nullptr))
+	if (backing != nullptr)
 	{
 		std::uint32_t fieldSlot = field_slot_index(backing);
 		if (property->get_getter() == symbol)

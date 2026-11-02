@@ -122,7 +122,7 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	}
 	else
 	{
-		if (!(method == nullptr) && !(method->get_return_type() == nullptr))
+		if (method != nullptr && !(method->get_return_type() == nullptr))
 			returnShape = pragmatic.find_or_create_type_shape(model, method->get_return_type());
 
 		if (layout != nullptr)

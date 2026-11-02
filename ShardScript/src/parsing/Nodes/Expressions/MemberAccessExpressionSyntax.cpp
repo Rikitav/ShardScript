@@ -40,7 +40,7 @@ void MemberAccessExpressionSyntax::set_identifier(const SyntaxToken& token)
 
 TextLocation MemberAccessExpressionSyntax::get_location() const
 {
-	if (!(m_previous == nullptr))
+	if (m_previous != nullptr)
 		return TextLocation(m_previous->get_location(), m_identifierToken);
 
 	return m_identifierToken.get_location();

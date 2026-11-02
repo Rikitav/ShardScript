@@ -42,7 +42,7 @@ void UnaryExpressionSyntax::set_is_postfix(bool isPostfix)
 
 TextLocation UnaryExpressionSyntax::get_location() const
 {
-	if (!(m_operand == nullptr))
+	if (m_operand != nullptr)
 		return TextLocation(m_operatorToken, m_operand->get_location());
 
 	return m_operatorToken.get_location();

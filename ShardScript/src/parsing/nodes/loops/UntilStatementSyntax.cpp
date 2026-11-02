@@ -40,7 +40,7 @@ void UntilStatementSyntax::set_block(StatementsBlockSyntax* block)
 
 TextLocation UntilStatementSyntax::get_location() const
 {
-	if (!(m_block == nullptr))
+	if (m_block != nullptr)
 		return TextLocation(m_untilKeywordToken, m_block->get_location());
 
 	return m_untilKeywordToken.get_location();

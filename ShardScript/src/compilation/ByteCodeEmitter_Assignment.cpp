@@ -35,7 +35,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		std::optional<const IndexatorExpressionSyntax*> indexatorRef = ref_from(indexator);
 
 		IndexatorSymbol* symbol = indexatorRef.has_value() ? lookup_symbol<IndexatorSymbol>(*indexatorRef) : nullptr;
-		if (!(symbol == nullptr))
+		if (symbol != nullptr)
 		{
 			MethodSymbol* setter = symbol->get_setter();
 			if (setter == nullptr)
@@ -79,7 +79,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		if (!(indexator->get_previous() == nullptr))
 			elementType = get_model().get_expression_type(indexator->get_previous());
 
-		if (!(elementType == nullptr) && elementType->get_kind() == SyntaxKind::ArrayType)
+		if (elementType != nullptr && elementType->get_kind() == SyntaxKind::ArrayType)
 			elementType = static_cast<ArrayTypeSymbol*>(elementType)->get_underlaying_type();
 
 		std::uint16_t temp = allocate_temporary(elementType, PlacementVerdict::Heap);
@@ -125,7 +125,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		}
 
 		FieldSymbol* captureField = capture_field_of(bound);
-		if (!(captureField == nullptr))
+		if (captureField != nullptr)
 		{
 			// the captured variable is a field of the box receiver (arg 0)
 			m_encoder.emit_load_local(0);
@@ -167,10 +167,10 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			return;
 		}
 
-		if (!(previous == nullptr) && is_identifier_target(previous))
+		if (previous != nullptr && is_identifier_target(previous))
 		{
 			SyntaxSymbol* previousBound = get_symbol_table().lookup_symbol(previous);
-			if (!(previousBound == nullptr) && local_verdict(previousBound) == PlacementVerdict::Scalar)
+			if (previousBound != nullptr && local_verdict(previousBound) == PlacementVerdict::Scalar)
 			{
 				std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
 				if (scalarSlot.has_value())
@@ -185,7 +185,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			}
 		}
 
-		if (!(previous == nullptr))
+		if (previous != nullptr)
 			previous->accept(*this);
 		else
 		{
@@ -232,7 +232,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		m_encoder.emit_store_local(temp);
 		eval_pop();
 
-		if (!(previous == nullptr))
+		if (previous != nullptr)
 			previous->accept(*this);
 		else
 		{
@@ -241,7 +241,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		}
 
 		const SyntaxSymbol* owner = property->get_parent();
-		bool interfaceDispatch = !(owner == nullptr) && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
+		bool interfaceDispatch = owner != nullptr && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
 		if (interfaceDispatch)
 			m_encoder.emit_call_interface(setter);
 		else
@@ -297,7 +297,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 		}
 
 		FieldSymbol* captureField = capture_field_of(bound);
-		if (!(captureField == nullptr))
+		if (captureField != nullptr)
 		{
 			m_encoder.emit_load_local(0);
 			eval_push(sizeof(void*));
@@ -349,7 +349,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			return;
 		}
 
-		if (!(previous == nullptr))
+		if (previous != nullptr)
 			previous->accept(*this);
 		else
 		{

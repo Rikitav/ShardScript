@@ -90,7 +90,7 @@ namespace
 
 		property->set_getter(getter);
 
-		if (!(setterCallback == nullptr))
+		if (setterCallback != nullptr)
 		{
 			AccessorSymbol* setter = table.emplace<AccessorSymbol>(L"set", property);
 			setter->set_return_type(table.get_void_primitive());

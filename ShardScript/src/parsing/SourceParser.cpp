@@ -280,7 +280,7 @@ TranslationUnitSyntax* SourceParser::read_compilation_unit(SourceProvider& reade
 				if (can_start_member_declaration(token.get_type()))
 				{
 					MemberDeclarationSyntax* member = read_member_declaration(reader, unit);
-					if (!(member == nullptr))
+					if (member != nullptr)
 						members.push_back(member);
 
 					break;
@@ -584,7 +584,7 @@ StructDeclarationSyntax* SourceParser::read_struct_declaration(SourceProvider& r
 				}
 
 				MemberDeclarationSyntax* member = read_member_declaration(reader, syntax);
-				if (!(member == nullptr))
+				if (member != nullptr)
 					members.push_back(member);
 			}
 
@@ -653,7 +653,7 @@ InterfaceDeclarationSyntax* SourceParser::read_interface_declaration(SourceProvi
 				}
 
 				MemberDeclarationSyntax* member = read_member_declaration(reader, syntax);
-				if (!(member == nullptr))
+				if (member != nullptr)
 					members.push_back(member);
 			}
 
@@ -743,7 +743,7 @@ EnumDeclarationSyntax* SourceParser::read_enum_declaration(SourceProvider& reade
 				if (current.get_type() == TokenType::Identifier)
 				{
 					EnumFieldDeclarationSyntax* field = read_enum_field_declaration(reader, syntax);
-					if (!(field == nullptr))
+					if (field != nullptr)
 						fields.push_back(field);
 				}
 				else
@@ -1554,7 +1554,7 @@ ParametersListSyntax* SourceParser::read_method_parameters(SourceProvider& reade
 		while (reader.can_consume())
 		{
 			ParameterSyntax* parameter = read_parameter(reader, syntax);
-			if (!(parameter == nullptr))
+			if (parameter != nullptr)
 				parameters.push_back(parameter);
 
 			if (!try_match(reader, { TokenType::Comma, TokenType::CloseCurl }, L"Expected ',' or ')'", 3))
@@ -1593,7 +1593,7 @@ ParametersListSyntax* SourceParser::read_indexer_parameters(SourceProvider& read
 		while (reader.can_consume())
 		{
 			ParameterSyntax* parameter = read_parameter(reader, syntax);
-			if (!(parameter == nullptr))
+			if (parameter != nullptr)
 				parameters.push_back(parameter);
 
 			if (!try_match(reader, { TokenType::Comma, TokenType::CloseSquare }, L"Expected ',' or ']'", 3))
@@ -1662,7 +1662,7 @@ ParametersListSyntax* SourceParser::read_lambda_parameters(SourceProvider& reade
 		while (reader.can_consume())
 		{
 			ParameterSyntax* parameter = read_lambda_parameter(reader, syntax);
-			if (!(parameter == nullptr))
+			if (parameter != nullptr)
 				parameters.push_back(parameter);
 
 			if (!try_match(reader, { TokenType::Comma, TokenType::PipeOperator }, L"Expected ',' or '|'", 3))
@@ -1719,7 +1719,7 @@ TypeParametersListSyntax* SourceParser::read_generic_type_parameters(SourceProvi
 		while (reader.can_consume())
 		{
 			TypeParameterSyntax* typeParameter = read_type_parameter(reader, syntax);
-			if (!(typeParameter == nullptr))
+			if (typeParameter != nullptr)
 				typeParameters.push_back(typeParameter);
 
 			if (!try_match(reader, { TokenType::Comma, TokenType::GreaterOperator }, L"Expected ',' or '>'", 3))
@@ -1770,7 +1770,7 @@ ArgumentsListSyntax* SourceParser::read_arguments_list(SourceProvider& reader, S
 		while (reader.can_consume())
 		{
 			ArgumentSyntax* argument = read_argument(reader, syntax);
-			if (!(argument == nullptr))
+			if (argument != nullptr)
 				arguments.push_back(argument);
 
 			if (!try_match(reader, { TokenType::Comma, TokenType::CloseCurl }, L"Expected ',' or ')'", 3))
@@ -1809,7 +1809,7 @@ TypeArgumentsListSyntax* SourceParser::read_type_arguments_list(SourceProvider& 
 		while (reader.can_consume())
 		{
 			TypeSyntax* type = read_type(reader, syntax);
-			if (!(type == nullptr))
+			if (type != nullptr)
 				types.push_back(type);
 
 			SyntaxToken closerToken{};
@@ -1970,7 +1970,7 @@ StatementsBlockSyntax* SourceParser::read_statements_block(SourceProvider& reade
 			break;
 
 		StatementSyntax* statement = read_statement(reader, syntax);
-		if (!(statement == nullptr))
+		if (statement != nullptr)
 			statements.push_back(statement);
 		else if (!try_synchronize(reader))
 			break; // no anchor anywhere; the block reader will resync at '}'
@@ -2295,7 +2295,7 @@ TryStatementSyntax* SourceParser::read_try_statement(SourceProvider& reader, Syn
 	while (reader.can_consume() && reader.current().get_type() == TokenType::CatchKeyword)
 	{
 		CatchClauseSyntax* clause = read_catch_clause(reader, syntax);
-		if (!(clause == nullptr))
+		if (clause != nullptr)
 			clauses.push_back(clause);
 		else
 			reader.consume(); // error recovery: guarantee progress
@@ -2424,7 +2424,7 @@ ExpressionSyntax* SourceParser::read_expression(SourceProvider& reader, SyntaxNo
 	}
 
 	ExpressionSyntax* left = read_operand(reader, parent);
-	while (!(left == nullptr) && reader.can_consume())
+	while (left != nullptr && reader.can_consume())
 	{
 		SyntaxToken operation = reader.current();
 		TokenType operationType = operation.get_type();
@@ -2673,7 +2673,7 @@ CollectionExpressionSyntax* SourceParser::read_collection_expression(SourceProvi
 		while (reader.can_consume())
 		{
 			ExpressionSyntax* value = read_expression(reader, syntax, 0);
-			if (!(value == nullptr))
+			if (value != nullptr)
 				values.push_back(value);
 
 			if (!try_match(reader, { TokenType::Comma, TokenType::CloseSquare }, L"Expected ',' or ']'", 3))
@@ -2892,7 +2892,7 @@ ArgumentsListSyntax* SourceParser::read_indexer_arguments_list(SourceProvider& r
 		while (reader.can_consume())
 		{
 			ArgumentSyntax* argument = read_argument(reader, syntax);
-			if (!(argument == nullptr))
+			if (argument != nullptr)
 				arguments.push_back(argument);
 
 			if (!try_match(reader, { TokenType::Comma, TokenType::CloseSquare }, L"Expected ',' or ']'", 3))

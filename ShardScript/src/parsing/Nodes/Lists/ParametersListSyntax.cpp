@@ -30,7 +30,7 @@ void ParameterSyntax::set_identifier(const SyntaxToken& token)
 
 TextLocation ParameterSyntax::get_location() const
 {
-	if (!(m_type == nullptr))
+	if (m_type != nullptr)
 		return TextLocation(m_identifierToken, m_type->get_location());
 
 	return m_identifierToken.get_location();

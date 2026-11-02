@@ -51,7 +51,7 @@ gmt::wstring ArrayTypeSyntax::get_qualifier() const
 
 TextLocation ArrayTypeSyntax::get_location() const
 {
-	if (!(m_underlayingType == nullptr))
+	if (m_underlayingType != nullptr)
 		return TextLocation(m_underlayingType->get_location(), m_closeBracketToken);
 
 	return m_openBracketToken.get_location();

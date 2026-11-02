@@ -40,9 +40,9 @@ void CastExpressionSyntax::set_target_type(TypeSyntax* targetType)
 
 TextLocation CastExpressionSyntax::get_location() const
 {
-	if (!(m_expression == nullptr))
+	if (m_expression != nullptr)
 	{
-		if (!(m_targetType == nullptr))
+		if (m_targetType != nullptr)
 			return TextLocation(m_expression->get_location(), m_targetType->get_location());
 
 		return m_expression->get_location();

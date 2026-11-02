@@ -86,7 +86,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 		// own no type and pass a null receiver
 		StructSymbol* receiverType = nullptr;
 		const SyntaxSymbol* parent = method->get_parent();
-		while (!(parent == nullptr))
+		while (parent != nullptr)
 		{
 			if (parent->is_type())
 			{
@@ -154,7 +154,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 
 		// array slots cannot carry their elements inline: an unbounded array
 		// type has no fixed payload, so arrays always normalize to heap
-		if (!(localType == nullptr) && localType->get_kind() == SyntaxKind::ArrayType)
+		if (localType != nullptr && localType->get_kind() == SyntaxKind::ArrayType)
 			verdict.verdict = PlacementVerdict::Heap;
 
 		// demote unconstructible scalars: dematerialized locals cannot run
@@ -162,12 +162,12 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 		// range-literal and call initializers degrade to plain stack placement
 		// instead; locals assigned a reference keep heap storage like any
 		// other composite
-		if (verdict.verdict == PlacementVerdict::Scalar && !(localType == nullptr) && !model.is_primitive_type(localType))
+		if (verdict.verdict == PlacementVerdict::Scalar && localType != nullptr && !model.is_primitive_type(localType))
 		{
 			const SyntaxNode* declaration = get_symbol_table().lookup_node(local);
 			bool keepScalar = false;
 
-			if (!(declaration == nullptr) && declaration->get_kind() == SyntaxKind::VariableStatement)
+			if (declaration != nullptr && declaration->get_kind() == SyntaxKind::VariableStatement)
 			{
 				const VariableStatementSyntax* variableNode = gmt::as<VariableStatementSyntax>(declaration);
 				const ExpressionSyntax* initializer = variableNode->get_expression();
@@ -190,11 +190,11 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 
 		// primitives bypass placement machinery entirely: dematerialization is
 		// composite-only, so a dead primitive local still gets a plain stack slot
-		if (verdict.verdict == PlacementVerdict::Scalar && !(localType == nullptr) && model.is_primitive_type(localType))
+		if (verdict.verdict == PlacementVerdict::Scalar && localType != nullptr && model.is_primitive_type(localType))
 			verdict.verdict = PlacementVerdict::Stack;
 
 		bool scalarLocal = verdict.verdict == PlacementVerdict::Scalar;
-		scalarLocal = scalarLocal && !(localType == nullptr);
+		scalarLocal = scalarLocal && localType != nullptr;
 		scalarLocal = scalarLocal && localType->get_kind() == SyntaxKind::StructDeclaration;
 		// primitives bypass placement machinery entirely: never dematerialized
 		scalarLocal = scalarLocal && !model.is_primitive_type(localType);
@@ -209,7 +209,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 		m_pragmatic.set_local_slot(method, local, argumentCount + variableIndex);
 
 		TypeShape* shape = nullptr;
-		if (!(localType == nullptr))
+		if (localType != nullptr)
 			shape = m_pragmatic.find_or_create_type_shape(model, localType);
 
 		variableShapes.push_back(shape);
@@ -283,7 +283,7 @@ void LayoutGenerator::visit_lambda_expression(const LambdaExpressionSyntax* node
 	if (!(node->get_parameters() == nullptr))
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_parameters());
-		if (!(bound == nullptr) && bound->is_method())
+		if (bound != nullptr && bound->is_method())
 			symbol = static_cast<MethodSymbol*>(bound);
 	}
 
@@ -302,7 +302,7 @@ void LayoutGenerator::visit_accessor_declaration(const AccessorDeclarationSyntax
 		return;
 
 	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
-	if (!(symbol == nullptr))
+	if (symbol != nullptr)
 		build_frame(symbol);
 }
 
@@ -331,7 +331,7 @@ void LayoutGenerator::visit_struct_declaration(const StructDeclarationSyntax* no
 			continue;
 
 		const SyntaxNode* declaration = get_symbol_table().lookup_node(constructor);
-		if (!(declaration == nullptr) && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
+		if (declaration != nullptr && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
 			continue;
 
 		build_frame(constructor);

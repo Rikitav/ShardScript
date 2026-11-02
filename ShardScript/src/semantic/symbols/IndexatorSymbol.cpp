@@ -25,10 +25,10 @@ void IndexatorSymbol::on_symbol_declared(SyntaxSymbol* symbol)
 		m_parameters.push_back(static_cast<ParameterSymbol*>(symbol));
 
 	AccessorSymbol* getter = get_getter();
-	if (!(getter == nullptr))
+	if (getter != nullptr)
 		getter->on_symbol_declared(symbol);
 
 	AccessorSymbol* setter = get_setter();
-	if (!(setter == nullptr))
+	if (setter != nullptr)
 		setter->on_symbol_declared(symbol);
 }

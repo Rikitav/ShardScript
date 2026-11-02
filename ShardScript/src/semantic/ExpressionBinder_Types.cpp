@@ -135,10 +135,10 @@ StructSymbol* ExpressionBinder::substitute_type_parameters(StructSymbol* type, G
 	if (type->get_kind() == SyntaxKind::TypeParameter)
 	{
 		StructSymbol* substituted = substitute_type_parameters(type, genericType);
-		if (!(substituted == nullptr) && substituted->get_kind() == SyntaxKind::TypeParameter)
+		if (substituted != nullptr && substituted->get_kind() == SyntaxKind::TypeParameter)
 			substituted = substitute_method_type_parameter(substituted, method, methodTypeArgs);
 
-		return !(substituted == nullptr) ? substituted : type;
+		return substituted != nullptr ? substituted : type;
 	}
 
 	if (type->get_kind() == SyntaxKind::GenericType)
@@ -156,7 +156,7 @@ StructSymbol* ExpressionBinder::substitute_type_parameters(StructSymbol* type, G
 			if (newArgument != argument)
 				changed = true;
 
-			newArguments.push_back(!(newArgument == nullptr) ? newArgument : argument);
+			newArguments.push_back(newArgument != nullptr ? newArgument : argument);
 		}
 
 		if (!changed)
@@ -218,10 +218,10 @@ void ExpressionBinder::visit_cast_expression(const CastExpressionSyntax* node)
 	OperatorSymbol* targetOperator = find_conversion_operator(targetType, sourceType, targetType);
 
 	int conversionCount = 0;
-	if (!(sourceOperator == nullptr))
+	if (sourceOperator != nullptr)
 		conversionCount++;
 
-	if (!(targetOperator == nullptr) && targetOperator != sourceOperator)
+	if (targetOperator != nullptr && targetOperator != sourceOperator)
 		conversionCount++;
 
 	if (conversionCount > 1)
@@ -233,11 +233,11 @@ void ExpressionBinder::visit_cast_expression(const CastExpressionSyntax* node)
 		return;
 	}
 
-	if (!(sourceOperator == nullptr) || !(targetOperator == nullptr))
+	if (sourceOperator != nullptr || targetOperator != nullptr)
 	{
 		if (nodeRef.has_value())
 		{
-			OperatorSymbol* conversion = !(sourceOperator == nullptr) ? sourceOperator : targetOperator;
+			OperatorSymbol* conversion = sourceOperator != nullptr ? sourceOperator : targetOperator;
 			get_symbol_table().bind_symbol<OperatorSymbol>(*nodeRef, conversion);
 			set_expression_type(*nodeRef, targetType);
 		}

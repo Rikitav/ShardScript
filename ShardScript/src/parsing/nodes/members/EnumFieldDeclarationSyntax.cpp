@@ -42,7 +42,7 @@ TextLocation EnumFieldDeclarationSyntax::get_location() const
 {
 	SyntaxToken identifierToken = get_identifier();
 
-	if (!(m_expression == nullptr))
+	if (m_expression != nullptr)
 		return TextLocation(identifierToken, m_expression->get_location());
 
 	if (!m_assignToken.is_missing())
