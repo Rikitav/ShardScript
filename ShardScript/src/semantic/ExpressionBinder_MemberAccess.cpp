@@ -41,7 +41,6 @@ bool ExpressionBinder::get_is_static_context(const ExpressionSyntax* expression)
 
 static StructSymbol* unwrap_nullable(StructSymbol* type)
 {
-	// TODO: pragmatic analysis — full nullable member-access semantics
 	while (!(type == nullptr) && type->get_kind() == SyntaxKind::NullableType)
 		type = static_cast<NullableTypeSymbol*>(type)->get_underlaying_type();
 
@@ -154,6 +153,7 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 			symbol = find_property_on(table, constraint, memberName);
 			if (symbol == nullptr)
 				symbol = find_field_on(table, constraint, memberName);
+
 			if (symbol == nullptr)
 				symbol = find_method_on(table, constraint, memberName);
 
@@ -170,6 +170,7 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 		symbol = find_property_on(table, currentType, memberName);
 		if (symbol == nullptr)
 			symbol = find_field_on(table, currentType, memberName);
+
 		if (symbol == nullptr)
 			symbol = find_method_on(table, currentType, memberName);
 

@@ -188,15 +188,16 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	}
 
 	bool stackPlaced = verdict == PlacementVerdict::Stack || verdict == PlacementVerdict::StackReturn;
-	bool hasConversion = get_model().get_nullable_conversion(initializer).kind != NullableConversionKind::None;
+	bool hasConversion = get_model().get_nullable_conversion(initializer).kind != NullableConversionKind::NONE;
+	bool specialPlacement = !hasConversion && stackPlaced;
 
-	if (!hasConversion && stackPlaced && initializer->get_kind() == SyntaxKind::ObjectExpression)
+	if (specialPlacement && initializer->get_kind() == SyntaxKind::ObjectExpression)
 	{
 		emit_object_construction(gmt::as<ObjectExpressionSyntax>(initializer), *slot);
 		return;
 	}
 
-	if (!hasConversion && stackPlaced && initializer->get_kind() == SyntaxKind::RangeExpression)
+	if (specialPlacement && initializer->get_kind() == SyntaxKind::RangeExpression)
 	{
 		emit_range_cursor(initializer, *slot);
 		return;
@@ -204,7 +205,7 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 
 	// composite-returning calls write straight into the local's slot through
 	// the chained return storage instead of bouncing a pointer off the heap
-	if (!hasConversion && stackPlaced && initializer->get_kind() == SyntaxKind::InvokationExpression)
+	if (specialPlacement && initializer->get_kind() == SyntaxKind::InvokationExpression)
 	{
 		MethodSymbol* intoMethod = into_call_method(initializer);
 		if (!(intoMethod == nullptr))
@@ -228,7 +229,8 @@ void ByteCodeEmitter::visit_return_statement(const ReturnStatementSyntax* node)
 	const ExpressionSyntax* expression = node->get_expression();
 
 	bool hasConversion = !(expression == nullptr);
-	hasConversion = hasConversion && get_model().get_nullable_conversion(expression).kind != NullableConversionKind::None;
+	if (hasConversion)
+		hasConversion = get_model().get_nullable_conversion(expression).kind != NullableConversionKind::NONE;
 
 	// tail calls forward the current frame's return slot: the callee writes
 	// its result straight into the caller's chained return storage

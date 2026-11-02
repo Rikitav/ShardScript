@@ -90,10 +90,14 @@ void ByteCodeEmitter::update_min_eval_payload()
 
 	auto isNullable = [](const TypeShape* shape)
 	{
-		if ((shape == nullptr) || (shape->get_base_type() == nullptr))
+		if (shape == nullptr)
 			return false;
 
-		return shape->get_base_type()->get_kind() == SyntaxKind::NullableType;
+		StructSymbol* baseType = shape->get_base_type();
+		if (baseType == nullptr)
+			return false;
+
+		return baseType->get_kind() == SyntaxKind::NullableType;
 	};
 
 	for (std::size_t i = 0; i < m_layout->get_argument_shape_count(); ++i)

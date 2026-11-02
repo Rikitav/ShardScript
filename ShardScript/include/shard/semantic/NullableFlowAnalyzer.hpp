@@ -5,17 +5,15 @@
 
 #include <gmt/Containers.hpp>
 
-#include <unordered_set>
-
 namespace shard
 {
 	class SHARD_API NullableFlowAnalyzer final : public SemanticVisitor
 	{
 		enum class NullState
 		{
-			Null,
-			MaybeNull,
-			NotNull
+			DEFINITELY_NULL,
+			MAYBE_NULL,
+			NOT_NULL
 		};
 
 		using State = gmt::unordered_map<SyntaxSymbol*, NullState>;

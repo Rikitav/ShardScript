@@ -425,7 +425,7 @@ void EscapeAnalyzer::mark_wrap_identity(const ExpressionSyntax* expression)
 	if (expression == nullptr)
 		return;
 
-	if (get_model().get_nullable_conversion(expression).kind != NullableConversionKind::Wrap)
+	if (get_model().get_nullable_conversion(expression).kind != NullableConversionKind::WRAP)
 		return;
 
 	mark_identity(expression, false);

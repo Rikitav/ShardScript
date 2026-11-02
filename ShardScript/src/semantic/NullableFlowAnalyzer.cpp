@@ -42,7 +42,6 @@
 #include <shard/parsing/nodes/expressions/InvokationExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/IsExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/LambdaExpressionSyntax.hpp>
-#include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/ObjectExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/RangeExpressionSyntax.hpp>
@@ -57,8 +56,6 @@
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <gmt/Containers.hpp>
-
-#include <utility>
 
 using namespace shard;
 
@@ -103,7 +100,7 @@ NullableFlowAnalyzer::NullState NullableFlowAnalyzer::join(NullState left, NullS
 	if (left == right)
 		return left;
 
-	return NullState::MaybeNull;
+	return NullState::MAYBE_NULL;
 }
 
 NullableFlowAnalyzer::State NullableFlowAnalyzer::merge(const State& left, const State& right)
@@ -113,14 +110,14 @@ NullableFlowAnalyzer::State NullableFlowAnalyzer::merge(const State& left, const
 	for (const auto& pair : left)
 	{
 		auto choice = right.find(pair.first);
-		NullState other = choice != right.end() ? choice->second : NullState::MaybeNull;
+		NullState other = choice != right.end() ? choice->second : NullState::MAYBE_NULL;
 		result[pair.first] = join(pair.second, other);
 	}
 
 	for (const auto& pair : right)
 	{
 		if (left.find(pair.first) == left.end())
-			result[pair.first] = NullState::MaybeNull;
+			result[pair.first] = NullState::MAYBE_NULL;
 	}
 
 	return result;
@@ -159,20 +156,20 @@ SyntaxSymbol* NullableFlowAnalyzer::tracked_root(const ExpressionSyntax* express
 NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const ExpressionSyntax* expression)
 {
 	if (expression == nullptr)
-		return NullState::MaybeNull;
+		return NullState::MAYBE_NULL;
 
 	SemanticModel& model = get_model();
 	StructSymbol* type = model.get_expression_type(expression);
 
 	if (model.is_null_type(type))
-		return NullState::Null;
+		return NullState::DEFINITELY_NULL;
 
 	NullableConversion conversion = model.get_nullable_conversion(expression);
-	if (conversion.kind == NullableConversionKind::Wrap)
-		return NullState::NotNull;
+	if (conversion.kind == NullableConversionKind::WRAP)
+		return NullState::NOT_NULL;
 
-	if (conversion.kind == NullableConversionKind::Default)
-		return NullState::Null;
+	if (conversion.kind == NullableConversionKind::DEFAULT)
+		return NullState::DEFINITELY_NULL;
 
 	switch (expression->get_kind())
 	{
@@ -183,14 +180,14 @@ NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const 
 				break;
 
 			auto choice = m_state.find(symbol);
-			return choice != m_state.end() ? choice->second : NullState::MaybeNull;
+			return choice != m_state.end() ? choice->second : NullState::MAYBE_NULL;
 		}
 
 		case SyntaxKind::MemberAccessExpression:
 		{
 			const MemberAccessExpressionSyntax* member = gmt::as<MemberAccessExpressionSyntax>(expression);
 			if (member->get_identifier().get_lexeme() == L"Value")
-				return NullState::NotNull;
+				return NullState::NOT_NULL;
 
 			break;
 		}
@@ -202,14 +199,14 @@ NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const 
 				break;
 
 			NullState leftState = state_of_expression(binary->get_left());
-			if (leftState == NullState::NotNull)
-				return NullState::NotNull;
+			if (leftState == NullState::NOT_NULL)
+				return NullState::NOT_NULL;
 
 			NullState rightState = state_of_expression(binary->get_right());
-			if (leftState == NullState::Null)
+			if (leftState == NullState::DEFINITELY_NULL)
 				return rightState;
 
-			return rightState == NullState::NotNull ? NullState::NotNull : NullState::MaybeNull;
+			return rightState == NullState::NOT_NULL ? NullState::NOT_NULL : NullState::MAYBE_NULL;
 		}
 
 		case SyntaxKind::IfExpression:
@@ -225,12 +222,12 @@ NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const 
 	}
 
 	if (type == nullptr)
-		return NullState::MaybeNull;
+		return NullState::MAYBE_NULL;
 
 	if (!is_nullable(type))
-		return NullState::NotNull;
+		return NullState::NOT_NULL;
 
-	return NullState::MaybeNull;
+	return NullState::MAYBE_NULL;
 }
 
 void NullableFlowAnalyzer::report_unwrap(const ExpressionSyntax* expression)
@@ -243,10 +240,10 @@ void NullableFlowAnalyzer::report_unwrap(const ExpressionSyntax* expression)
 
 	switch (state_of_expression(expression))
 	{
-		case NullState::NotNull:
+		case NullState::NOT_NULL:
 			return;
 
-		case NullState::Null:
+		case NullState::DEFINITELY_NULL:
 			get_diagnostics().report_error(expression->get_location(), L"nullable value is always null here");
 			return;
 
@@ -271,7 +268,7 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 	if (expression == nullptr)
 		return;
 
-	if (get_model().get_nullable_conversion(expression).kind == NullableConversionKind::Unwrap)
+	if (get_model().get_nullable_conversion(expression).kind == NullableConversionKind::UNWRAP)
 		report_unwrap(expression);
 
 	switch (expression->get_kind())
@@ -361,8 +358,10 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 		}
 
 		case SyntaxKind::LambdaExpression:
+		{
 			analyze_lambda(gmt::as<LambdaExpressionSyntax>(expression));
 			break;
+		}
 
 		case SyntaxKind::CollectionExpression:
 		{
@@ -398,16 +397,22 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 		}
 
 		case SyntaxKind::AwaitExpression:
+		{
 			analyze_expression(gmt::as<AwaitExpressionSyntax>(expression)->get_expression());
 			break;
+		}
 
 		case SyntaxKind::CastExpression:
+		{
 			analyze_expression(gmt::as<CastExpressionSyntax>(expression)->get_expression());
 			break;
+		}
 
 		case SyntaxKind::IsExpression:
+		{
 			analyze_expression(gmt::as<IsExpressionSyntax>(expression)->get_expression());
 			break;
+		}
 
 		default:
 			break;
@@ -449,10 +454,10 @@ NullableFlowAnalyzer::ConditionalStates NullableFlowAnalyzer::analyze_condition(
 
 				bool checkIsNull = op == TokenType::EqualsOperator;
 				State nullState = m_state;
-				nullState[local] = NullState::Null;
+				nullState[local] = NullState::DEFINITELY_NULL;
 
 				State valueState = m_state;
-				valueState[local] = NullState::NotNull;
+				valueState[local] = NullState::NOT_NULL;
 
 				m_state = incoming;
 				result.whenTrue = checkIsNull ? nullState : valueState;
@@ -469,17 +474,8 @@ NullableFlowAnalyzer::ConditionalStates NullableFlowAnalyzer::analyze_condition(
 			ConditionalStates right = analyze_condition(binary->get_right());
 			m_state = incoming;
 
-			if (op == TokenType::AndOperator)
-			{
-				result.whenTrue = merge(left.whenTrue, right.whenTrue);
-				result.whenFalse = merge(left.whenFalse, right.whenFalse);
-			}
-			else
-			{
-				result.whenTrue = merge(left.whenTrue, right.whenTrue);
-				result.whenFalse = merge(left.whenFalse, right.whenFalse);
-			}
-
+			result.whenTrue = merge(left.whenTrue, right.whenTrue);
+			result.whenFalse = merge(left.whenFalse, right.whenFalse);
 			return result;
 		}
 	}
@@ -507,10 +503,10 @@ NullableFlowAnalyzer::ConditionalStates NullableFlowAnalyzer::analyze_condition(
 				analyze_expression(member->get_previous());
 
 				State nullState = m_state;
-				nullState[local] = NullState::Null;
+				nullState[local] = NullState::DEFINITELY_NULL;
 
 				State valueState = m_state;
-				valueState[local] = NullState::NotNull;
+				valueState[local] = NullState::NOT_NULL;
 
 				m_state = incoming;
 				result.whenTrue = valueState;
@@ -588,23 +584,26 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 		case SyntaxKind::VariableStatement:
 		{
 			const VariableStatementSyntax* variable = gmt::as<VariableStatementSyntax>(statement);
-			analyze_expression(variable->get_expression());
+			const ExpressionSyntax* initializer = variable->get_expression();
+			analyze_expression(initializer);
 
 			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(statement);
 			if ((!(symbol == nullptr)) && is_nullable(symbol_type(symbol)))
 			{
-				if (variable->get_expression() == nullptr)
-					m_state[symbol] = NullState::Null;
+				if (initializer == nullptr)
+					m_state[symbol] = NullState::DEFINITELY_NULL;
 				else
-					m_state[symbol] = state_of_expression(variable->get_expression());
+					m_state[symbol] = state_of_expression(initializer);
 			}
 
 			return true;
 		}
 
 		case SyntaxKind::ExpressionStatement:
+		{
 			analyze_expression(gmt::as<ExpressionStatementSyntax>(statement)->get_expression());
 			return true;
+		}
 
 		case SyntaxKind::IfStatement:
 			return analyze_conditional_clause(gmt::as<ConditionalClauseSyntax>(statement), false);
@@ -670,12 +669,16 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 		}
 
 		case SyntaxKind::ReturnStatement:
+		{
 			analyze_expression(gmt::as<ReturnStatementSyntax>(statement)->get_expression());
 			return false;
+		}
 
 		case SyntaxKind::ThrowStatement:
+		{
 			analyze_expression(gmt::as<ThrowStatementSyntax>(statement)->get_expression());
 			return false;
+		}
 
 		case SyntaxKind::BreakStatement:
 		case SyntaxKind::ContinueStatement:
@@ -761,8 +764,10 @@ bool NullableFlowAnalyzer::analyze_block(const BlockSyntax* block)
 		}
 
 		case SyntaxKind::ArrowClause:
+		{
 			analyze_expression(gmt::as<ArrowClauseSyntax>(block)->get_expression());
 			return false;
+		}
 
 		default:
 			return true;
@@ -792,12 +797,16 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 		}
 
 		case SyntaxKind::UnaryExpression:
+		{
 			collect_assigned_expression(gmt::as<UnaryExpressionSyntax>(expression)->get_operand(), assigned);
 			break;
+		}
 
 		case SyntaxKind::MemberAccessExpression:
+		{
 			collect_assigned_expression(gmt::as<MemberAccessExpressionSyntax>(expression)->get_previous(), assigned);
 			break;
+		}
 
 		case SyntaxKind::InvokationExpression:
 		{
@@ -841,16 +850,22 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 		}
 
 		case SyntaxKind::AwaitExpression:
+		{
 			collect_assigned_expression(gmt::as<AwaitExpressionSyntax>(expression)->get_expression(), assigned);
 			break;
+		}
 
 		case SyntaxKind::CastExpression:
+		{
 			collect_assigned_expression(gmt::as<CastExpressionSyntax>(expression)->get_expression(), assigned);
 			break;
+		}
 
 		case SyntaxKind::IsExpression:
+		{
 			collect_assigned_expression(gmt::as<IsExpressionSyntax>(expression)->get_expression(), assigned);
 			break;
+		}
 
 		default:
 			break;
@@ -873,8 +888,10 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 		}
 
 		case SyntaxKind::ArrowClause:
+		{
 			collect_assigned_expression(gmt::as<ArrowClauseSyntax>(node)->get_expression(), assigned);
 			break;
+		}
 
 		case SyntaxKind::VariableStatement:
 		{
@@ -887,8 +904,10 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 		}
 
 		case SyntaxKind::ExpressionStatement:
+		{
 			collect_assigned_expression(gmt::as<ExpressionStatementSyntax>(node)->get_expression(), assigned);
 			break;
+		}
 
 		case SyntaxKind::IfStatement:
 		case SyntaxKind::UnlessStatement:
@@ -901,8 +920,10 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 		}
 
 		case SyntaxKind::ElseStatement:
+		{
 			collect_assigned(gmt::as<ElseStatementSyntax>(node)->get_block(), assigned);
 			break;
+		}
 
 		case SyntaxKind::WhileStatement:
 		{
@@ -929,12 +950,16 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 		}
 
 		case SyntaxKind::ReturnStatement:
+		{
 			collect_assigned_expression(gmt::as<ReturnStatementSyntax>(node)->get_expression(), assigned);
 			break;
+		}
 
 		case SyntaxKind::ThrowStatement:
+		{
 			collect_assigned_expression(gmt::as<ThrowStatementSyntax>(node)->get_expression(), assigned);
 			break;
+		}
 
 		case SyntaxKind::TryStatement:
 		{
@@ -951,12 +976,16 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 		}
 
 		case SyntaxKind::DeferStatement:
+		{
 			collect_assigned_expression(gmt::as<DeferStatementSyntax>(node)->get_expression(), assigned);
 			break;
+		}
 
 		case SyntaxKind::DeferBlock:
+		{
 			collect_assigned(gmt::as<DeferBlockSyntax>(node)->get_block(), assigned);
 			break;
+		}
 
 		default:
 			break;
@@ -969,7 +998,7 @@ void NullableFlowAnalyzer::widen_assigned(const gmt::unordered_set<SyntaxSymbol*
 	{
 		auto choice = m_state.find(symbol);
 		if (choice != m_state.end())
-			choice->second = NullState::MaybeNull;
+			choice->second = NullState::MAYBE_NULL;
 	}
 }
 
@@ -981,7 +1010,7 @@ void NullableFlowAnalyzer::declare_parameters(MethodSymbol* method)
 	for (ParameterSymbol* const& parameter : method->get_parameters())
 	{
 		if (!(parameter == nullptr) && is_nullable(parameter->get_type()))
-			m_state[parameter] = NullState::MaybeNull;
+			m_state[parameter] = NullState::MAYBE_NULL;
 	}
 }
 

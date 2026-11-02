@@ -28,15 +28,15 @@ namespace shard
 {
 	enum class NullableConversionKind
 	{
-		None,
-		Wrap,
-		Default,
-		Unwrap
+		NONE,
+		WRAP,
+		DEFAULT,
+		UNWRAP
 	};
 
 	struct NullableConversion
 	{
-		NullableConversionKind kind = NullableConversionKind::None;
+		NullableConversionKind kind = NullableConversionKind::NONE;
 		StructSymbol* targetType = nullptr;
 	};
 
