@@ -259,6 +259,7 @@ ObjectInstance GarbageCollector::get_static_storage(FieldSymbol* field)
 	StaticStorage storage{};
 	storage.shape = shape;
 	storage.storage = static_cast<std::byte*>(gmt::mem_alloc(bytes));
+	std::memset(storage.storage, 0, bytes);
 	m_statics.emplace(key, storage);
 
 	return ObjectInstance(shape, storage.storage);

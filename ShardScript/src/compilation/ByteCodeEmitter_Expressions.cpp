@@ -269,12 +269,12 @@ void ByteCodeEmitter::emit_nullable_coalesce(const BinaryExpressionSyntax* node)
 	const ExpressionSyntax* left = node->get_left();
 	const ExpressionSyntax* right = node->get_right();
 
-	StructSymbol* leftType = model.get_expression_type(left);
+	StructSymbol* leftType = substitute_type(model.get_expression_type(left));
 	if ((leftType == nullptr) || leftType->get_kind() != SyntaxKind::NullableType)
 		return;
 
-	StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(leftType)->get_underlaying_type();
-	StructSymbol* resultType = model.get_expression_type(node);
+	StructSymbol* underlaying = substitute_type(static_cast<NullableTypeSymbol*>(leftType)->get_underlaying_type());
+	StructSymbol* resultType = substitute_type(model.get_expression_type(node));
 	bool resultNullable = !(resultType == nullptr) && resultType->get_kind() == SyntaxKind::NullableType;
 
 	std::int32_t entryDepth = m_evalDepth;
@@ -320,8 +320,8 @@ bool ByteCodeEmitter::emit_nullable_comparison(const BinaryExpressionSyntax* nod
 	const ExpressionSyntax* left = node->get_left();
 	const ExpressionSyntax* right = node->get_right();
 
-	StructSymbol* leftType = model.get_expression_type(left);
-	StructSymbol* rightType = model.get_expression_type(right);
+	StructSymbol* leftType = substitute_type(model.get_expression_type(left));
+	StructSymbol* rightType = substitute_type(model.get_expression_type(right));
 	bool leftIsNull = model.is_null_type(leftType);
 	bool rightIsNull = model.is_null_type(rightType);
 
@@ -599,7 +599,7 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 	const ExpressionSyntax* previous = node->get_previous();
 	if (!(previous == nullptr))
 	{
-		StructSymbol* receiverType = get_model().get_expression_type(previous);
+		StructSymbol* receiverType = substitute_type(get_model().get_expression_type(previous));
 		if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::NullableType)
 		{
 			std::wstring_view name = node->get_identifier().get_lexeme();
@@ -615,7 +615,7 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 
 			if (name == L"Value")
 			{
-				StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(receiverType)->get_underlaying_type();
+				StructSymbol* underlaying = substitute_type(static_cast<NullableTypeSymbol*>(receiverType)->get_underlaying_type());
 				m_encoder.emit_nullable_unwrap(receiverType);
 				eval_pop();
 				eval_push_type(underlaying);
@@ -830,26 +830,28 @@ void ByteCodeEmitter::emit_converted(const ExpressionSyntax* expression)
 	expression->accept(*this);
 
 	NullableConversion conversion = get_model().get_nullable_conversion(expression);
+	StructSymbol* targetType = substitute_type(conversion.targetType);
+
 	switch (conversion.kind)
 	{
 		case NullableConversionKind::Wrap:
-			m_encoder.emit_nullable_wrap(conversion.targetType);
+			m_encoder.emit_nullable_wrap(targetType);
 			eval_pop();
-			eval_push_type(conversion.targetType);
+			eval_push_type(targetType);
 			break;
 
 		case NullableConversionKind::Default:
-			m_encoder.emit_nullable_default(conversion.targetType);
+			m_encoder.emit_nullable_default(targetType);
 			eval_pop();
-			eval_push_type(conversion.targetType);
+			eval_push_type(targetType);
 			break;
 
 		case NullableConversionKind::Unwrap:
 		{
-			StructSymbol* sourceType = get_model().get_expression_type(expression);
+			StructSymbol* sourceType = substitute_type(get_model().get_expression_type(expression));
 			m_encoder.emit_nullable_unwrap(sourceType);
 			eval_pop();
-			eval_push_type(conversion.targetType);
+			eval_push_type(targetType);
 			break;
 		}
 
@@ -1217,7 +1219,7 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 
 	targetType = substitute_type(targetType);
 
-	StructSymbol* sourceType = get_model().get_expression_type(node->get_expression());
+	StructSymbol* sourceType = substitute_type(get_model().get_expression_type(node->get_expression()));
 	bool targetNullable = !(targetType == nullptr) && targetType->get_kind() == SyntaxKind::NullableType;
 	bool sourceNullable = !(sourceType == nullptr) && sourceType->get_kind() == SyntaxKind::NullableType;
 
