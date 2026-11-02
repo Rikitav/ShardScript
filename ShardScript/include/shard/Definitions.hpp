@@ -45,7 +45,7 @@
 #endif
 
 #if _DEBUG
-	#pragma warning(disable: 4251)
+	//#pragma warning(disable: 4251)
 #endif
 
 constexpr const char* SHARDSCRIPT_VERSION = "0.7.0";
