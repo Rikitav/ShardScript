@@ -5,8 +5,10 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/LiteralSymbol.hpp>
 
+#include <gmt/Concat.hpp>
 #include <gmt/Containers.hpp>
 
 #include <cerrno>
@@ -210,6 +212,41 @@ namespace
 	}
 }
 
+static bool is_default_constructible_type(SymbolTable& table, const StructSymbol* type)
+{
+	if (type == nullptr)
+		return false;
+
+	if (type == table.get_void_primitive() || type == table.get_null_primitive())
+		return false;
+
+	if (type == table.get_string_primitive() || type == table.get_array_primitive())
+		return false;
+
+	switch (type->get_kind())
+	{
+		case SyntaxKind::NullableType:
+		case SyntaxKind::EnumDeclaration:
+		case SyntaxKind::StructDeclaration:
+			return true;
+
+		case SyntaxKind::GenericType:
+		{
+			const StructSymbol* underlaying = static_cast<const GenericTypeSymbol*>(type)->get_underlaying_type();
+			if (underlaying == nullptr)
+				return false;
+
+			if (underlaying->get_kind() == SyntaxKind::InterfaceDeclaration)
+				return false;
+
+			return underlaying->get_kind() != SyntaxKind::DelegateType;
+		}
+
+		default:
+			return false;
+	}
+}
+
 StructSymbol* ExpressionBinder::analyze_literal_expression(const LiteralExpressionSyntax* node)
 {
 	const SyntaxToken literal = node->get_literal();
@@ -280,6 +317,38 @@ void ExpressionBinder::visit_literal_expression(const LiteralExpressionSyntax* n
 
 	if ((type == nullptr) && node->get_literal().get_type() != TokenType::NullLiteral)
 		get_diagnostics().report_error(node->get_location(), L"Unsupported literal type");
+}
+
+StructSymbol* ExpressionBinder::analyze_default_expression(const DefaultExpressionSyntax* node)
+{
+	StructSymbol* type = nullptr;
+	if (node->get_type() != nullptr)
+		type = resolve_type_expression(node->get_type());
+	else
+		type = resolve_left_denotation();
+
+	if (type == nullptr)
+	{
+		get_diagnostics().report_error(node->get_location(), L"Cannot deduce the type of 'default'; add an explicit type");
+		return nullptr;
+	}
+
+	if (!is_default_constructible_type(get_symbol_table(), type))
+	{
+		get_diagnostics().report_error(node->get_location(), gmt::concat(L"'default' cannot produce type '", get_model().get_type_display_name(type), L"'"));
+		return type;
+	}
+
+	return type;
+}
+
+void ExpressionBinder::visit_default_expression(const DefaultExpressionSyntax* node)
+{
+	StructSymbol* type = analyze_default_expression(node);
+
+	std::optional<const DefaultExpressionSyntax*> nodeRef = ref_from(node);
+	if (nodeRef.has_value())
+		set_expression_type(*nodeRef, type);
 }
 
 StructSymbol* ExpressionBinder::analyze_number_literal(const LiteralExpressionSyntax* node)

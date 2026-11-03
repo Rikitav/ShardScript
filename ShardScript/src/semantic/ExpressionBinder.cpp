@@ -377,16 +377,26 @@ void ExpressionBinder::visit_operator_declaration(const OperatorDeclarationSynta
 
 void ExpressionBinder::visit_field_declaration(const FieldDeclarationSyntax* node)
 {
-	const ExpressionSyntax* initializer = node->get_expression();
-	visit_expression(initializer);
-
 	std::optional<const FieldDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
 	FieldSymbol* symbol = lookup_symbol<FieldSymbol>(*nodeRef);
+	const ExpressionSyntax* initializer = node->get_expression();
 	if ((symbol == nullptr) || (initializer == nullptr))
 		return;
+
+	StructSymbol* returnType = symbol->get_return_type();
+	if (returnType == nullptr)
+	{
+		get_diagnostics().report_error(node->get_location(), L"Field return type not resolved");
+		return;
+	}
+
+	LeftDenotationSymbol* denotation = get_symbol_table().emplace<LeftDenotationSymbol>(returnType, symbol);
+	push_scope(denotation);
+	visit_expression(initializer);
+	pop_scope();
 
 	StructSymbol* initializerType = get_expression_type(initializer);
 	if (initializerType == nullptr)
@@ -396,14 +406,7 @@ void ExpressionBinder::visit_field_declaration(const FieldDeclarationSyntax* nod
 	}
 
 	TextLocation location = node->get_location();
-	StructSymbol* returnType = symbol->get_return_type();
 	SemanticModel& model = get_model();
-
-	if (returnType == nullptr)
-	{
-		get_diagnostics().report_error(location, L"Field return type not resolved");
-		return;
-	}
 
 	if (!model.is_assignable_to(returnType, initializerType))
 	{
@@ -427,16 +430,32 @@ void ExpressionBinder::visit_property_declaration(const PropertyDeclarationSynta
 	if (!(symbol->get_parent() == nullptr) && !symbol->get_parent()->is_type())
 		return;
 
-	if (symbol->get_return_type() == get_symbol_table().get_void_primitive())
+	StructSymbol* returnType = symbol->get_return_type();
+	const ExpressionSyntax* initializer = node->get_expression();
+
+	if (returnType == get_symbol_table().get_void_primitive())
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Property '", node->get_identifier().get_lexeme(), L"' must have return value"));
 
-	visit_expression(node->get_expression());
-
-	if (!(node->get_expression() == nullptr) && !(symbol->get_return_type() == nullptr))
+	if (initializer != nullptr)
 	{
-		StructSymbol* initializerType = get_expression_type(node->get_expression());
-		if (initializerType != nullptr && get_model().is_assignable_to(symbol->get_return_type(), initializerType))
-			record_conversion(node->get_expression(), symbol->get_return_type(), initializerType);
+		if (returnType == nullptr)
+		{
+			visit_expression(initializer);
+		}
+		else
+		{
+			LeftDenotationSymbol* denotation = get_symbol_table().emplace<LeftDenotationSymbol>(returnType, symbol);
+			push_scope(denotation);
+			visit_expression(initializer);
+			pop_scope();
+		}
+	}
+
+	if (initializer != nullptr && returnType != nullptr)
+	{
+		StructSymbol* initializerType = get_expression_type(initializer);
+		if (initializerType != nullptr && get_model().is_assignable_to(returnType, initializerType))
+			record_conversion(initializer, returnType, initializerType);
 	}
 
 	push_scope(symbol);
@@ -729,7 +748,11 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 		return;
 	}
 
+	LeftDenotationSymbol* denotation = get_symbol_table().emplace<LeftDenotationSymbol>(returnType, returnOwner);
+	push_scope(denotation);
 	visit_expression(expression);
+	pop_scope();
+
 	StructSymbol* expressionType = get_expression_type(expression);
 	if (expressionType == nullptr)
 	{
@@ -981,13 +1004,27 @@ void ExpressionBinder::visit_statements_block(const StatementsBlockSyntax* node)
 void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 {
 	StructSymbol* returnType = find_target_return_type();
+	const ExpressionSyntax* expression = node->get_expression();
+	bool hasTarget = returnType != nullptr;
+	hasTarget = hasTarget && returnType != get_symbol_table().get_void_primitive();
 
-	visit_expression(node->get_expression());
+	LeftDenotationSymbol* denotation = nullptr;
+	if (expression != nullptr && hasTarget)
+	{
+		SyntaxSymbol* owner = find_target_return_owner();
+		denotation = get_symbol_table().emplace<LeftDenotationSymbol>(returnType, owner);
+		push_scope(denotation);
+	}
+
+	visit_expression(expression);
+
+	if (denotation != nullptr)
+		pop_scope();
 
 	// arrow bodies without an explicit return type infer it from the expression
 	if (returnType == nullptr)
 	{
-		StructSymbol* inferredType = get_expression_type(node->get_expression());
+		StructSymbol* inferredType = get_expression_type(expression);
 		if (inferredType == nullptr)
 		{
 			get_diagnostics().report_error(node->get_location(), L"Expression body return type could not be determined");
@@ -1005,7 +1042,7 @@ void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 	if (returnType == get_symbol_table().get_void_primitive())
 		return;
 
-	StructSymbol* expressionType = get_expression_type(node->get_expression());
+	StructSymbol* expressionType = get_expression_type(expression);
 	if (expressionType == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Expression body return type could not be determined");
@@ -1016,7 +1053,7 @@ void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 	if (!model.is_assignable_to(returnType, expressionType))
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
 	else
-		record_conversion(node->get_expression(), returnType, expressionType);
+		record_conversion(expression, returnType, expressionType);
 }
 
 

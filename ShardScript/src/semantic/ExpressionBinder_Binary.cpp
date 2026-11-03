@@ -181,10 +181,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 	SymbolTable& table = get_symbol_table();
 	SemanticModel& model = get_model();
 
-	const ExpressionSyntax* savedAssignmentTarget = m_assignmentTarget;
-	m_assignmentTarget = is_assignment_operator(op) ? node->get_left() : nullptr;
 	visit_expression(node->get_left());
-	m_assignmentTarget = savedAssignmentTarget;
 
 	StructSymbol* leftType = get_expression_type(node->get_left());
 
@@ -232,7 +229,21 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		}
 	}
 
+	bool coalesceTarget = op == TokenType::NullCoalescingOperator && leftType != nullptr;
+	coalesceTarget = coalesceTarget && leftType->get_kind() == SyntaxKind::NullableType;
+
+	LeftDenotationSymbol* coalesceDenotation = nullptr;
+	if (coalesceTarget)
+	{
+		StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(leftType)->get_underlaying_type();
+		coalesceDenotation = table.emplace<LeftDenotationSymbol>(underlaying, nullptr);
+		push_scope(coalesceDenotation);
+	}
+
 	visit_expression(node->get_right());
+
+	if (coalesceDenotation != nullptr)
+		pop_scope();
 
 	if (enumBitwiseContext)
 		pop_scope();

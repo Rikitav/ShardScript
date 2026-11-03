@@ -69,6 +69,7 @@ namespace shard
 		// Expressions
 		ObjectExpression,
 		LiteralExpression,
+		DefaultExpression,
 		BinaryExpression,
 		UnaryExpression,
 		TernaryExpression,

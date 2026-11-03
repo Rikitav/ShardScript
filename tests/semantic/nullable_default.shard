@@ -1,0 +1,55 @@
+using stdio;
+
+struct Defaults
+{
+    public Number: int = 7;
+    public Maybe: int?;
+}
+
+struct Explicit
+{
+    public Number: int;
+
+    public new()
+    {
+        this.Number = 9;
+    }
+}
+
+func Zero() -> int
+{
+    return default;
+}
+
+func Main() -> void
+{
+    a: int = default;
+    println(a);
+
+    b: int? = default;
+    println(b == null);
+
+    c := default(int);
+    println(c);
+
+    d := default(int?);
+    println(d == null);
+
+    m: int? = 5;
+    println(m ?? default);
+
+    n: int? = null;
+    println(n ?? default);
+
+    values: Defaults = default;
+    println(values.Number);
+    println(values.Maybe == null);
+
+    println(Zero());
+
+    text: string? = default;
+    println(text == null);
+
+    explicit: Explicit = default;
+    println(explicit.Number);
+}

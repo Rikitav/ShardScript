@@ -121,6 +121,7 @@ namespace shard
 		void visit_qualified_name_type(const QualifiedNameTypeSyntax* node) override;
 		void visit_array_type(const ArrayTypeSyntax* node) override;
 		void visit_nullable_type(const NullableTypeSyntax* node) override;
+		void visit_default_expression(const DefaultExpressionSyntax* node) override;
 		void visit_generic_type(const GenericTypeSyntax* node) override;
 	};
 }

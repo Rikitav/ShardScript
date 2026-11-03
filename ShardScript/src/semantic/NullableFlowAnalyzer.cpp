@@ -183,15 +183,6 @@ NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const 
 			return choice != m_state.end() ? choice->second : NullState::MAYBE_NULL;
 		}
 
-		case SyntaxKind::MemberAccessExpression:
-		{
-			const MemberAccessExpressionSyntax* member = gmt::as<MemberAccessExpressionSyntax>(expression);
-			if (member->get_identifier().get_lexeme() == L"Value")
-				return NullState::NOT_NULL;
-
-			break;
-		}
-
 		case SyntaxKind::BinaryExpression:
 		{
 			const BinaryExpressionSyntax* binary = gmt::as<BinaryExpressionSyntax>(expression);
@@ -207,6 +198,14 @@ NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const 
 				return rightState;
 
 			return rightState == NullState::NOT_NULL ? NullState::NOT_NULL : NullState::MAYBE_NULL;
+		}
+
+		case SyntaxKind::DefaultExpression:
+		{
+			if (type == nullptr)
+				break;
+
+			return is_nullable(type) ? NullState::DEFINITELY_NULL : NullState::NOT_NULL;
 		}
 
 		case SyntaxKind::IfExpression:
@@ -248,7 +247,7 @@ void NullableFlowAnalyzer::report_unwrap(const ExpressionSyntax* expression)
 			return;
 
 		default:
-			get_diagnostics().report_error(expression->get_location(), L"cannot prove that this nullable value is non-null; check for null, use ??, or use '.Value'");
+			get_diagnostics().report_error(expression->get_location(), L"cannot prove that this nullable value is non-null; check for null or use ??");
 			return;
 	}
 }
@@ -311,7 +310,7 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 			const InvokationExpressionSyntax* invocation = gmt::as<InvokationExpressionSyntax>(expression);
 			analyze_expression(invocation->get_previous());
 
-			if (!(invocation->get_arguments() == nullptr))
+			if (invocation->get_arguments() != nullptr)
 			{
 				for (ArgumentSyntax* const& argument : invocation->get_arguments()->get_arguments())
 				{
@@ -328,7 +327,7 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 			const IndexatorExpressionSyntax* indexator = gmt::as<IndexatorExpressionSyntax>(expression);
 			analyze_expression(indexator->get_previous());
 
-			if (!(indexator->get_arguments() == nullptr))
+			if (indexator->get_arguments() != nullptr)
 			{
 				for (ArgumentSyntax* const& argument : indexator->get_arguments()->get_arguments())
 				{
@@ -384,7 +383,7 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 			const ObjectExpressionSyntax* object = gmt::as<ObjectExpressionSyntax>(expression);
 			analyze_expression(object->get_array_size());
 
-			if (!(object->get_arguments() == nullptr))
+			if (object->get_arguments() != nullptr)
 			{
 				for (ArgumentSyntax* const& argument : object->get_arguments()->get_arguments())
 				{
@@ -489,30 +488,6 @@ NullableFlowAnalyzer::ConditionalStates NullableFlowAnalyzer::analyze_condition(
 			result.whenTrue = inner.whenFalse;
 			result.whenFalse = inner.whenTrue;
 			return result;
-		}
-	}
-
-	if (expression->get_kind() == SyntaxKind::MemberAccessExpression)
-	{
-		const MemberAccessExpressionSyntax* member = gmt::as<MemberAccessExpressionSyntax>(expression);
-		if (member->get_identifier().get_lexeme() == L"HasValue")
-		{
-			SyntaxSymbol* local = tracked_root(member->get_previous());
-			if (local != nullptr)
-			{
-				analyze_expression(member->get_previous());
-
-				State nullState = m_state;
-				nullState[local] = NullState::DEFINITELY_NULL;
-
-				State valueState = m_state;
-				valueState[local] = NullState::NOT_NULL;
-
-				m_state = incoming;
-				result.whenTrue = valueState;
-				result.whenFalse = nullState;
-				return result;
-			}
 		}
 	}
 
@@ -733,7 +708,7 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 		{
 			State saved = m_state;
 			const DeferVariableSyntax* defer = gmt::as<DeferVariableSyntax>(statement);
-			if (!(defer->get_variable() == nullptr))
+			if (defer->get_variable() != nullptr)
 				analyze_statement(defer->get_variable());
 
 			m_state = saved;
@@ -812,7 +787,7 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 		{
 			const InvokationExpressionSyntax* invocation = gmt::as<InvokationExpressionSyntax>(expression);
 			collect_assigned_expression(invocation->get_previous(), assigned);
-			if (!(invocation->get_arguments() == nullptr))
+			if (invocation->get_arguments() != nullptr)
 			{
 				for (ArgumentSyntax* const& argument : invocation->get_arguments()->get_arguments())
 				{
@@ -828,7 +803,7 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 		{
 			const IndexatorExpressionSyntax* indexator = gmt::as<IndexatorExpressionSyntax>(expression);
 			collect_assigned_expression(indexator->get_previous(), assigned);
-			if (!(indexator->get_arguments() == nullptr))
+			if (indexator->get_arguments() != nullptr)
 			{
 				for (ArgumentSyntax* const& argument : indexator->get_arguments()->get_arguments())
 				{
@@ -1030,7 +1005,7 @@ void NullableFlowAnalyzer::analyze_lambda(const LambdaExpressionSyntax* node)
 		return;
 
 	MethodSymbol* method = nullptr;
-	if (!(node->get_parameters() == nullptr))
+	if (node->get_parameters() != nullptr)
 	{
 		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_parameters());
 		if ((bound != nullptr) && bound->is_method())

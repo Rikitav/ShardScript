@@ -85,7 +85,6 @@ namespace shard
 		SymbolFactory m_factory;
 		gmt::unordered_set<std::wstring_view> m_ambiguousNames;
 		gmt::unordered_set<const ExpressionSyntax*> m_staticContextExpressions;
-		const ExpressionSyntax* m_assignmentTarget = nullptr;
 
 		// lambdas whose parameter types could not be resolved yet; they bind
 		// once an expected delegate type appears (overload resolution picks a
@@ -109,6 +108,7 @@ namespace shard
 		bool get_is_static_context(const ExpressionSyntax* expression) const;
 
 		StructSymbol* analyze_literal_expression(const LiteralExpressionSyntax* node);
+		StructSymbol* analyze_default_expression(const DefaultExpressionSyntax* node);
 		StructSymbol* analyze_number_literal(const LiteralExpressionSyntax* node);
 		StructSymbol* analyze_double_literal(const LiteralExpressionSyntax* node);
 		StructSymbol* analyze_binary_expression(const BinaryExpressionSyntax* node);
@@ -204,6 +204,7 @@ namespace shard
 		void visit_arrow_clause(const ArrowClauseSyntax* node) override;
 
 		void visit_literal_expression(const LiteralExpressionSyntax* node) override;
+		void visit_default_expression(const DefaultExpressionSyntax* node) override;
 		void visit_identifier_name_type(const IdentifierNameTypeSyntax* node) override;
 		void visit_qualified_name_type(const QualifiedNameTypeSyntax* node) override;
 		void visit_generic_type(const GenericTypeSyntax* node) override;

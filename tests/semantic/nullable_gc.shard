@@ -25,22 +25,47 @@ func Main() -> void
     h: Holder = new Holder();
     h.Value = 123;
     h.Ref = new Payload();
-    h.Ref.Value.N = 42;
+
+    refLocal: Payload? = h.Ref;
+    if (refLocal != null)
+    {
+        refLocal.N = 42;
+    }
 
     Churn();
-    println(h.Value.Value);
-    println(h.Ref.Value.N);
+    println(h.Value ?? 0);
+
+    refAfter: Payload? = h.Ref;
+    if (refAfter != null)
+    {
+        println(refAfter.N);
+    }
 
     p: Payload? = new Payload();
-    p.Value.N = 7;
+    if (p != null)
+    {
+        p.N = 7;
+    }
 
     Churn();
-    println(p.Value.N);
+    if (p != null)
+    {
+        println(p.N);
+    }
 
     items: Payload?[] = new Payload?[1];
     items[0] = new Payload();
-    items[0].Value.N = 9;
+
+    itemLocal: Payload? = items[0];
+    if (itemLocal != null)
+    {
+        itemLocal.N = 9;
+    }
 
     Churn();
-    println(items[0].Value.N);
+    itemAfter: Payload? = items[0];
+    if (itemAfter != null)
+    {
+        println(itemAfter.N);
+    }
 }

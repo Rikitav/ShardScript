@@ -20,12 +20,17 @@ func Main() -> void
     w: Widget = new Widget();
     w.Marker = 1;
     iw: IWidget? = w;
-    println(iw.HasValue);
-    println(iw.Value != null);
+    println(iw != null);
 
     none: IWidget? = null;
-    println(none.HasValue);
+    println(none != null);
 
     plain: string = "x";
     println(plain != null);
+
+    text: string? = "ok";
+    if (text != null)
+    {
+        println(text);
+    }
 }

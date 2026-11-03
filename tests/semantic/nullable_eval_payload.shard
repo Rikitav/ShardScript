@@ -10,6 +10,11 @@ func Main() -> void
     a: int? = 5;
     b: int? = Pick(a);
     c: int? = Pick(b);
-    println(c.Value);
-    println(Pick(11).Value);
+    println(c ?? -1);
+    println(Pick(11) ?? -1);
+
+    if (c != null)
+    {
+        println(c);
+    }
 }

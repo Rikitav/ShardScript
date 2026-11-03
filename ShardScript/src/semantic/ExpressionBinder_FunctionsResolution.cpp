@@ -1237,6 +1237,16 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 
 StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationExpressionSyntax* node, StructSymbol* currentType)
 {
+	const ExpressionSyntax* receiver = node->get_previous();
+	if (currentType != nullptr && currentType->get_kind() == SyntaxKind::NullableType)
+	{
+		StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(currentType)->get_underlaying_type();
+		if (receiver != nullptr)
+			record_conversion(receiver, underlaying, currentType);
+
+		currentType = underlaying;
+	}
+
 	std::wstring_view methodName = node->get_identifier().get_lexeme();
 	gmt::inline_vector<StructSymbol*, 4> methodTypeArgs;
 	GenericTypeSymbol* genericType = nullptr;
@@ -1295,9 +1305,9 @@ StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationEx
 		return nullptr;
 	}
 
-	bool extensionCandidate = !(node->get_previous() == nullptr);
+	bool extensionCandidate = node->get_previous() != nullptr;
 	extensionCandidate = extensionCandidate && method->get_linking() == LINK_STATIC;
-	extensionCandidate = extensionCandidate && !(node->get_arguments() == nullptr);
+	extensionCandidate = extensionCandidate && node->get_arguments() != nullptr;
 
 	std::size_t parameterOffset = 0;
 	if (extensionCandidate)
@@ -1333,7 +1343,16 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 	{
 		visit_expression(previous);
 		StructSymbol* calleeType = get_expression_type(previous);
-		DelegateTypeSymbol* delegate = get_delegate_type(calleeType);
+		StructSymbol* delegateType = calleeType;
+
+		if (delegateType != nullptr && delegateType->get_kind() == SyntaxKind::NullableType)
+		{
+			StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(delegateType)->get_underlaying_type();
+			record_conversion(previous, underlaying, delegateType);
+			delegateType = underlaying;
+		}
+
+		DelegateTypeSymbol* delegate = get_delegate_type(delegateType);
 
 		if (delegate == nullptr)
 		{
