@@ -1,0 +1,22 @@
+using stdio;
+
+func Main() -> void
+{
+    parsed: int? = parse_int("42");
+    println(parsed ?? -1);
+    println(parsed == null);
+    println(parsed);
+
+    missing: int? = parse_int("not a number");
+    println(missing ?? -1);
+    println(missing == null);
+    println(missing);
+
+    nothing: int? = parse_int("");
+    println(nothing ?? -1);
+
+    negative: int? = parse_int("-7");
+    println(negative ?? 0);
+
+    println(parse_int("42") + 1 ?? 0);
+}

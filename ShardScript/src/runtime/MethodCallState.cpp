@@ -18,6 +18,7 @@
 #include <gmt/Allocator.hpp>
 #include <gmt/InlineVector.hpp>
 
+#include <cstring>
 #include <stdexcept>
 #include <utility>
 
@@ -25,6 +26,9 @@ using namespace shard;
 
 namespace
 {
+	constexpr std::uint32_t NullableFlagSlot = 0;
+	constexpr std::uint32_t NullableValueSlot = 1;
+
 	StructSymbol* constructed_definition(StructSymbol* type)
 	{
 		if (type != nullptr && type->get_kind() == SyntaxKind::GenericType)
@@ -146,9 +150,10 @@ ObjectInstance DelegateRef::operator()(std::initializer_list<ObjectInstance> arg
 	return m_vm->invoke_method(target, fullArgs.get_vector());
 }
 
-MethodCallState::MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments)
+MethodCallState::MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments, MethodSymbol* method)
 	: m_vm(vm)
 	, m_frame(frame)
+	, m_method(method)
 	, m_arguments(arguments)
 	, m_returnValue(ObjectInstance::null())
 { }
@@ -212,6 +217,40 @@ std::wstring_view MethodCallState::get_string_argument(std::size_t index) const
 	return std::wstring_view(data, static_cast<std::size_t>(length));
 }
 
+bool MethodCallState::is_nullable_argument(std::size_t index) const
+{
+	ObjectInstance instance = get_argument(index);
+	const TypeShape* shape = instance.get_shape();
+	if ((shape == nullptr) || (shape->get_base_type() == nullptr))
+		return false;
+
+	return shape->get_base_type()->get_kind() == SyntaxKind::NullableType;
+}
+
+bool MethodCallState::get_nullable_has_value(std::size_t index) const
+{
+	if (!is_nullable_argument(index))
+		throw std::invalid_argument("argument is not nullable");
+
+	return get_argument(index).get_field(static_cast<std::uint32_t>(NullableFlagSlot)).as_boolean();
+}
+
+ObjectInstance MethodCallState::get_nullable_argument(std::size_t index) const
+{
+	if (!is_nullable_argument(index))
+		throw std::invalid_argument("argument is not nullable");
+
+	ObjectInstance wrapper = get_argument(index);
+	ObjectInstance slot = wrapper.get_field(static_cast<std::uint32_t>(NullableValueSlot));
+	const TypeShape* valueShape = slot.get_shape();
+
+	if (!valueShape->is_reference())
+		return slot;
+
+	// a reference underlying is stored as a pointer inside the wrapper
+	return ObjectInstance(valueShape, slot.as_pointer());
+}
+
 void MethodCallState::set_return(ObjectInstance value)
 {
 	m_returnValue = value;
@@ -262,6 +301,89 @@ void MethodCallState::set_return_byte(std::uint8_t value)
 void MethodCallState::set_return_string(std::wstring_view value)
 {
 	m_returnValue = m_vm.create_string(value);
+}
+
+const TypeShape* MethodCallState::nullable_return_shape() const
+{
+	StructSymbol* returnType = nullptr;
+	if (m_method != nullptr)
+		returnType = m_method->get_return_type();
+	else if ((m_frame != nullptr) && (m_frame->get_method() != nullptr))
+		returnType = m_frame->get_method()->get_return_type();
+
+	if ((returnType == nullptr) || (returnType->get_kind() != SyntaxKind::NullableType))
+		throw std::invalid_argument("method does not return a nullable");
+
+	return m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), returnType);
+}
+
+void MethodCallState::write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes)
+{
+	const TypeShape* shape = nullable_return_shape();
+
+	std::memset(m_returnBuffer, 0, sizeof(m_returnBuffer));
+	m_returnBuffer[0] = hasValue ? std::byte{ 1 } : std::byte{ 0 };
+
+	if (hasValue && (payload != nullptr) && (payloadBytes > 0))
+		std::memcpy(m_returnBuffer + 1, payload, payloadBytes);
+
+	m_returnValue = ObjectInstance(shape, m_returnBuffer);
+}
+
+void MethodCallState::set_return_empty_nullable()
+{
+	write_nullable_return(false, nullptr, 0);
+}
+
+void MethodCallState::set_return_nullable_boolean(bool hasValue, bool value)
+{
+	write_nullable_return(hasValue, &value, sizeof(bool));
+}
+
+void MethodCallState::set_return_nullable_integer(bool hasValue, std::int64_t value)
+{
+	write_nullable_return(hasValue, &value, sizeof(std::int64_t));
+}
+
+void MethodCallState::set_return_nullable_nint(bool hasValue, std::uintptr_t value)
+{
+	write_nullable_return(hasValue, &value, sizeof(std::uintptr_t));
+}
+
+void MethodCallState::set_return_nullable_double(bool hasValue, double value)
+{
+	write_nullable_return(hasValue, &value, sizeof(double));
+}
+
+void MethodCallState::set_return_nullable_char(bool hasValue, wchar_t value)
+{
+	write_nullable_return(hasValue, &value, sizeof(wchar_t));
+}
+
+void MethodCallState::set_return_nullable_byte(bool hasValue, std::uint8_t value)
+{
+	write_nullable_return(hasValue, &value, sizeof(std::uint8_t));
+}
+
+void MethodCallState::set_return_nullable_string(bool hasValue, std::wstring_view value)
+{
+	if (!hasValue)
+	{
+		set_return_empty_nullable();
+		return;
+	}
+
+	ObjectInstance text = m_vm.create_string(value);
+	std::byte* pointer = text.get_memory();
+	write_nullable_return(true, &pointer, sizeof(std::byte*));
+}
+
+void MethodCallState::set_return_nullable_reference(bool hasValue, ObjectInstance value)
+{
+	std::byte* pointer = value.get_memory();
+	bool present = hasValue && (pointer != nullptr);
+
+	write_nullable_return(present, &pointer, sizeof(std::byte*));
 }
 
 ObjectInstance MethodCallState::get_return_value() const
