@@ -1,0 +1,15 @@
+interface IWidget
+{
+    func Get() -> int;
+}
+
+func Main() -> void
+{
+    noConversion: double? = 1 as double?;
+    noReference: IWidget? = 1 as IWidget?;
+    noText: int? = "text" as int?;
+
+    println(noConversion == null);
+    println(noReference == null);
+    println(noText == null);
+}

@@ -69,6 +69,44 @@ namespace
 		return target->get_kind() == SyntaxKind::InterfaceDeclaration || source->get_kind() == SyntaxKind::InterfaceDeclaration;
 	}
 
+	// a nullable is produced by wrapping a value of its underlying type, by the
+	// null literal, or by re-tagging another nullable whose underlying layout
+	// matches; nothing here converts between underlying types
+	bool is_nullable_cast_allowed(StructSymbol* source, StructSymbol* target, SemanticModel& model)
+	{
+		if ((source == nullptr) || (target == nullptr))
+			return false;
+
+		if (target->get_kind() != SyntaxKind::NullableType)
+			return false;
+
+		StructSymbol* targetUnderlaying = static_cast<NullableTypeSymbol*>(target)->get_underlaying_type();
+		if (targetUnderlaying == nullptr)
+			return false;
+
+		if (model.is_null_type(source))
+			return true;
+
+		if (source->get_kind() == SyntaxKind::NullableType)
+		{
+			StructSymbol* sourceUnderlaying = static_cast<NullableTypeSymbol*>(source)->get_underlaying_type();
+			if (sourceUnderlaying == nullptr)
+				return false;
+
+			// re-tagging keeps the wrapper layout, which only matches when both
+			// underlyings are stored as references
+			bool bothReference = model.is_reference_shaped(sourceUnderlaying);
+			bothReference = bothReference && model.is_reference_shaped(targetUnderlaying);
+
+			return bothReference && model.is_assignable_to(targetUnderlaying, sourceUnderlaying);
+		}
+
+		if (SemanticModel::are_types_equal(source, targetUnderlaying))
+			return true;
+
+		return model.is_reference_shaped(targetUnderlaying) && model.is_assignable_to(targetUnderlaying, source);
+	}
+
 	OperatorSymbol* find_conversion_operator(StructSymbol* ownerType, StructSymbol* sourceType, StructSymbol* targetType)
 	{
 		if ((ownerType == nullptr) || (sourceType == nullptr) || (targetType == nullptr))
@@ -257,6 +295,15 @@ void ExpressionBinder::visit_cast_expression(const CastExpressionSyntax* node)
 	// 3. built-in primitive conversions
 	bool bothScalar = is_scalar_primitive(sourceType, table) && is_scalar_primitive(targetType, table);
 	if (bothScalar)
+	{
+		if (nodeRef.has_value())
+			set_expression_type(*nodeRef, targetType);
+
+		return;
+	}
+
+	// 4. producing a nullable: wrap, or re-tag another nullable
+	if (is_nullable_cast_allowed(sourceType, targetType, get_model()))
 	{
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, targetType);
