@@ -342,7 +342,16 @@ bool SemanticModel::is_assignable_to(const StructSymbol* target, const StructSym
 	{
 		const StructSymbol* targetUnderlaying = gmt::as<NullableTypeSymbol>(target)->get_underlaying_type();
 		const StructSymbol* sourceUnderlaying = gmt::as<NullableTypeSymbol>(source)->get_underlaying_type();
-		return are_types_equal(targetUnderlaying, sourceUnderlaying);
+
+		if (are_types_equal(targetUnderlaying, sourceUnderlaying))
+			return true;
+
+		// both wrappers keep a reference, so a struct nullable widens to a
+		// nullable interface the struct implements by re-tagging the pointer
+		bool referenceConversion = is_reference_shaped(targetUnderlaying);
+		referenceConversion = referenceConversion && is_reference_shaped(sourceUnderlaying);
+
+		return referenceConversion && is_assignable_to(targetUnderlaying, sourceUnderlaying);
 	}
 
 	if (targetIsNullable)

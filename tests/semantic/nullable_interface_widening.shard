@@ -1,0 +1,56 @@
+using stdio;
+
+interface IWidget
+{
+    func Get() -> int;
+}
+
+struct Label : IPrintable, IWidget
+{
+    public Marker: int;
+
+    public func ToString() -> string
+    {
+        return "label";
+    }
+
+    public func Get() -> int
+    {
+        return this.Marker;
+    }
+}
+
+func ShowPrintable(value: IPrintable?) -> void
+{
+    if (value != null)
+    {
+        println(value);
+    }
+    else
+    {
+        println("<empty>");
+    }
+}
+
+func Main() -> void
+{
+    label: Label = new Label();
+    label.Marker = 5;
+
+    wrapped: Label? = label;
+    printable: IPrintable? = wrapped;
+    println(printable != null);
+    println(printable ?? label);
+
+    ShowPrintable(wrapped);
+    ShowPrintable(null);
+
+    widgetly: IWidget? = wrapped;
+    if (widgetly != null)
+    {
+        println(widgetly.Get());
+    }
+
+    empty: Label? = null;
+    ShowPrintable(empty);
+}

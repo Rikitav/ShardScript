@@ -1,0 +1,24 @@
+using stdio;
+
+interface IWidget
+{
+    func Get() -> int;
+}
+
+struct Plain
+{
+    public Marker: int;
+}
+
+func Main() -> void
+{
+    number: int? = 1;
+    printable: IPrintable? = number;
+
+    plain: Plain = new Plain();
+    wrapped: Plain? = plain;
+    widgetly: IWidget? = wrapped;
+
+    println(printable != null);
+    println(widgetly != null);
+}
