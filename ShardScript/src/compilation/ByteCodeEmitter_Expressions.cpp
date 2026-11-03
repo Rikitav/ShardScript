@@ -488,13 +488,21 @@ bool ByteCodeEmitter::emit_nullable_comparison(const BinaryExpressionSyntax* nod
 	bool leftNullable = leftType != nullptr && leftType->get_kind() == SyntaxKind::NullableType;
 	bool rightNullable = rightType != nullptr && rightType->get_kind() == SyntaxKind::NullableType;
 
-	if (!leftNullable || !rightNullable)
+	if (leftNullable != rightNullable)
+	{
+		// the binder wrapped the plain side, so both operands are wrappers here
+		const ExpressionSyntax* valueSide = leftNullable ? right : left;
+		if (model.get_nullable_conversion(valueSide).kind != NullableConversionKind::WRAP)
+			return false;
+	}
+
+	if (!leftNullable && !rightNullable)
 		return false;
 
 	emit_converted(left);
 	emit_converted(right);
 
-	m_encoder.emit_nullable_equal(leftType);
+	m_encoder.emit_nullable_equal(leftNullable ? leftType : rightType);
 	eval_pop(2);
 	eval_push(sizeof(bool));
 

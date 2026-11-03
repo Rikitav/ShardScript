@@ -1,0 +1,23 @@
+using stdio;
+
+func Main() -> void
+{
+    number: int? = 4;
+    println(number == 4);
+    println(number != 4);
+    println(number == 5);
+    println(4 == number);
+    println(9 != number);
+
+    missing: int? = null;
+    println(missing == 4);
+    println(missing != 4);
+
+    text: string? = "x";
+    println(text == "x");
+    println(text == "y");
+
+    flag: bool? = true;
+    println(flag == true);
+    println(flag == false);
+}

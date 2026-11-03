@@ -175,6 +175,30 @@ OperatorSymbol* ExpressionBinder::resolve_operator_method(StructSymbol* ownerTyp
 	return find_operator(searchType, operatorToken, parameterTypes);
 }
 
+bool ExpressionBinder::bind_nullable_value_comparison(const BinaryExpressionSyntax* node, StructSymbol* leftType, StructSymbol* rightType)
+{
+	bool leftNullable = leftType != nullptr && leftType->get_kind() == SyntaxKind::NullableType;
+	bool rightNullable = rightType != nullptr && rightType->get_kind() == SyntaxKind::NullableType;
+
+	if (leftNullable == rightNullable)
+		return false;
+
+	StructSymbol* nullableType = leftNullable ? leftType : rightType;
+	StructSymbol* valueType = leftNullable ? rightType : leftType;
+	const ExpressionSyntax* valueExpression = leftNullable ? node->get_right() : node->get_left();
+
+	if ((nullableType == nullptr) || (valueType == nullptr) || (valueExpression == nullptr))
+		return false;
+
+	StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(nullableType)->get_underlaying_type();
+	if ((underlaying == nullptr) || !SemanticModel::are_types_equal(underlaying, valueType))
+		return false;
+
+	// the value side is wrapped, so the comparison sees two nullables
+	record_conversion(valueExpression, nullableType, valueType);
+	return true;
+}
+
 StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpressionSyntax* node)
 {
 	const TokenType op = node->get_operator_token().get_type();
@@ -342,6 +366,8 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		case TokenType::LessOrEqualsOperator:
 		{
 			bool comparable = are_types_comparable(leftType, rightType, bothTypeParameters, table, model);
+			if (!comparable)
+				comparable = bind_nullable_value_comparison(node, leftType, rightType);
 
 			if (!comparable)
 			{
