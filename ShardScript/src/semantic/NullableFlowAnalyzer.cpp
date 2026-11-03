@@ -512,6 +512,10 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 		case SyntaxKind::AwaitExpression:
 		{
 			analyze_expression(gmt::as<AwaitExpressionSyntax>(expression)->get_expression());
+
+			// while the frame is suspended other tasks run, and they may hold a
+			// reference to anything this frame can reach
+			invalidate_member_paths();
 			break;
 		}
 
@@ -804,34 +808,47 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 		}
 
 		case SyntaxKind::DeferStatement:
-		{
-			State saved = m_state;
-			analyze_expression(gmt::as<DeferStatementSyntax>(statement)->get_expression());
-			m_state = saved;
-			return true;
-		}
-
 		case SyntaxKind::DeferBlock:
-		{
-			State saved = m_state;
-			analyze_block(gmt::as<DeferBlockSyntax>(statement)->get_block());
-			m_state = saved;
-			return true;
-		}
-
 		case SyntaxKind::DeferVariable:
 		{
-			State saved = m_state;
-			const DeferVariableSyntax* defer = gmt::as<DeferVariableSyntax>(statement);
-			if (defer->get_variable() != nullptr)
-				analyze_statement(defer->get_variable());
+			// the body runs when this scope exits; its effects are applied then
+			if (!m_deferScopes.empty())
+				m_deferScopes.back().push_back(statement);
 
-			m_state = saved;
 			return true;
 		}
 
 		default:
 			return true;
+	}
+}
+
+void NullableFlowAnalyzer::analyze_deferred_body(const StatementSyntax* statement)
+{
+	if (statement == nullptr)
+		return;
+
+	switch (statement->get_kind())
+	{
+		case SyntaxKind::DeferStatement:
+			analyze_expression(gmt::as<DeferStatementSyntax>(statement)->get_expression());
+			break;
+
+		case SyntaxKind::DeferBlock:
+			analyze_block(gmt::as<DeferBlockSyntax>(statement)->get_block());
+			break;
+
+		case SyntaxKind::DeferVariable:
+		{
+			const DeferVariableSyntax* defer = gmt::as<DeferVariableSyntax>(statement);
+			if (defer->get_variable() != nullptr)
+				analyze_statement(defer->get_variable());
+
+			break;
+		}
+
+		default:
+			break;
 	}
 }
 
@@ -844,13 +861,27 @@ bool NullableFlowAnalyzer::analyze_block(const BlockSyntax* block)
 	{
 		case SyntaxKind::StatementsBlock:
 		{
+			m_deferScopes.emplace_back();
+
+			bool reachable = true;
 			for (StatementSyntax* const& statement : gmt::as<StatementsBlockSyntax>(block)->get_statements())
 			{
 				if (!analyze_statement(statement))
-					return false;
+				{
+					reachable = false;
+					break;
+				}
 			}
 
-			return true;
+			// defers registered in this scope run as it exits, so their effects
+			// land after every statement of the block, in reverse order
+			gmt::vector<const StatementSyntax*> deferred = std::move(m_deferScopes.back());
+			m_deferScopes.pop_back();
+
+			for (auto it = deferred.rbegin(); it != deferred.rend(); ++it)
+				analyze_deferred_body(*it);
+
+			return reachable;
 		}
 
 		case SyntaxKind::ArrowClause:
@@ -1119,9 +1150,19 @@ void NullableFlowAnalyzer::analyze_member_body(MethodSymbol* method, const Block
 	if ((method == nullptr) || (body == nullptr))
 		return;
 
+	// a nested body, such as a lambda, starts from a clean state and its own
+	// defer scopes; the enclosing body gets both back when it returns
+	State savedState = std::move(m_state);
+	gmt::vector<gmt::vector<const StatementSyntax*>> savedScopes = std::move(m_deferScopes);
+
 	m_state.clear();
+	m_deferScopes.clear();
+
 	declare_parameters(method);
 	analyze_block(body);
+
+	m_deferScopes = std::move(savedScopes);
+	m_state = std::move(savedState);
 }
 
 void NullableFlowAnalyzer::analyze_lambda(const LambdaExpressionSyntax* node)
