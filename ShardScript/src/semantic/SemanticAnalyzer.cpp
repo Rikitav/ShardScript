@@ -18,31 +18,13 @@ SemanticAnalyzer::SemanticAnalyzer(DiagnosticsContext& diagnostics)
 void SemanticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model)
 {
 	DeclarationCollector collector(model, m_diagnostics);
-	for (TranslationUnitSyntax* const& unit : tree.get_units())
-		collector.visit_translation_unit(unit);
-
-	/*
-	if (m_diagnostics.has_errors())
-		return;
-	*/
+	collector.visit_syntax_tree(tree);
 
 	TypeBinder typeBinder(model, m_diagnostics);
-	for (TranslationUnitSyntax* const& unit : tree.get_units())
-		typeBinder.visit_translation_unit(unit);
-
-	/*
-	if (m_diagnostics.has_errors())
-		return;
-	*/
+	typeBinder.visit_syntax_tree(tree);
 
 	ExpressionBinder expressionBinder(model, m_diagnostics);
-	for (TranslationUnitSyntax* const& unit : tree.get_units())
-		expressionBinder.visit_translation_unit(unit);
-
-	/*
-	if (m_diagnostics.has_errors())
-		return;
-	*/
+	expressionBinder.visit_syntax_tree(tree);
 
 	ControlFlowAnalyzer flowAnalyzer(model, m_diagnostics);
 	flowAnalyzer.analyze(tree);
