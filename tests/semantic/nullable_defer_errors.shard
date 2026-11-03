@@ -1,0 +1,48 @@
+using stdio;
+
+struct Holder
+{
+    public Item: string?;
+
+    public func Clear() -> void
+    {
+        this.Item = null;
+    }
+}
+
+async func Wipe(target: Holder) -> int
+{
+    target.Clear();
+    return 1;
+}
+
+func DeferredRead() -> void
+{
+    text: string? = "x";
+
+    defer
+    {
+        resolved: string = text;
+        println(resolved);
+    }
+
+    text = null;
+}
+
+func SuspendedRead() -> void
+{
+    holder: Holder = new Holder();
+    task := Wipe(holder);
+
+    holder.Item = "x";
+    if (holder.Item != null)
+    {
+        await task;
+        after: string = holder.Item;
+        println(after);
+    }
+}
+
+func Main() -> void
+{
+}

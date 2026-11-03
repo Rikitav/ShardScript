@@ -37,6 +37,7 @@ namespace shard
 		gmt::vector<PathNode> m_paths;
 		gmt::unordered_map<SyntaxSymbol*, int> m_rootPaths;
 		gmt::unordered_map<int, gmt::unordered_map<SyntaxSymbol*, int>> m_memberPaths;
+		gmt::vector<gmt::vector<const StatementSyntax*>> m_deferScopes;
 		gmt::unordered_set<const ExpressionSyntax*> m_reported;
 
 		static NullState join(NullState left, NullState right);
@@ -63,6 +64,7 @@ namespace shard
 		void collect_assigned_expression(const ExpressionSyntax* expression, gmt::unordered_set<int>& assigned);
 		void widen_assigned(const gmt::unordered_set<int>& assigned);
 		void apply_assignment(const BinaryExpressionSyntax* node);
+		void analyze_deferred_body(const StatementSyntax* statement);
 
 		void report_unwrap(const ExpressionSyntax* expression);
 		void declare_parameters(MethodSymbol* method);

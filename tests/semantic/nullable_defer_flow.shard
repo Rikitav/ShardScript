@@ -1,0 +1,39 @@
+using stdio;
+
+struct Holder
+{
+    public Item: string?;
+
+    public func Clear() -> void
+    {
+        this.Item = null;
+    }
+}
+
+func Done() -> void
+{
+    println("done");
+}
+
+func Main() -> void
+{
+    text: string? = "kept";
+    defer
+    {
+        resolved: string = text;
+        println(resolved);
+    }
+
+    holder: Holder = new Holder();
+    holder.Item = "x";
+    if (holder.Item != null)
+    {
+        defer Done();
+        early: string = holder.Item;
+        println(early);
+    }
+
+    index: int = 0;
+    defer index = index + 1;
+    println(index);
+}
