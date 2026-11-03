@@ -6,6 +6,7 @@
 #include <shard/pragmatic/TypeShape.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/PrimitiveMath.hpp>
+#include <shard/runtime/adapters/EnumerableAdapter.hpp>
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/StandardTypes.hpp>
 #include <shard/semantic/SymbolTable.hpp>
@@ -150,6 +151,17 @@ namespace
 
 		if (newline)
 			write_newline();
+	}
+
+	void native_sum_sequence(MethodCallState& state)
+	{
+		std::int64_t total = 0;
+		EnumerableAdapter sequence(state, state.get_argument(0));
+
+		for (ObjectInstance value : sequence)
+			total += value.as_integer();
+
+		state.set_return_integer(total);
 	}
 
 	void native_parse_integer(MethodCallState& state)
@@ -304,6 +316,11 @@ namespace shard::interpreter
 		register_nullable_native(table, stdio, L"print", table.get_nint_primitive(), &native_print_nullable<std::uintptr_t>);
 		register_nullable_native(table, stdio, L"println", table.get_nint_primitive(), &native_println_nullable<std::uintptr_t>);
 		register_native(table, stdio, L"parse_int", table.get_string_primitive(), &native_parse_integer, table.find_or_create_nullable_type(table.get_integer_primitive()));
+
+		StructSymbol* enumerable = static_cast<StructSymbol*>(table.get_standard_type(StandardTypes::IEnumerable));
+		StructSymbol* enumerableArguments[] = { table.get_integer_primitive() };
+		StructSymbol* enumerableOfInteger = table.find_or_create_generic_type(enumerable, enumerableArguments);
+		register_native(table, stdio, L"sum", enumerableOfInteger, &native_sum_sequence, table.get_integer_primitive());
 
 		register_nullable_native(table, stdio, L"print", table.get_string_primitive(), &native_print_nullable_string);
 		register_nullable_native(table, stdio, L"println", table.get_string_primitive(), &native_println_nullable_string);
