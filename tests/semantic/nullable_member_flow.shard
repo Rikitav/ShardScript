@@ -1,0 +1,60 @@
+using stdio;
+
+struct Inner
+{
+    public Item: string?;
+}
+
+struct Outer
+{
+    public Part: Inner;
+
+    public Name -> string?
+    {
+        get
+        {
+            return this.Part.Item;
+        }
+    }
+}
+
+func Main() -> void
+{
+    outer: Outer = new Outer();
+    outer.Part = new Inner();
+    outer.Part.Item = "nested";
+
+    if (outer.Part.Item != null)
+    {
+        deep: string = outer.Part.Item;
+        println(deep);
+    }
+
+    if (outer.Name != null)
+    {
+        viaProperty: string = outer.Name;
+        println(viaProperty);
+    }
+
+    if (outer.Part.Item == null)
+    {
+        println("empty");
+    }
+    else
+    {
+        inElse: string = outer.Part.Item;
+        println(inElse);
+    }
+
+    if (outer.Part.Item != null)
+    {
+        index: int = 0;
+        while index < 3
+        {
+            index = index + 1;
+        }
+
+        survived: string = outer.Part.Item;
+        println(survived);
+    }
+}

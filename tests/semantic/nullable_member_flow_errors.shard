@@ -1,0 +1,50 @@
+using stdio;
+
+struct Inner
+{
+    public Item: string?;
+}
+
+struct Outer
+{
+    public Part: Inner;
+}
+
+func Use(value: string) -> void
+{
+    println(value);
+}
+
+func Main() -> void
+{
+    outer: Outer = new Outer();
+    outer.Part = new Inner();
+    outer.Part.Item = "nested";
+
+    if (outer.Part.Item != null)
+    {
+        Use("a call may change the field");
+        afterCall: string = outer.Part.Item;
+        println(afterCall);
+    }
+
+    if (outer.Part.Item != null)
+    {
+        outer.Part.Item = null;
+        afterWrite: string = outer.Part.Item;
+        println(afterWrite);
+    }
+
+    if (outer.Part.Item != null)
+    {
+        index: int = 0;
+        while index < 1
+        {
+            outer.Part.Item = null;
+            index = index + 1;
+        }
+
+        afterLoop: string = outer.Part.Item;
+        println(afterLoop);
+    }
+}
