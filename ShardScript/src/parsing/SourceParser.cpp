@@ -1359,7 +1359,7 @@ TypeSyntax* SourceParser::read_type(SourceProvider& reader, SyntaxNode* parent)
 		reader.consume();
 		base = predefined;
 	}
-	else if (current.get_type() == TokenType::Identifier)
+	else if (current.get_type() == TokenType::Identifier || current.get_type() == TokenType::SelfKeyword)
 	{
 		base = read_identifier_name_type(reader, parent);
 

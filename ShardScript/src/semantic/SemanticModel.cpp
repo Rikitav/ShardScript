@@ -70,10 +70,46 @@ NullableConversion SemanticModel::get_nullable_conversion(const ExpressionSyntax
 	return it != m_nullableConversions.end() ? it->second : NullableConversion{};
 }
 
+// the open instantiation `Owner<T...>` denotes the same type as its definition,
+// which is what `Self` resolves to inside a generic declaration
+static bool is_open_instantiation_of(const StructSymbol* candidate, const StructSymbol* definition)
+{
+	if ((candidate == nullptr) || (definition == nullptr))
+		return false;
+
+	if (candidate->get_kind() != SyntaxKind::GenericType)
+		return false;
+
+	if (definition->get_kind() == SyntaxKind::GenericType)
+		return false;
+
+	const GenericTypeSymbol* generic = gmt::as<GenericTypeSymbol>(candidate);
+	if (generic->get_underlaying_type() != definition)
+		return false;
+
+	const gmt::vector<TypeParameterSymbol*>& parameters = definition->type_parameters;
+	if (parameters.empty())
+		return false;
+
+	for (TypeParameterSymbol* parameter : parameters)
+	{
+		if (generic->substitute_type_parameter(parameter) != parameter)
+			return false;
+	}
+
+	return true;
+}
+
 bool SemanticModel::are_types_equal(const StructSymbol* left, const StructSymbol* right)
 {
 	if ((left == nullptr) || (right == nullptr))
 		return false;
+
+	if (left == right)
+		return true;
+
+	if (is_open_instantiation_of(left, right) || is_open_instantiation_of(right, left))
+		return true;
 
 	switch (left->get_kind())
 	{

@@ -1,0 +1,64 @@
+using stdio;
+
+interface IComparable<T>
+{
+    func CompareTo(other: T) -> int;
+}
+
+struct Box<T> : IComparable<self>
+{
+    public Value: T;
+
+    public func CompareTo(other: self) -> int
+    {
+        return 0;
+    }
+
+    public func Clone() -> Self
+    {
+        copy: Self = this;
+        return copy;
+    }
+}
+
+struct Node
+{
+    public Value: int;
+    public Next: self;
+
+    public func Link(other: Self) -> void
+    {
+        this.Next = other;
+    }
+}
+
+struct Vec
+{
+    public X: int;
+
+    public static operator +(left: self, right: Self) -> int
+    {
+        return left.X + right.X;
+    }
+}
+
+func Main() -> void
+{
+    first: Vec = new Vec();
+    first.X = 2;
+    second: Vec = new Vec();
+    second.X = 3;
+    println(first + second);
+
+    box: Box<int> = new Box<int>();
+    box.Value = 4;
+    println(box.CompareTo(box));
+    println(box.Clone().Value);
+
+    head: Node = new Node();
+    head.Value = 1;
+    tail: Node = new Node();
+    tail.Value = 2;
+    head.Link(tail);
+    println(head.Next.Value);
+}

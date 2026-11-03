@@ -1,0 +1,11 @@
+func Lower(x: self) -> void
+{
+}
+
+func Upper(x: Self) -> void
+{
+}
+
+func Main() -> void
+{
+}

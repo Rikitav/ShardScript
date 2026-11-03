@@ -940,12 +940,12 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 
 	const std::wstring_view name = node->get_identifier().get_lexeme();
 
-	if (name == L"Self")
+	if ((name == L"Self") || (name == L"self"))
 	{
 		StructSymbol* ownerType = get_owner_type();
 		if ((ownerType == nullptr) || ownerType->get_kind() != SyntaxKind::StructDeclaration)
 		{
-			get_diagnostics().report_error(node->get_location(), L"'Self' can only be used inside a struct declaration");
+			get_diagnostics().report_error(node->get_location(), gmt::concat(L"'", gmt::wstring(name), L"' can only be used inside a struct declaration"));
 			return;
 		}
 
