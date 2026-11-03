@@ -2,8 +2,7 @@
 
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/MethodCallState.hpp>
-
-#include "AsyncRuntime.hpp"
+#include <shard/runtime/AsyncRuntime.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>
 #include <shard/compilation/VirtualProgramImage.hpp>

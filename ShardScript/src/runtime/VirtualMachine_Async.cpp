@@ -3,9 +3,8 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
-
-#include "AsyncRuntime.hpp"
-#include "EventLoop.hpp"
+#include <shard/runtime/AsyncRuntime.hpp>
+#include <shard/runtime/EventLoop.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>
 
