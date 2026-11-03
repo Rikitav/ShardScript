@@ -756,6 +756,10 @@ bool ControlFlowAnalyzer::is_assigned(SyntaxSymbol* variable) const
 	if (variable == nullptr)
 		return false;
 
+	// the implicit receiver is initialized by the call that created the frame
+	if (variable->get_kind() == SyntaxKind::Parameter && variable->get_name() == L"this")
+		return true;
+
 	return m_assignedVariables.find(variable) != m_assignedVariables.end();
 }
 
