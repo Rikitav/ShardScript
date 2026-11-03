@@ -1,0 +1,8 @@
+using stdio;
+
+func Main() -> void
+{
+    number: int? = 4;
+    println(number == "text");
+    println(number == true);
+}
