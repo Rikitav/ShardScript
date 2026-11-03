@@ -1824,9 +1824,8 @@ extern "C"
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_array_length(shard_shard_ByteCodeEncoder_t self);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_branch_null(shard_shard_ByteCodeEncoder_t self, std::size_t p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_delegate(shard_shard_ByteCodeEncoder_t self, const void* p0);
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_interface(shard_shard_ByteCodeEncoder_t self, const void* p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_into(shard_shard_ByteCodeEncoder_t self, const void* p0, std::uint16_t p1);
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_symbol(shard_shard_ByteCodeEncoder_t self, const void* p0);
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_symbol(shard_shard_ByteCodeEncoder_t self, const void* p0, std::uint32_t p1);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast(shard_shard_ByteCodeEncoder_t self, const void* p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast_as(shard_shard_ByteCodeEncoder_t self, const void* p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast_primitive(shard_shard_ByteCodeEncoder_t self, const void* p0);

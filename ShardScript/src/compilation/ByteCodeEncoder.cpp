@@ -229,7 +229,7 @@ void ByteCodeEncoder::emit_jump_false(std::size_t jump)
 
 void ByteCodeEncoder::emit_branch_null(std::size_t jump)
 {
-	append_data_value(m_image.get_text_section(), OpCode::BR_NULL);
+	append_data_value(m_image.get_text_section(), OpCode::JUMP_NULL);
 	append_data_value(m_image.get_text_section(), jump);
 }
 
@@ -501,10 +501,11 @@ void ByteCodeEncoder::emit_load_type_argument(std::uint16_t index, StructSymbol*
 	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_call_method_symbol(MethodSymbol* method)
+void ByteCodeEncoder::emit_call_method_symbol(MethodSymbol* method, std::uint32_t interfaceSlot)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLMETHODSYMBOL);
 	append_symbol_operand(m_image.get_text_section(), method);
+	append_data_value(m_image.get_text_section(), interfaceSlot);
 }
 
 void ByteCodeEncoder::emit_call_method_into(MethodSymbol* method, std::uint16_t slot)
@@ -528,12 +529,6 @@ void ByteCodeEncoder::emit_call_delegate(DelegateTypeSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLDELEGATE);
 	append_symbol_operand(m_image.get_text_section(), type);
-}
-
-void ByteCodeEncoder::emit_call_interface(MethodSymbol* interfaceMethod)
-{
-	append_data_value(m_image.get_text_section(), OpCode::CALLINTERFACE);
-	append_symbol_operand(m_image.get_text_section(), interfaceMethod);
 }
 
 void ByteCodeEncoder::emit_is_instance(StructSymbol* type)

@@ -1,7 +1,11 @@
 #include <shard/pragmatic/PragmaticModel.hpp>
 
 #include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/GenericMethodSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
 
 #include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
@@ -107,7 +111,111 @@ TypeShape* PragmaticModel::find_type_shape(SemanticModel& model, StructSymbol* b
 
 TypeShape* PragmaticModel::find_or_create_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs)
 {
-	return m_typeShapeCache.find_or_create_type_shape(model, baseType, genericArgs);
+	TypeShape* shape = m_typeShapeCache.find_or_create_type_shape(model, baseType, genericArgs);
+	fill_vtable(model, shape);
+	return shape;
+}
+
+void PragmaticModel::reserve_interface_slot(MethodSymbol* member)
+{
+	if (member == nullptr)
+		return;
+
+	if (m_interfaceSlots.find(member) != m_interfaceSlots.end())
+		return;
+
+	m_interfaceSlots[member] = m_interfaceSlotCount;
+	++m_interfaceSlotCount;
+}
+
+std::optional<std::uint32_t> PragmaticModel::get_interface_slot(MethodSymbol* member) const
+{
+	auto choice = m_interfaceSlots.find(member);
+	if (choice == m_interfaceSlots.end())
+		return std::nullopt;
+
+	return choice->second;
+}
+
+std::uint32_t PragmaticModel::get_interface_slot_count() const
+{
+	return m_interfaceSlotCount;
+}
+
+void PragmaticModel::fill_vtable(SemanticModel& model, TypeShape* shape)
+{
+
+	if ((shape == nullptr) || shape->has_vtable() || (m_interfaceSlotCount == 0))
+		return;
+
+	StructSymbol* baseType = shape->get_base_type();
+	if ((baseType == nullptr) || baseType->get_kind() == SyntaxKind::InterfaceDeclaration)
+		return;
+
+	if (baseType->interfaces.empty())
+		return;
+
+	gmt::vector<MethodSymbol*> entries(m_interfaceSlotCount, nullptr);
+	gmt::unordered_set<StructSymbol*> visited;
+
+	fill_vtable_for_interfaces(model, baseType, baseType, entries, visited);
+	shape->set_vtable(std::move(entries));
+}
+
+void PragmaticModel::fill_vtable_for_interfaces(SemanticModel& model, StructSymbol* concrete, StructSymbol* source, gmt::vector<MethodSymbol*>& entries, gmt::unordered_set<StructSymbol*>& visited)
+{
+	for (StructSymbol* interfaceType : source->interfaces)
+	{
+		if (interfaceType == nullptr)
+			continue;
+
+		// a constructed interface keeps its members on the definition
+		if (interfaceType->get_kind() == SyntaxKind::GenericType)
+			interfaceType = static_cast<GenericTypeSymbol*>(interfaceType)->get_underlaying_type();
+
+		if ((interfaceType == nullptr) || !visited.insert(interfaceType).second)
+			continue;
+
+		fill_vtable_for_interface(model, concrete, interfaceType, entries);
+		fill_vtable_for_interfaces(model, concrete, interfaceType, entries, visited);
+	}
+}
+
+void PragmaticModel::fill_vtable_for_interface(SemanticModel& model, StructSymbol* concrete, StructSymbol* interfaceType, gmt::vector<MethodSymbol*>& entries)
+{
+	for (MethodSymbol* member : interfaceType->methods)
+		assign_vtable_entry(model, concrete, member, entries);
+
+	for (PropertySymbol* property : interfaceType->properties)
+	{
+		if (property == nullptr)
+			continue;
+
+		assign_vtable_entry(model, concrete, property->get_getter(), entries);
+		assign_vtable_entry(model, concrete, property->get_setter(), entries);
+	}
+
+	for (IndexatorSymbol* indexator : interfaceType->indexators)
+	{
+		if (indexator == nullptr)
+			continue;
+
+		assign_vtable_entry(model, concrete, indexator->get_getter(), entries);
+		assign_vtable_entry(model, concrete, indexator->get_setter(), entries);
+	}
+}
+
+void PragmaticModel::assign_vtable_entry(SemanticModel& model, StructSymbol* concrete, MethodSymbol* member, gmt::vector<MethodSymbol*>& entries)
+{
+	if (member == nullptr)
+		return;
+
+	std::optional<std::uint32_t> slot = get_interface_slot(member);
+	if (!slot.has_value() || *slot >= entries.size())
+		return;
+
+	entries[*slot] = model.find_interface_implementation(concrete, member);
+
 }
 
 FrameLayout* PragmaticModel::find_frame_layout(MethodSymbol* method) const

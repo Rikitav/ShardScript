@@ -57,20 +57,6 @@ namespace shard
 		// the collector so it is torn down before the collector disappears
 		gmt::unique_ptr<AsyncRuntime> m_async;
 
-		// Interface calls repeat the same (concrete receiver type, interface
-		// method) pair in hot loops. Resolution is content-based and stable
-		// after the semantic phase, so a direct-mapped cache removes the
-		// per-call scan of the receiver's member lists.
-		struct InterfaceDispatchEntry
-		{
-			StructSymbol* receiverType = nullptr;
-			MethodSymbol* interfaceMethod = nullptr;
-			MethodSymbol* implementation = nullptr;
-		};
-
-		static constexpr std::size_t InterfaceDispatchCacheSize = 256;
-		InterfaceDispatchEntry m_interfaceDispatch[InterfaceDispatchCacheSize] = {};
-
 		const TypeShape* resolve_shape(StructSymbol* type);
 		// pointer-identity fast path for the canonical primitive shapes;
 		// returns null for composites and void
@@ -127,8 +113,10 @@ namespace shard
 		VirtualMachine& operator=(const VirtualMachine&) = delete;
 
 		void run();
-		ObjectInstance invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr);
+		ObjectInstance invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr, std::uint32_t interfaceSlot = DirectCallSlot);
 		ObjectInstance try_invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, ObjectInstance& outException);
+		MethodSymbol* resolve_interface_target(std::span<const ObjectInstance> arguments, MethodSymbol* interfaceMethod, std::uint32_t interfaceSlot, ObjectInstance& outReceiver);
+		ObjectInstance invoke_virtual(MethodSymbol* interfaceMethod, std::span<const ObjectInstance> arguments, std::uint32_t interfaceSlot);
 
 		// async surface used by native libraries through MethodCallState
 		ObjectInstance launch_async_method(MethodSymbol* method, std::span<const ObjectInstance> arguments);

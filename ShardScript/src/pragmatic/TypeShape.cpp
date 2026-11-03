@@ -46,3 +46,26 @@ const TypeShape::SlotInfo& TypeShape::get_slot(std::uint32_t slotIndex) const
 
 	return m_slots[slotIndex];
 }
+
+bool TypeShape::has_vtable() const
+{
+	return !m_vtable.empty();
+}
+
+std::size_t TypeShape::get_vtable_size() const
+{
+	return m_vtable.size();
+}
+
+MethodSymbol* TypeShape::get_vtable_entry(std::uint32_t slot) const
+{
+	if (slot >= m_vtable.size())
+		return nullptr;
+
+	return m_vtable[slot];
+}
+
+void TypeShape::set_vtable(gmt::vector<MethodSymbol*> entries)
+{
+	m_vtable = std::move(entries);
+}

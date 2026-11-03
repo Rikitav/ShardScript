@@ -1,0 +1,50 @@
+interface IWidget
+{
+    Count -> int { get; set; }
+    func Get() -> int;
+}
+
+struct MissingMethod : IWidget
+{
+    public Marker: int;
+}
+
+struct MissingSetter : IWidget
+{
+    public Marker: int;
+
+    public Count -> int
+    {
+        get
+        {
+            return this.Marker;
+        }
+    }
+
+    public func Get() -> int
+    {
+        return this.Marker;
+    }
+}
+
+struct StaticOnly : IWidget
+{
+    public Marker: int;
+
+    public Count -> int
+    {
+        get
+        {
+            return this.Marker;
+        }
+        set
+        {
+            this.Marker = value;
+        }
+    }
+
+    public static func Get() -> int
+    {
+        return 0;
+    }
+}

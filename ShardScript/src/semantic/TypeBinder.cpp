@@ -1,12 +1,15 @@
 #include <shard/semantic/TypeBinder.hpp>
 
 #include <gmt/Containers.hpp>
+#include <gmt/Concat.hpp>
 #include <gmt/InlineVector.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/TokenType.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/symbols/EnumSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
 #include <shard/semantic/symbols/OperatorSymbol.hpp>
@@ -412,7 +415,77 @@ void TypeBinder::visit_struct_declaration(const StructDeclarationSyntax* node)
 	for (MemberDeclarationSyntax* const& member : node->get_members())
 		member->accept(*this);
 
+	validate_interface_conformance(symbol, node);
+
 	pop_scope();
+}
+
+void TypeBinder::validate_interface_conformance(StructSymbol* symbol, const StructDeclarationSyntax* node)
+{
+	if (symbol->interfaces.empty())
+		return;
+
+	SemanticModel& model = get_model();
+	TextLocation location = node->get_identifier().get_location();
+
+	auto report_missing = [&](StructSymbol* interfaceType, std::wstring_view memberName)
+	{
+		get_diagnostics().report_error(location, gmt::concat(L"Type '", symbol->get_name(), L"' does not implement member '", memberName, L"' of interface '", interfaceType->get_name(), L"'"));
+	};
+
+	for (StructSymbol* interfaceType : symbol->interfaces)
+	{
+		if (interfaceType == nullptr)
+			continue;
+
+		// a constructed interface keeps its members on the definition
+		StructSymbol* definition = interfaceType;
+		if (definition->get_kind() == SyntaxKind::GenericType)
+			definition = static_cast<GenericTypeSymbol*>(definition)->get_underlaying_type();
+
+		if (definition == nullptr)
+			continue;
+
+		for (MethodSymbol* member : definition->methods)
+		{
+			if ((member == nullptr) || model.find_interface_implementation(symbol, member) != nullptr)
+				continue;
+
+			report_missing(definition, member->get_name());
+		}
+
+		for (PropertySymbol* property : definition->properties)
+		{
+			if (property == nullptr)
+				continue;
+
+			bool satisfied = true;
+			if (property->get_getter() != nullptr)
+				satisfied = model.find_interface_implementation(symbol, property->get_getter()) != nullptr;
+
+			if (satisfied && (property->get_setter() != nullptr))
+				satisfied = model.find_interface_implementation(symbol, property->get_setter()) != nullptr;
+
+			if (!satisfied)
+				report_missing(definition, property->get_name());
+		}
+
+		for (IndexatorSymbol* indexator : definition->indexators)
+		{
+			if (indexator == nullptr)
+				continue;
+
+			bool satisfied = true;
+			if (indexator->get_getter() != nullptr)
+				satisfied = model.find_interface_implementation(symbol, indexator->get_getter()) != nullptr;
+
+			if (satisfied && (indexator->get_setter() != nullptr))
+				satisfied = model.find_interface_implementation(symbol, indexator->get_setter()) != nullptr;
+
+			if (!satisfied)
+				report_missing(definition, indexator->get_name());
+		}
+	}
 }
 
 void TypeBinder::visit_interface_declaration(const InterfaceDeclarationSyntax* node)

@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 
 namespace shard
 {
@@ -44,6 +45,7 @@ namespace shard
 		wchar_t as_char() const;
 		std::uintptr_t as_nint() const;
 		std::byte* as_pointer() const;
+		std::wstring_view as_string() const;
 
 		void write_boolean(bool value);
 		void write_integer(std::int64_t value);

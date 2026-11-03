@@ -15,6 +15,7 @@
 
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <span>
 #include <vector>
 
@@ -46,6 +47,10 @@ namespace shard
 		// ordered symbols captured by each lambda method, matching its capture
 		// box field order; empty for non-capturing lambdas
 		gmt::unordered_map<MethodSymbol*, gmt::vector<SyntaxSymbol*>> m_lambdaCaptures;
+
+		// interface member -> vtable slot
+		gmt::unordered_map<MethodSymbol*, std::uint32_t> m_interfaceSlots;
+		std::uint32_t m_interfaceSlotCount = 0;
 
 	public:
 		PragmaticModel() = default;
@@ -88,5 +93,15 @@ namespace shard
 
 		gmt::vector<SyntaxSymbol*>& lambda_captures_for(MethodSymbol* method);
 		const gmt::vector<SyntaxSymbol*>* get_lambda_captures(MethodSymbol* method) const;
+
+		void reserve_interface_slot(MethodSymbol* member);
+		std::optional<std::uint32_t> get_interface_slot(MethodSymbol* member) const;
+		std::uint32_t get_interface_slot_count() const;
+
+	private:
+		void fill_vtable(SemanticModel& model, TypeShape* shape);
+		void fill_vtable_for_interfaces(SemanticModel& model, StructSymbol* concrete, StructSymbol* source, gmt::vector<MethodSymbol*>& entries, gmt::unordered_set<StructSymbol*>& visited);
+		void fill_vtable_for_interface(SemanticModel& model, StructSymbol* concrete, StructSymbol* interfaceType, gmt::vector<MethodSymbol*>& entries);
+		void assign_vtable_entry(SemanticModel& model, StructSymbol* concrete, MethodSymbol* member, gmt::vector<MethodSymbol*>& entries);
 	};
 }

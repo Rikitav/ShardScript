@@ -131,6 +131,7 @@ namespace shard
 		void mark_identity(const ExpressionSyntax* expression, bool includeReceivers);
 		void mark_wrap_identity(const ExpressionSyntax* expression);
 		void record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver);
+		EscapeLevel argument_escape_level(MethodSymbol* callee, std::size_t parameterIndex, EscapeLevel base) const;
 		void alias_into(SyntaxSymbol* target, const ExpressionSyntax* sourceExpression);
 
 		void register_allocation_site(const ExpressionSyntax* site);

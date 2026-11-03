@@ -136,6 +136,18 @@ std::byte* ObjectInstance::as_pointer() const
 	return value;
 }
 
+std::wstring_view ObjectInstance::as_string() const
+{
+	std::int64_t length{};
+	std::memcpy(&length, m_memory, sizeof(std::int64_t));
+
+	if (length <= 0)
+		return std::wstring_view();
+
+	const wchar_t* data = reinterpret_cast<const wchar_t*>(m_memory + sizeof(std::int64_t));
+	return std::wstring_view(data, length);
+}
+
 void ObjectInstance::write_boolean(bool value)
 {
 	std::memcpy(m_memory, &value, sizeof(bool));

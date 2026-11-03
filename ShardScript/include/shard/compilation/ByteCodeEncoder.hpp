@@ -9,6 +9,7 @@
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 
 #include <shard/compilation/VirtualProgramImage.hpp>
+#include <shard/compilation/OperationCode.hpp>
 
 #include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
@@ -114,10 +115,9 @@ namespace shard
 		void emit_load_enum_field(FieldSymbol* field);
 
 		void emit_load_type_argument(std::uint16_t index, StructSymbol* type);
-		void emit_call_method_symbol(MethodSymbol* method);
+		void emit_call_method_symbol(MethodSymbol* method, std::uint32_t interfaceSlot = DirectCallSlot);
 		void emit_call_method_into(MethodSymbol* method, std::uint16_t slot);
 		void emit_call_delegate(DelegateTypeSymbol* type);
-		void emit_call_interface(MethodSymbol* interfaceMethod);
 		void emit_return_placed();
 	void emit_await();
 		void emit_is_instance(StructSymbol* type);

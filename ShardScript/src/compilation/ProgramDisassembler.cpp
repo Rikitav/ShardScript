@@ -213,7 +213,7 @@ namespace
 				break;
 			}
 
-			case OpCode::BR_NULL:
+			case OpCode::JUMP_NULL:
 			{
 				opcode = L"brnull";
 				args << L"SS_";
@@ -348,6 +348,11 @@ namespace
 			{
 				opcode = L"call";
 				write_symbol_name(args, decoder.absorb_method_symbol());
+
+				const std::uint32_t interfaceSlot = decoder.absorb_uint32();
+				if (interfaceSlot != DirectCallSlot)
+					args << L" [slot " << interfaceSlot << L"]";
+
 				break;
 			}
 
@@ -409,13 +414,6 @@ namespace
 			{
 				opcode = L"calldelegate";
 				write_symbol_name(args, decoder.absorb_delegate_type_symbol());
-				break;
-			}
-
-			case OpCode::CALLINTERFACE:
-			{
-				opcode = L"callinterface";
-				write_symbol_name(args, decoder.absorb_method_symbol());
 				break;
 			}
 

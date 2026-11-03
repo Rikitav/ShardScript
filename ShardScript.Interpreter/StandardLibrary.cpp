@@ -2,19 +2,30 @@
 
 #include <shard/runtime/MethodCallState.hpp>
 
+#include <shard/pragmatic/PragmaticModel.hpp>
+#include <shard/pragmatic/TypeShape.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/PrimitiveMath.hpp>
 #include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/StandardTypes.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <cstdint>
+#include <cstring>
 #include <iostream>
+#include <optional>
 
 using namespace shard;
 
 namespace
 {
+	constexpr std::uint32_t NullableFlagSlot = 0;
+	constexpr std::uint32_t NullableValueSlot = 1;
+
 	void native_print_integer(MethodCallState& state)
 	{
 		std::wcout << state.get_integer_argument(0);
@@ -55,6 +66,187 @@ namespace
 		std::wcout << (state.get_boolean_argument(0) ? L"true" : L"false") << std::endl;
 	}
 
+	void write_newline()
+	{
+		std::wcout << std::endl;
+	}
+
+	void write_null(bool newline)
+	{
+		std::wcout << L"<NULL?>";
+
+		if (newline)
+			write_newline();
+	}
+
+	void write_printed_value(bool value)
+	{
+		std::wcout << (value ? L"true" : L"false");
+	}
+
+	void write_printed_value(std::int64_t value)
+	{
+		std::wcout << value;
+	}
+
+	void write_printed_value(std::uint8_t value)
+	{
+		std::wcout << static_cast<int>(value);
+	}
+
+	void write_printed_value(std::uintptr_t value)
+	{
+		std::wcout << value;
+	}
+
+	void write_printed_value(wchar_t value)
+	{
+		std::wcout << value;
+	}
+
+	void write_printed_value(double value)
+	{
+		std::wcout << value;
+	}
+
+	bool nullable_has_value(ObjectInstance wrapper)
+	{
+		return wrapper.get_field(NullableFlagSlot).as_boolean();
+	}
+
+	ObjectInstance nullable_value(ObjectInstance wrapper)
+	{
+		ObjectInstance slot = wrapper.get_field(NullableValueSlot);
+		const TypeShape* shape = slot.get_shape();
+
+		if (!shape->is_reference())
+			return slot;
+
+		return ObjectInstance(shape, slot.as_pointer());
+	}
+
+	template<typename TValue>
+	void print_nullable_primitive(MethodCallState& state, bool newline)
+	{
+		ObjectInstance wrapper = state.get_argument(0);
+
+		if (!nullable_has_value(wrapper))
+		{
+			write_null(newline);
+			return;
+		}
+
+		ObjectInstance slot = wrapper.get_field(NullableValueSlot);
+		TValue value{};
+		std::memcpy(&value, slot.get_memory(), sizeof(TValue));
+		write_printed_value(value);
+
+		if (newline)
+			write_newline();
+	}
+
+	template<typename TValue>
+	void native_print_nullable(MethodCallState& state)
+	{
+		print_nullable_primitive<TValue>(state, false);
+	}
+
+	template<typename TValue>
+	void native_println_nullable(MethodCallState& state)
+	{
+		print_nullable_primitive<TValue>(state, true);
+	}
+
+	void print_nullable_string(MethodCallState& state, bool newline)
+	{
+		ObjectInstance wrapper = state.get_argument(0);
+
+		if (!nullable_has_value(wrapper))
+		{
+			write_null(newline);
+			return;
+		}
+
+		std::wcout << nullable_value(wrapper).as_string();
+
+		if (newline)
+			write_newline();
+	}
+
+	void native_print_nullable_string(MethodCallState& state)
+	{
+		print_nullable_string(state, false);
+	}
+
+	void native_println_nullable_string(MethodCallState& state)
+	{
+		print_nullable_string(state, true);
+	}
+
+	void print_printable(MethodCallState& state, ObjectInstance value, bool newline)
+	{
+		if (value == nullptr)
+		{
+			write_null(newline);
+			return;
+		}
+
+		SymbolTable& table = state.get_vm().get_model().get_table();
+		MethodSymbol* contract = static_cast<MethodSymbol*>(table.get_standard_type(StandardTypes::IPrintable_ToString));
+		if (contract == nullptr)
+		{
+			state.get_vm().raise_runtime_exception(L"IPrintable.ToString is not available in this program image");
+			return;
+		}
+
+		// the contract is a virtual member: the VM resolves the receiver's
+		// implementation, so printing never looks a method up by name
+		InvokeResult result = state.try_invoke_method(contract, { value });
+		if (!result.is_ok())
+		{
+			state.propagate(result.get_exception());
+			return;
+		}
+
+		std::wcout << result.get_value().as_string();
+
+		if (newline)
+			write_newline();
+	}
+
+	void native_print_printable(MethodCallState& state)
+	{
+		print_printable(state, state.get_argument(0), false);
+	}
+
+	void native_println_printable(MethodCallState& state)
+	{
+		print_printable(state, state.get_argument(0), true);
+	}
+
+	void print_nullable_printable(MethodCallState& state, bool newline)
+	{
+		ObjectInstance wrapper = state.get_argument(0);
+
+		if (!nullable_has_value(wrapper))
+		{
+			write_null(newline);
+			return;
+		}
+
+		print_printable(state, nullable_value(wrapper), newline);
+	}
+
+	void native_print_nullable_printable(MethodCallState& state)
+	{
+		print_nullable_printable(state, false);
+	}
+
+	void native_println_nullable_printable(MethodCallState& state)
+	{
+		print_nullable_printable(state, true);
+	}
+
 	MethodSymbol* register_native(SymbolTable& table, NamespaceSymbol* owner, const wchar_t* name, StructSymbol* parameterType, void (*callback)(MethodCallState&))
 	{
 		MethodSymbol* method = table.emplace<MethodSymbol>(name, owner);
@@ -72,6 +264,11 @@ namespace
 		owner->members.push_back(method);
 		return method;
 	}
+
+	MethodSymbol* register_nullable_native(SymbolTable& table, NamespaceSymbol* owner, const wchar_t* name, StructSymbol* underlayingType, void (*callback)(MethodCallState&))
+	{
+		return register_native(table, owner, name, table.find_or_create_nullable_type(underlayingType), callback);
+	}
 }
 
 namespace shard::interpreter
@@ -81,6 +278,8 @@ namespace shard::interpreter
 		SymbolTable& table = model.get_table();
 		NamespaceSymbol* stdio = table.get_root_namespace()->lookup_or_create(L"stdio", table);
 
+		StructSymbol* printable = static_cast<StructSymbol*>(table.get_standard_type(StandardTypes::IPrintable));
+
 		register_native(table, stdio, L"print", table.get_integer_primitive(), &native_print_integer);
 		register_native(table, stdio, L"println", table.get_integer_primitive(), &native_println_integer);
 		register_native(table, stdio, L"print", table.get_string_primitive(), &native_print_string);
@@ -89,5 +288,25 @@ namespace shard::interpreter
 		register_native(table, stdio, L"println", table.get_double_primitive(), &native_println_double);
 		register_native(table, stdio, L"print", table.get_boolean_primitive(), &native_print_boolean);
 		register_native(table, stdio, L"println", table.get_boolean_primitive(), &native_println_boolean);
+
+		register_native(table, stdio, L"print", printable, &native_print_printable);
+		register_native(table, stdio, L"println", printable, &native_println_printable);
+		register_nullable_native(table, stdio, L"print", printable, &native_print_nullable_printable);
+		register_nullable_native(table, stdio, L"println", printable, &native_println_nullable_printable);
+
+		register_nullable_native(table, stdio, L"print", table.get_boolean_primitive(), &native_print_nullable<bool>);
+		register_nullable_native(table, stdio, L"println", table.get_boolean_primitive(), &native_println_nullable<bool>);
+		register_nullable_native(table, stdio, L"print", table.get_integer_primitive(), &native_print_nullable<std::int64_t>);
+		register_nullable_native(table, stdio, L"println", table.get_integer_primitive(), &native_println_nullable<std::int64_t>);
+		register_nullable_native(table, stdio, L"print", table.get_double_primitive(), &native_print_nullable<double>);
+		register_nullable_native(table, stdio, L"println", table.get_double_primitive(), &native_println_nullable<double>);
+		register_nullable_native(table, stdio, L"print", table.get_char_primitive(), &native_print_nullable<wchar_t>);
+		register_nullable_native(table, stdio, L"println", table.get_char_primitive(), &native_println_nullable<wchar_t>);
+		register_nullable_native(table, stdio, L"print", table.get_byte_primitive(), &native_print_nullable<std::uint8_t>);
+		register_nullable_native(table, stdio, L"println", table.get_byte_primitive(), &native_println_nullable<std::uint8_t>);
+		register_nullable_native(table, stdio, L"print", table.get_nint_primitive(), &native_print_nullable<std::uintptr_t>);
+		register_nullable_native(table, stdio, L"println", table.get_nint_primitive(), &native_println_nullable<std::uintptr_t>);
+		register_nullable_native(table, stdio, L"print", table.get_string_primitive(), &native_print_nullable_string);
+		register_nullable_native(table, stdio, L"println", table.get_string_primitive(), &native_println_nullable_string);
 	}
 }

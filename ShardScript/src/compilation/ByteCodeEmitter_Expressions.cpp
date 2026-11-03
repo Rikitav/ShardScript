@@ -365,7 +365,7 @@ void ByteCodeEmitter::visit_default_expression(const DefaultExpressionSyntax* no
 	{
 		m_encoder.emit_load_local(temp);
 		eval_push(sizeof(void*));
-		m_encoder.emit_call_method_symbol(constructorCall);
+		emit_call_method(constructorCall);
 		eval_pop(constructorCall->get_parameters().size() + 1);
 	}
 
@@ -565,7 +565,7 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 			node->get_right()->accept(*this);
 			node->get_left()->accept(*this);
 
-			m_encoder.emit_call_method_symbol(target);
+			emit_call_method(target);
 			eval_pop(2);
 			eval_push_type(target->get_return_type());
 			return;
@@ -827,12 +827,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 				eval_push(sizeof(void*));
 			}
 
-			const SyntaxSymbol* owner = property->get_parent();
-			bool interfaceDispatch = owner != nullptr && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
-			if (interfaceDispatch)
-				m_encoder.emit_call_interface(getter);
-			else
-				m_encoder.emit_call_method_symbol(getter);
+			emit_call_method(getter);
 
 			eval_pop();
 
@@ -1005,9 +1000,6 @@ void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyn
 	bool isStatic = method->get_linking() == LINK_STATIC;
 	bool extension = is_extension_call(method, receiver, arguments);
 
-	const SyntaxSymbol* parent = method->get_parent();
-	bool interfaceDispatch = parent != nullptr && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
-
 	emit_arguments_reversed(arguments);
 
 	std::size_t receiverEval = 0;
@@ -1024,10 +1016,7 @@ void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyn
 		receiverEval = 1;
 	}
 
-	if (interfaceDispatch)
-		m_encoder.emit_call_interface(method);
-	else
-		m_encoder.emit_call_method_symbol(method);
+	emit_call_method(method);
 
 	// the extension receiver fills the first parameter slot, so the parameter
 	// count already covers it
@@ -1270,7 +1259,7 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 			eval_push(sizeof(void*));
 		}
 
-		m_encoder.emit_call_method_symbol(getter);
+		emit_call_method(getter);
 
 		std::size_t argumentCount = indexator->get_parameters().size() + 1;
 		eval_pop(argumentCount);
@@ -1541,7 +1530,7 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 
 		if (constructorCall != nullptr)
 		{
-			m_encoder.emit_call_method_symbol(constructorCall);
+			emit_call_method(constructorCall);
 			eval_pop(constructorCall->get_parameters().size() + 1);
 		}
 
@@ -1568,7 +1557,7 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 
 	if (constructorCall != nullptr)
 	{
-		m_encoder.emit_call_method_symbol(constructorCall);
+		emit_call_method(constructorCall);
 		eval_pop(constructorCall->get_parameters().size() + 1);
 	}
 

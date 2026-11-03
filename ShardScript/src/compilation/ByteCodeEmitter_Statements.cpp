@@ -44,20 +44,6 @@
 
 using namespace shard;
 
-namespace
-{
-	// accessors belong to a property or indexator, so the declaring type sits
-	// one level above the accessor's direct parent
-	bool is_interface_accessor(MethodSymbol* accessor)
-	{
-		const SyntaxSymbol* owner = accessor->get_parent();
-		if (owner != nullptr && (owner->get_kind() == SyntaxKind::PropertyDeclaration || owner->get_kind() == SyntaxKind::IndexatorDeclaration))
-			owner = owner->get_parent();
-
-		return owner != nullptr && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
-	}
-}
-
 void ByteCodeEmitter::emit_defer_drain(std::size_t count)
 {
 	if (count == 0)
@@ -574,10 +560,7 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 		eval_push(sizeof(std::int64_t));
 		m_encoder.emit_load_local(rangeSlot);
 		eval_push(sizeof(void*));
-		if (is_interface_accessor(countGetter))
-			m_encoder.emit_call_interface(countGetter);
-		else
-			m_encoder.emit_call_method_symbol(countGetter);
+		emit_call_method(countGetter);
 		eval_pop();
 		eval_push(sizeof(std::int64_t));
 		m_encoder.emit_compare_less();
@@ -615,10 +598,7 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 		eval_push(sizeof(std::int64_t));
 		m_encoder.emit_load_local(rangeSlot);
 		eval_push(sizeof(void*));
-		if (is_interface_accessor(indexGetter))
-			m_encoder.emit_call_interface(indexGetter);
-		else
-			m_encoder.emit_call_method_symbol(indexGetter);
+		emit_call_method(indexGetter);
 		eval_pop(2);
 		eval_push_type(loopVariableType);
 	}
@@ -899,7 +879,7 @@ void ByteCodeEmitter::visit_defer_variable(const DeferVariableSyntax* node)
 	patch_jump(deferAt);
 	m_encoder.emit_load_local(*slot);
 	eval_push(sizeof(void*));
-	m_encoder.emit_call_method_symbol(dispose);
+	emit_call_method(dispose);
 	eval_pop();
 	m_encoder.emit_defer_break();
 
