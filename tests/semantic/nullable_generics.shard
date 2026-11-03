@@ -10,26 +10,26 @@ func Maybe<T>(value: T?) -> T?
     return value;
 }
 
-func Force<T>(value: T?) -> T
+func Force<T>(value: T?, fallback: T) -> T
 {
-    return value.Value;
+    return value ?? fallback;
 }
 
 func Main() -> void
 {
     a: int? = Maybe<int>(5);
-    println(a.Value);
+    println(a ?? 0);
 
     b: int? = Maybe<int>(null);
-    println(b.HasValue);
+    println(b != null);
 
     box: Box<int> = new Box<int>();
     box.Item = 9;
-    println(box.Item.Value);
+    println(box.Item ?? 0);
 
     nested: Box<int?> = new Box<int?>();
     nested.Item = null;
-    println(nested.Item.HasValue);
+    println(nested.Item != null);
 
-    println(Force<int>(a));
+    println(Force<int>(a, 0));
 }

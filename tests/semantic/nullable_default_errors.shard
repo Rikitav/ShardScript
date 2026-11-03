@@ -1,0 +1,17 @@
+using stdio;
+
+public interface IWidget
+{
+    func Get() -> int;
+}
+
+func Bad() -> string
+{
+    return default;
+}
+
+func Main() -> void
+{
+    widget: IWidget = default;
+    println(default);
+}

@@ -67,6 +67,7 @@
 #include <shard/parsing/nodes/loops/ForInStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
+#include <shard/parsing/nodes/expressions/DefaultExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/InvokationExpressionSyntax.hpp>
@@ -232,6 +233,7 @@ namespace shard
 		ExpressionSyntax* read_operand(SourceProvider& reader, SyntaxNode* parent);
 
 		LiteralExpressionSyntax* read_literal_expression(SourceProvider& reader, SyntaxNode* parent);
+		DefaultExpressionSyntax* read_default_expression(SourceProvider& reader, SyntaxNode* parent);
 		UnaryExpressionSyntax* read_unary_expression(SourceProvider& reader, SyntaxNode* parent);
 		AwaitExpressionSyntax* read_await_expression(SourceProvider& reader, SyntaxNode* parent);
 		IfExpressionSyntax* read_if_expression(SourceProvider& reader, SyntaxNode* parent);

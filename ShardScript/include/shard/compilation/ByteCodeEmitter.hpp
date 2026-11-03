@@ -125,6 +125,7 @@ namespace shard
 
 		void emit_condition_jump(const ExpressionSyntax* condition, bool jumpWhenTrue);
 		void emit_converted(const ExpressionSyntax* expression);
+		void emit_receiver(const ExpressionSyntax* receiver);
 		void emit_nullable_coalesce(const BinaryExpressionSyntax* node);
 		bool emit_nullable_comparison(const BinaryExpressionSyntax* node, TokenType op);
 		void update_min_eval_payload();
@@ -181,6 +182,7 @@ namespace shard
 		void visit_defer_variable(const DeferVariableSyntax* node) override;
 
 		void visit_literal_expression(const LiteralExpressionSyntax* node) override;
+		void visit_default_expression(const DefaultExpressionSyntax* node) override;
 		void visit_binary_expression(const BinaryExpressionSyntax* node) override;
 		void visit_unary_expression(const UnaryExpressionSyntax* node) override;
 		void visit_member_access_expression(const MemberAccessExpressionSyntax* node) override;

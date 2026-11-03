@@ -263,6 +263,116 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 	}
 }
 
+void ByteCodeEmitter::visit_default_expression(const DefaultExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	StructSymbol* type = substitute_type(get_model().get_expression_type(node));
+	if (type == nullptr)
+		return;
+
+	if (type->get_kind() == SyntaxKind::NullableType)
+	{
+		m_encoder.emit_nullable_default(type);
+		eval_push_type(type);
+		return;
+	}
+
+	SymbolTable& table = get_symbol_table();
+
+	if (type == table.get_boolean_primitive())
+	{
+		m_encoder.emit_load_const_bool(false);
+		eval_push_type(type);
+		return;
+	}
+
+	if (type == table.get_integer_primitive())
+	{
+		m_encoder.emit_load_const_int64(0);
+		eval_push_type(type);
+		return;
+	}
+
+	if (type == table.get_double_primitive())
+	{
+		m_encoder.emit_load_const_double64(0.0);
+		eval_push_type(type);
+		return;
+	}
+
+	if (type == table.get_char_primitive())
+	{
+		m_encoder.emit_load_const_char16(0);
+		eval_push_type(type);
+		return;
+	}
+
+	if (type == table.get_byte_primitive())
+	{
+		m_encoder.emit_load_const_int8(0);
+		eval_push_type(type);
+		return;
+	}
+
+	if (type == table.get_nint_primitive())
+	{
+		m_encoder.emit_load_const_native_int(0);
+		eval_push_type(type);
+		return;
+	}
+
+	if (type->get_kind() == SyntaxKind::EnumDeclaration)
+	{
+		m_encoder.emit_load_const_int64(0);
+		eval_push_type(type);
+		return;
+	}
+
+	StructSymbol* constructorOwner = type;
+	if (type->get_kind() == SyntaxKind::GenericType)
+		constructorOwner = static_cast<GenericTypeSymbol*>(type)->get_underlaying_type();
+
+	ConstructorSymbol* constructor = nullptr;
+	if (constructorOwner != nullptr)
+	{
+		for (ConstructorSymbol* candidate : constructorOwner->constructors)
+		{
+			if (candidate == nullptr)
+				continue;
+
+			if (!candidate->get_parameters().empty())
+				continue;
+
+			constructor = candidate;
+			break;
+		}
+	}
+
+	MethodSymbol* constructorCall = nullptr;
+	if (constructor != nullptr)
+		constructorCall = resolve_call_target(node, constructor, type);
+
+	std::uint16_t temp = allocate_temporary(type, PlacementVerdict::Heap);
+
+	m_encoder.emit_alloc_heap(type);
+	eval_push(sizeof(void*));
+	m_encoder.emit_store_local(temp);
+	eval_pop();
+
+	if (constructorCall != nullptr)
+	{
+		m_encoder.emit_load_local(temp);
+		eval_push(sizeof(void*));
+		m_encoder.emit_call_method_symbol(constructorCall);
+		eval_pop(constructorCall->get_parameters().size() + 1);
+	}
+
+	m_encoder.emit_load_local(temp);
+	eval_push(sizeof(void*));
+}
+
 void ByteCodeEmitter::emit_nullable_coalesce(const BinaryExpressionSyntax* node)
 {
 	SemanticModel& model = get_model();
@@ -597,39 +707,11 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 	if (node == nullptr)
 		return;
 
-	const ExpressionSyntax* previous = node->get_previous();
-	if (previous != nullptr)
-	{
-		StructSymbol* receiverType = substitute_type(get_model().get_expression_type(previous));
-		if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::NullableType)
-		{
-			std::wstring_view name = node->get_identifier().get_lexeme();
-			previous->accept(*this);
-
-			if (name == L"HasValue")
-			{
-				m_encoder.emit_nullable_has_value();
-				eval_pop();
-				eval_push(sizeof(bool));
-				return;
-			}
-
-			if (name == L"Value")
-			{
-				StructSymbol* underlaying = substitute_type(static_cast<NullableTypeSymbol*>(receiverType)->get_underlaying_type());
-				m_encoder.emit_nullable_unwrap(receiverType);
-				eval_pop();
-				eval_push_type(underlaying);
-				return;
-			}
-		}
-	}
-
 	std::optional<const MemberAccessExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	emit_identifier_load(*nodeRef, previous);
+	emit_identifier_load(*nodeRef, node->get_previous());
 }
 
 void ByteCodeEmitter::visit_identifier_name_type(const IdentifierNameTypeSyntax* node)
@@ -738,7 +820,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 				return;
 
 			if (previous != nullptr)
-				previous->accept(*this);
+				emit_receiver(previous);
 			else
 			{
 				m_encoder.emit_load_local(0);
@@ -788,7 +870,7 @@ void ByteCodeEmitter::emit_instance_field_load(FieldSymbol* field, const Express
 	}
 
 	if (previous != nullptr)
-		previous->accept(*this);
+		emit_receiver(previous);
 	else
 	{
 		m_encoder.emit_load_local(0);
@@ -823,6 +905,26 @@ FieldSymbol* ByteCodeEmitter::capture_field_of(SyntaxSymbol* bound) const
 	return nullptr;
 }
 
+void ByteCodeEmitter::emit_receiver(const ExpressionSyntax* receiver)
+{
+	if (receiver == nullptr)
+		return;
+
+	receiver->accept(*this);
+
+	StructSymbol* receiverType = substitute_type(get_model().get_expression_type(receiver));
+	if (receiverType == nullptr)
+		return;
+
+	if (receiverType->get_kind() != SyntaxKind::NullableType)
+		return;
+
+	StructSymbol* underlaying = substitute_type(static_cast<NullableTypeSymbol*>(receiverType)->get_underlaying_type());
+	m_encoder.emit_nullable_unwrap(receiverType);
+	eval_pop();
+	eval_push_type(underlaying);
+}
+
 void ByteCodeEmitter::emit_converted(const ExpressionSyntax* expression)
 {
 	if (expression == nullptr)
@@ -845,8 +947,9 @@ void ByteCodeEmitter::emit_converted(const ExpressionSyntax* expression)
 
 		case NullableConversionKind::DEFAULT:
 		{
-			m_encoder.emit_nullable_default(targetType);
+			m_encoder.emit_pop();
 			eval_pop();
+			m_encoder.emit_nullable_default(targetType);
 			eval_push_type(targetType);
 			break;
 		}
@@ -911,7 +1014,7 @@ void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyn
 	if (!isStatic || extension)
 	{
 		if (receiver != nullptr)
-			receiver->accept(*this);
+			emit_receiver(receiver);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -951,7 +1054,7 @@ void ByteCodeEmitter::emit_method_call_into(MethodSymbol* method, const Expressi
 	if (!isStatic || extension)
 	{
 		if (receiver != nullptr)
-			receiver->accept(*this);
+			emit_receiver(receiver);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -1035,7 +1138,7 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 			: nullptr;
 
 		emit_arguments_reversed(node->get_arguments());
-		node->get_previous()->accept(*this);
+		emit_receiver(node->get_previous());
 
 		m_encoder.emit_call_delegate(delegateType);
 
@@ -1098,7 +1201,7 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 		else
 		{
 			if (!(node->get_previous() == nullptr))
-				node->get_previous()->accept(*this);
+				emit_receiver(node->get_previous());
 			else
 			{
 				m_encoder.emit_load_local(0);
@@ -1160,7 +1263,7 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 
 		emit_arguments_reversed(node->get_arguments());
 		if (!(node->get_previous() == nullptr))
-			node->get_previous()->accept(*this);
+			emit_receiver(node->get_previous());
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -1178,7 +1281,7 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 	}
 
 	// array element access
-	node->get_previous()->accept(*this);
+	emit_receiver(node->get_previous());
 
 	std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
 	if (!arguments.empty())
@@ -1240,10 +1343,15 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 	if (targetNullable)
 	{
 		if (get_model().is_null_type(sourceType))
+		{
+			m_encoder.emit_pop();
+			eval_pop();
 			m_encoder.emit_nullable_default(targetType);
-		else
-			m_encoder.emit_nullable_wrap(targetType);
+			eval_push_type(targetType);
+			return;
+		}
 
+		m_encoder.emit_nullable_wrap(targetType);
 		eval_pop();
 		eval_push_type(targetType);
 		return;

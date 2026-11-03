@@ -2540,6 +2540,9 @@ ExpressionSyntax* SourceParser::read_operand(SourceProvider& reader, SyntaxNode*
 		case TokenType::ByteLiteral:
 			return read_linked_expression(reader, parent, read_literal_expression(reader, parent));
 
+		case TokenType::DefaultKeyword:
+			return read_linked_expression(reader, parent, read_default_expression(reader, parent));
+
 		case TokenType::OpenCurl: // parenthesized grouping
 		{
 			reader.consume();
@@ -2603,6 +2606,24 @@ LiteralExpressionSyntax* SourceParser::read_literal_expression(SourceProvider& r
 
 	syntax->set_literal(reader.current());
 	reader.consume();
+
+	return syntax;
+}
+
+DefaultExpressionSyntax* SourceParser::read_default_expression(SourceProvider& reader, SyntaxNode* parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<DefaultExpressionSyntax>(parent);
+
+	syntax->set_default_keyword(reader.current());
+	reader.consume();
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::OpenCurl)
+	{
+		reader.consume();
+		syntax->set_type(read_type(reader, syntax));
+		expect(reader, TokenType::CloseCurl, L"Expected ')'");
+	}
 
 	return syntax;
 }

@@ -1,3 +1,8 @@
+func Positive(value: int) -> bool
+{
+    return value > 0;
+}
+
 func Read(x: int?) -> int
 {
     if (x == null)
@@ -12,12 +17,12 @@ func Read(x: int?) -> int
         b: int = x;
     }
 
-    if (x.HasValue)
+    if (x != null)
     {
         c: int = x;
     }
 
-    if (x != null and x.Value > 0)
+    if (x != null and Positive(x))
     {
         d: int = x;
     }

@@ -468,6 +468,15 @@ void SyntaxVisitor::visit_literal_expression(const LiteralExpressionSyntax* node
 		return;
 }
 
+void SyntaxVisitor::visit_default_expression(const DefaultExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->get_type() != nullptr)
+		node->get_type()->accept(*this);
+}
+
 void SyntaxVisitor::visit_binary_expression(const BinaryExpressionSyntax* node)
 {
 	if (node == nullptr)

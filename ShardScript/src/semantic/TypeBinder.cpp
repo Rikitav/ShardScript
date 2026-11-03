@@ -146,6 +146,12 @@ void TypeBinder::bind_expression(const ExpressionSyntax* expression)
 			break;
 		}
 
+		case SyntaxKind::DefaultExpression:
+		{
+			visit_default_expression(static_cast<const DefaultExpressionSyntax*>(expression));
+			break;
+		}
+
 		case SyntaxKind::CollectionExpression:
 		{
 			for (ExpressionSyntax* const& value : gmt::as<CollectionExpressionSyntax>(expression)->get_values())
@@ -1020,6 +1026,15 @@ void TypeBinder::visit_nullable_type(const NullableTypeSyntax* node)
 		get_diagnostics().report_error(node->get_question_token().get_location(), L"Nullable of 'void' is not a valid type");
 
 	m_factory.create_nullable_type(*nodeRef, underlaying);
+}
+
+void TypeBinder::visit_default_expression(const DefaultExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->get_type() != nullptr)
+		resolve_type(node->get_type());
 }
 
 void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)

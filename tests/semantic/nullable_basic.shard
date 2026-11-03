@@ -1,36 +1,50 @@
 using stdio;
 
+struct Box
+{
+    public Amount: int;
+}
+
 func Echo(value: int?) -> int?
 {
     return value;
 }
 
-func Unwrap(value: int?) -> int
+func Safe(value: int?) -> int
 {
-    return value.Value;
+    if (value == null)
+    {
+        return 0;
+    }
+
+    return value;
 }
 
 func Main() -> void
 {
     a: int? = 5;
     b: int? = null;
-    println(a.HasValue);
-    println(b.HasValue);
-    println(a.Value);
-    println(Unwrap(7));
-    println(Echo(9).Value);
+    println(a != null);
+    println(b != null);
+    println(a);
+    println(Safe(7));
+    println(Safe(null));
 
     c: int? = a;
     c = null;
-    println(a.HasValue);
+    println(a != null);
 
-    try
+    box: Box = new Box();
+    box.Amount = 7;
+    maybeBox: Box? = box;
+    if (maybeBox != null)
     {
-        v: int = b.Value;
-        println(v);
+        println(maybeBox.Amount);
     }
-    catch error: RuntimeException
+
+    e: int? = Echo(9);
+    if (e != null)
     {
-        println("caught");
+        println(e);
     }
 }

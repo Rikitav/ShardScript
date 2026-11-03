@@ -55,7 +55,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 
 			emit_arguments_reversed(indexator->get_arguments());
 			if (!(indexator->get_previous() == nullptr))
-				indexator->get_previous()->accept(*this);
+				emit_receiver(indexator->get_previous());
 			else
 			{
 				m_encoder.emit_load_local(0);
@@ -67,7 +67,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			return;
 		}
 
-		indexator->get_previous()->accept(*this);
+		emit_receiver(indexator->get_previous());
 
 		std::span<ArgumentSyntax* const> arguments = indexator->get_arguments()->get_arguments();
 		if (!arguments.empty())
@@ -186,7 +186,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		}
 
 		if (previous != nullptr)
-			previous->accept(*this);
+			emit_receiver(previous);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -233,7 +233,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		eval_pop();
 
 		if (previous != nullptr)
-			previous->accept(*this);
+			emit_receiver(previous);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -350,7 +350,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 		}
 
 		if (previous != nullptr)
-			previous->accept(*this);
+			emit_receiver(previous);
 		else
 		{
 			m_encoder.emit_load_local(0);

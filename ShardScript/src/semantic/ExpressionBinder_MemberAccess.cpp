@@ -112,28 +112,13 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 	if (currentType == nullptr)
 		return nullptr;
 
-	if (currentType->get_kind() == SyntaxKind::NullableType)
+	StructSymbol* receiverType = currentType;
+	currentType = unwrap_nullable(currentType);
+
+	if (receiverType != currentType)
 	{
-		NullableTypeSymbol* nullable = static_cast<NullableTypeSymbol*>(currentType);
-		StructSymbol* underlaying = nullable->get_underlaying_type();
-		bool isHasValue = memberName == L"HasValue";
-		bool isValue = memberName == L"Value";
-
-		if (!isHasValue && !isValue)
-		{
-			diagnostics.report_error(location, gmt::concat(L"Cannot access member '", memberName, L"' on nullable type '", get_model().get_type_display_name(currentType), L"'; unwrap it first"));
-			return nullptr;
-		}
-
-		bool assignmentTarget = node == m_assignmentTarget;
-
-		if (assignmentTarget)
-		{
-			diagnostics.report_error(location, gmt::concat(L"Cannot assign to read-only nullable member '", memberName, L"'"));
-			return isHasValue ? table.get_boolean_primitive() : underlaying;
-		}
-
-		return isHasValue ? table.get_boolean_primitive() : underlaying;
+		StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(receiverType)->get_underlaying_type();
+		record_conversion(previous, underlaying, receiverType);
 	}
 
 	if (!currentType->is_type())
@@ -556,10 +541,13 @@ StructSymbol* ExpressionBinder::analyze_indexator_expression(const IndexatorExpr
 	if ((currentType == nullptr) || (previous == nullptr))
 		return nullptr;
 
-	if (currentType->get_kind() == SyntaxKind::NullableType)
+	StructSymbol* receiverType = currentType;
+	currentType = unwrap_nullable(currentType);
+
+	if (receiverType != currentType)
 	{
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot index nullable type '", get_model().get_type_display_name(currentType), L"'; unwrap it first"));
-		return nullptr;
+		StructSymbol* underlaying = static_cast<NullableTypeSymbol*>(receiverType)->get_underlaying_type();
+		record_conversion(previous, underlaying, receiverType);
 	}
 
 	// arrays expose an implicit element indexator
@@ -614,7 +602,7 @@ IndexatorSymbol* ExpressionBinder::resolve_indexator(const IndexatorExpressionSy
 	DiagnosticsContext& diagnostics = get_diagnostics();
 
 	gmt::inline_vector<StructSymbol*, 4> argumentTypes;
-	if (!(node->get_arguments() == nullptr))
+	if (node->get_arguments() != nullptr)
 	{
 		for (ArgumentSyntax* const& argument : node->get_arguments()->get_arguments())
 		{

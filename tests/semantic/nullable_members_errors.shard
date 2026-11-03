@@ -1,8 +1,12 @@
 func Bad(x: int?) -> void
 {
-    other: int = x.SomeMember;
-    x.Value = 5;
-    x.HasValue = true;
+    if (x != null)
+    {
+        other: int = x.SomeMember;
+        value: int = x.Value;
+        flag: bool = x.HasValue;
+    }
+
     d: int? = null ?? 5;
     e: int = x + 1;
 }

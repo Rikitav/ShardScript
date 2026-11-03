@@ -54,6 +54,7 @@
 #include <shard/parsing/nodes/statements/CatchClauseSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
+#include <shard/parsing/nodes/expressions/DefaultExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/InvokationExpressionSyntax.hpp>
@@ -140,6 +141,7 @@ namespace shard
         virtual void visit_catch_clause(const CatchClauseSyntax* node);
 
         virtual void visit_literal_expression(const LiteralExpressionSyntax* node);
+        virtual void visit_default_expression(const DefaultExpressionSyntax* node);
         virtual void visit_binary_expression(const BinaryExpressionSyntax* node);
         virtual void visit_unary_expression(const UnaryExpressionSyntax* node);
         virtual void visit_member_access_expression(const MemberAccessExpressionSyntax* node);
