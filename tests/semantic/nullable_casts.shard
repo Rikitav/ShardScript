@@ -1,0 +1,54 @@
+using stdio;
+
+struct Label : IPrintable
+{
+    public Marker: int;
+
+    public func ToString() -> string
+    {
+        return "label";
+    }
+}
+
+interface IWidget
+{
+    func Get() -> int;
+}
+
+struct Widget : IWidget
+{
+    public Value: int;
+
+    public func Get() -> int
+    {
+        return this.Value;
+    }
+}
+
+func Main() -> void
+{
+    literal: int? = 4 as int?;
+    println(literal ?? 0);
+
+    missing: int? = null as int?;
+    println(missing == null);
+
+    plain: int = 9;
+    widened: int? = plain as int?;
+    println(widened ?? 0);
+
+    label: Label = new Label();
+    label.Marker = 5;
+    wrapped: Label? = label as Label?;
+    println(wrapped != null);
+    println(wrapped ?? label);
+
+    printable: IPrintable? = wrapped as IPrintable?;
+    println(printable != null);
+    println(printable ?? label);
+
+    widget: Widget = new Widget();
+    widget.Value = 3;
+    iface: IWidget? = widget as IWidget?;
+    println((iface ?? widget).Get());
+}
