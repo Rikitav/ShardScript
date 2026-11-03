@@ -141,16 +141,111 @@ StructSymbol* NullableFlowAnalyzer::symbol_type(SyntaxSymbol* symbol) const
 	}
 }
 
-SyntaxSymbol* NullableFlowAnalyzer::tracked_root(const ExpressionSyntax* expression)
+int NullableFlowAnalyzer::root_path(SyntaxSymbol* symbol)
 {
-	if ((expression == nullptr) || expression->get_kind() != SyntaxKind::IdentifierNameType)
-		return nullptr;
+	if (symbol == nullptr)
+		return -1;
 
-	SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(expression);
-	if ((symbol == nullptr) || !is_nullable(symbol_type(symbol)))
-		return nullptr;
+	auto choice = m_rootPaths.find(symbol);
+	if (choice != m_rootPaths.end())
+		return choice->second;
 
-	return symbol;
+	PathNode node;
+	node.root = symbol;
+
+	int id = static_cast<int>(m_paths.size());
+	m_paths.push_back(node);
+	m_rootPaths[symbol] = id;
+	return id;
+}
+
+int NullableFlowAnalyzer::member_path(int parent, SyntaxSymbol* member)
+{
+	if ((parent < 0) || (member == nullptr))
+		return -1;
+
+	gmt::unordered_map<SyntaxSymbol*, int>& children = m_memberPaths[parent];
+	auto choice = children.find(member);
+	if (choice != children.end())
+		return choice->second;
+
+	PathNode node;
+	node.parent = parent;
+	node.member = member;
+
+	int id = static_cast<int>(m_paths.size());
+	m_paths.push_back(node);
+	children[member] = id;
+	return id;
+}
+
+int NullableFlowAnalyzer::tracked_path(const ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return -1;
+
+	switch (expression->get_kind())
+	{
+		case SyntaxKind::IdentifierNameType:
+			return root_path(get_symbol_table().lookup_symbol(expression));
+
+		case SyntaxKind::MemberAccessExpression:
+		{
+			const MemberAccessExpressionSyntax* access = gmt::as<MemberAccessExpressionSyntax>(expression);
+			int parent = tracked_path(access->get_previous());
+			if (parent < 0)
+				return -1;
+
+			// only stored members form a location; calling a method does not
+			SyntaxSymbol* member = get_symbol_table().lookup_symbol(access);
+			if (member == nullptr)
+				return -1;
+
+			SyntaxKind kind = member->get_kind();
+			if ((kind != SyntaxKind::FieldDeclaration) && (kind != SyntaxKind::PropertyDeclaration))
+				return -1;
+
+			return member_path(parent, member);
+		}
+
+		default:
+			return -1;
+	}
+}
+
+bool NullableFlowAnalyzer::path_within(int id, int ancestor) const
+{
+	if ((id < 0) || (ancestor < 0))
+		return false;
+
+	while (id >= 0)
+	{
+		if (id == ancestor)
+			return true;
+
+		id = m_paths[static_cast<std::size_t>(id)].parent;
+	}
+
+	return false;
+}
+
+bool NullableFlowAnalyzer::is_member_path(int id) const
+{
+	if ((id < 0) || (static_cast<std::size_t>(id) >= m_paths.size()))
+		return false;
+
+	return m_paths[static_cast<std::size_t>(id)].parent >= 0;
+}
+
+void NullableFlowAnalyzer::invalidate_member_paths()
+{
+	for (auto it = m_state.begin(); it != m_state.end();)
+	{
+		if (is_member_path(it->first))
+			it = m_state.erase(it);
+		else
+			++it;
+	}
 }
 
 NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const ExpressionSyntax* expression)
@@ -174,12 +269,13 @@ NullableFlowAnalyzer::NullState NullableFlowAnalyzer::state_of_expression(const 
 	switch (expression->get_kind())
 	{
 		case SyntaxKind::IdentifierNameType:
+		case SyntaxKind::MemberAccessExpression:
 		{
-			SyntaxSymbol* symbol = tracked_root(expression);
-			if (symbol == nullptr)
+			int path = tracked_path(expression);
+			if (path < 0)
 				break;
 
-			auto choice = m_state.find(symbol);
+			auto choice = m_state.find(path);
 			return choice != m_state.end() ? choice->second : NullState::MAYBE_NULL;
 		}
 
@@ -255,11 +351,27 @@ void NullableFlowAnalyzer::report_unwrap(const ExpressionSyntax* expression)
 void NullableFlowAnalyzer::apply_assignment(const BinaryExpressionSyntax* node)
 {
 	const ExpressionSyntax* target = node->get_left();
-	SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(target);
-	if ((symbol == nullptr) || !is_nullable(symbol_type(symbol)))
+	if (target == nullptr)
 		return;
 
-	m_state[symbol] = state_of_expression(node->get_right());
+	StructSymbol* targetType = get_model().get_expression_type(target);
+	if ((targetType == nullptr) || !is_nullable(targetType))
+		return;
+
+	int path = tracked_path(target);
+	if (path < 0)
+		return;
+
+	// writing a path invalidates every fact recorded below it
+	for (auto it = m_state.begin(); it != m_state.end();)
+	{
+		if ((it->first != path) && path_within(it->first, path))
+			it = m_state.erase(it);
+		else
+			++it;
+	}
+
+	m_state[path] = state_of_expression(node->get_right());
 }
 
 void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression)
@@ -319,6 +431,8 @@ void NullableFlowAnalyzer::analyze_expression(const ExpressionSyntax* expression
 				}
 			}
 
+			// a call may mutate anything reachable, so member facts end here
+			invalidate_member_paths();
 			break;
 		}
 
@@ -446,17 +560,17 @@ NullableFlowAnalyzer::ConditionalStates NullableFlowAnalyzer::analyze_condition(
 			else if (model.is_null_type(leftType) && !model.is_null_type(rightType))
 				valueSide = right;
 
-			SyntaxSymbol* local = tracked_root(valueSide);
-			if (local != nullptr)
+			int path = tracked_path(valueSide);
+			if (path >= 0)
 			{
 				analyze_expression(valueSide);
 
 				bool checkIsNull = op == TokenType::EqualsOperator;
 				State nullState = m_state;
-				nullState[local] = NullState::DEFINITELY_NULL;
+				nullState[path] = NullState::DEFINITELY_NULL;
 
 				State valueState = m_state;
-				valueState[local] = NullState::NOT_NULL;
+				valueState[path] = NullState::NOT_NULL;
 
 				m_state = incoming;
 				result.whenTrue = checkIsNull ? nullState : valueState;
@@ -565,10 +679,11 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(statement);
 			if ((symbol != nullptr) && is_nullable(symbol_type(symbol)))
 			{
+				int path = root_path(symbol);
 				if (initializer == nullptr)
-					m_state[symbol] = NullState::DEFINITELY_NULL;
+					m_state[path] = NullState::DEFINITELY_NULL;
 				else
-					m_state[symbol] = state_of_expression(initializer);
+					m_state[path] = state_of_expression(initializer);
 			}
 
 			return true;
@@ -607,7 +722,7 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 				negate = true;
 			}
 
-			gmt::unordered_set<SyntaxSymbol*> assigned;
+			gmt::unordered_set<int> assigned;
 			collect_assigned(body, assigned);
 
 			State loopHead = m_state;
@@ -635,7 +750,7 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 			const ForInStatementSyntax* loop = gmt::as<ForInStatementSyntax>(statement);
 			analyze_expression(loop->get_range_expression());
 
-			gmt::unordered_set<SyntaxSymbol*> assigned;
+			gmt::unordered_set<int> assigned;
 			collect_assigned(loop->get_block(), assigned);
 			widen_assigned(assigned);
 			analyze_block(loop->get_block());
@@ -662,7 +777,7 @@ bool NullableFlowAnalyzer::analyze_statement(const StatementSyntax* statement)
 		case SyntaxKind::TryStatement:
 		{
 			const TryStatementSyntax* tryStatement = gmt::as<TryStatementSyntax>(statement);
-			gmt::unordered_set<SyntaxSymbol*> assigned;
+			gmt::unordered_set<int> assigned;
 			collect_assigned(tryStatement->get_try_block(), assigned);
 
 			State incoming = m_state;
@@ -749,7 +864,7 @@ bool NullableFlowAnalyzer::analyze_block(const BlockSyntax* block)
 	}
 }
 
-void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* expression, gmt::unordered_set<SyntaxSymbol*>& assigned)
+void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* expression, gmt::unordered_set<int>& assigned)
 {
 	if (expression == nullptr)
 		return;
@@ -761,9 +876,14 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 			const BinaryExpressionSyntax* binary = gmt::as<BinaryExpressionSyntax>(expression);
 			if (is_assignment_token(binary->get_operator_token().get_type()))
 			{
-				SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(binary->get_left());
-				if ((symbol != nullptr) && is_nullable(symbol_type(symbol)))
-					assigned.insert(symbol);
+				const ExpressionSyntax* target = binary->get_left();
+				StructSymbol* targetType = target == nullptr ? nullptr : get_model().get_expression_type(target);
+				if ((targetType != nullptr) && is_nullable(targetType))
+				{
+					int path = tracked_path(target);
+					if (path >= 0)
+						assigned.insert(path);
+				}
 			}
 
 			collect_assigned_expression(binary->get_left(), assigned);
@@ -847,7 +967,7 @@ void NullableFlowAnalyzer::collect_assigned_expression(const ExpressionSyntax* e
 	}
 }
 
-void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unordered_set<SyntaxSymbol*>& assigned)
+void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unordered_set<int>& assigned)
 {
 	if (node == nullptr)
 		return;
@@ -872,7 +992,7 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 		{
 			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(node);
 			if ((symbol != nullptr) && is_nullable(symbol_type(symbol)))
-				assigned.insert(symbol);
+				assigned.insert(root_path(symbol));
 
 			collect_assigned_expression(gmt::as<VariableStatementSyntax>(node)->get_expression(), assigned);
 			break;
@@ -967,13 +1087,18 @@ void NullableFlowAnalyzer::collect_assigned(const SyntaxNode* node, gmt::unorder
 	}
 }
 
-void NullableFlowAnalyzer::widen_assigned(const gmt::unordered_set<SyntaxSymbol*>& assigned)
+void NullableFlowAnalyzer::widen_assigned(const gmt::unordered_set<int>& assigned)
 {
-	for (SyntaxSymbol* symbol : assigned)
+	for (auto& entry : m_state)
 	{
-		auto choice = m_state.find(symbol);
-		if (choice != m_state.end())
-			choice->second = NullState::MAYBE_NULL;
+		for (int id : assigned)
+		{
+			if (!path_within(entry.first, id))
+				continue;
+
+			entry.second = NullState::MAYBE_NULL;
+			break;
+		}
 	}
 }
 
@@ -985,7 +1110,7 @@ void NullableFlowAnalyzer::declare_parameters(MethodSymbol* method)
 	for (ParameterSymbol* const& parameter : method->get_parameters())
 	{
 		if (parameter != nullptr && is_nullable(parameter->get_type()))
-			m_state[parameter] = NullState::MAYBE_NULL;
+			m_state[root_path(parameter)] = NullState::MAYBE_NULL;
 	}
 }
 
