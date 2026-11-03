@@ -1,5 +1,6 @@
 #include <shard/compilation/ByteCodeEmitter.hpp>
 
+#include <shard/lexical/SyntaxFacts.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/TokenType.hpp>
 
@@ -512,6 +513,128 @@ bool ByteCodeEmitter::emit_nullable_comparison(const BinaryExpressionSyntax* nod
 	return true;
 }
 
+bool ByteCodeEmitter::emit_lifted_operator(const BinaryExpressionSyntax* node, TokenType op)
+{
+	SemanticModel& model = get_model();
+	const ExpressionSyntax* left = node->get_left();
+	const ExpressionSyntax* right = node->get_right();
+
+	StructSymbol* leftType = substitute_type(model.get_expression_type(left));
+	StructSymbol* rightType = substitute_type(model.get_expression_type(right));
+
+	bool leftNullable = leftType != nullptr && leftType->get_kind() == SyntaxKind::NullableType;
+	bool rightNullable = rightType != nullptr && rightType->get_kind() == SyntaxKind::NullableType;
+
+	if (!leftNullable && !rightNullable)
+		return false;
+
+	StructSymbol* nullableType = leftNullable ? leftType : rightType;
+	StructSymbol* underlaying = substitute_type(static_cast<NullableTypeSymbol*>(nullableType)->get_underlaying_type());
+	StructSymbol* resultType = substitute_type(model.get_expression_type(node));
+
+	bool arithmetic = is_binary_arithmetic_operator(op) || is_binary_bit_operator(op);
+	bool relational = op == TokenType::GreaterOperator || op == TokenType::GreaterOrEqualsOperator;
+	relational = relational || op == TokenType::LessOperator || op == TokenType::LessOrEqualsOperator;
+
+	if (!arithmetic && !relational)
+		return false;
+
+	std::int32_t entryDepth = m_evalDepth;
+
+	emit_converted(left);
+	m_encoder.emit_duplicate();
+	eval_push_type(nullableType);
+
+	m_encoder.emit_nullable_has_value();
+	eval_pop();
+	eval_push(sizeof(bool));
+
+	std::size_t leftEmptyAt = mark_position();
+	m_encoder.emit_jump_false(0);
+	eval_pop();
+
+	m_encoder.emit_nullable_unwrap(nullableType);
+	eval_pop();
+	eval_push_type(underlaying);
+
+	emit_converted(right);
+	m_encoder.emit_duplicate();
+	eval_push_type(nullableType);
+
+	m_encoder.emit_nullable_has_value();
+	eval_pop();
+	eval_push(sizeof(bool));
+
+	std::size_t rightEmptyAt = mark_position();
+	m_encoder.emit_jump_false(0);
+	eval_pop();
+
+	m_encoder.emit_nullable_unwrap(nullableType);
+	eval_pop();
+	eval_push_type(underlaying);
+
+	bool emitted = arithmetic ? emit_arithmetic_op(op) : emit_relational_op(op);
+
+	// arithmetic keeps the value (and therefore the null), a relational result
+	// is the boolean itself and is false whenever an operand was empty
+	if (arithmetic)
+	{
+		m_encoder.emit_nullable_wrap(resultType);
+		eval_pop();
+		eval_push_type(resultType);
+	}
+
+	std::size_t endAt = mark_position();
+	m_encoder.emit_jump(0);
+
+	patch_jump(rightEmptyAt);
+	m_evalDepth = entryDepth + 2;
+	m_encoder.emit_pop();
+	eval_pop();
+	m_encoder.emit_pop();
+	eval_pop();
+	emit_empty_lifted_result(resultType, arithmetic);
+
+	std::size_t rightEmptyEndAt = mark_position();
+	m_encoder.emit_jump(0);
+
+	patch_jump(leftEmptyAt);
+	m_evalDepth = entryDepth + 1;
+	m_encoder.emit_pop();
+	eval_pop();
+	emit_empty_lifted_result(resultType, arithmetic);
+
+	patch_jump(rightEmptyEndAt);
+	patch_jump(endAt);
+
+	return emitted;
+}
+
+void ByteCodeEmitter::emit_empty_lifted_result(StructSymbol* resultType, bool arithmetic)
+{
+	if (arithmetic)
+	{
+		m_encoder.emit_nullable_default(resultType);
+		eval_push_type(resultType);
+		return;
+	}
+
+	m_encoder.emit_load_const_bool(false);
+	eval_push(sizeof(bool));
+}
+
+bool ByteCodeEmitter::emit_relational_op(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::GreaterOperator: m_encoder.emit_compare_greater(); return true;
+		case TokenType::GreaterOrEqualsOperator: m_encoder.emit_compare_greater_or_equal(); return true;
+		case TokenType::LessOperator: m_encoder.emit_compare_less(); return true;
+		case TokenType::LessOrEqualsOperator: m_encoder.emit_compare_less_or_equal(); return true;
+		default: return false;
+	}
+}
+
 void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node)
 {
 	if (node == nullptr)
@@ -536,6 +659,9 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 
 	bool equality = op == TokenType::EqualsOperator || op == TokenType::NotEqualsOperator;
 	if (equality && emit_nullable_comparison(node, op))
+		return;
+
+	if (emit_lifted_operator(node, op))
 		return;
 
 	if (op == TokenType::AndOperator || op == TokenType::OrOperator)

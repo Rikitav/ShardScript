@@ -153,6 +153,7 @@ namespace shard
 		bool match_method_arguments(SyntaxToken blameToken, std::span<ParameterSymbol* const> parameters, std::span<ArgumentSyntax* const> arguments, GenericTypeSymbol* genericType, std::size_t parameterOffset = 0);
 		void record_conversion(const ExpressionSyntax* expression, StructSymbol* targetType, StructSymbol* sourceType);
 		bool bind_nullable_value_comparison(const BinaryExpressionSyntax* node, StructSymbol* leftType, StructSymbol* rightType);
+		StructSymbol* bind_lifted_operator(const BinaryExpressionSyntax* node, TokenType op, StructSymbol* leftType, StructSymbol* rightType);
 		void record_argument_conversions(MethodSymbol* method, GenericTypeSymbol* genericType, std::span<StructSymbol* const> methodTypeArgs, const ArgumentsListSyntax* arguments, std::size_t parameterOffset = 0);
 		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes);
 

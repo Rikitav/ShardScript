@@ -53,6 +53,24 @@ namespace
 		return nullptr;
 	}
 
+	static bool is_lifted_operator(TokenType type)
+	{
+		if (is_binary_arithmetic_operator(type) || is_binary_bit_operator(type))
+			return true;
+
+		switch (type)
+		{
+			case TokenType::GreaterOperator:
+			case TokenType::GreaterOrEqualsOperator:
+			case TokenType::LessOperator:
+			case TokenType::LessOrEqualsOperator:
+				return true;
+
+			default:
+				return false;
+		}
+	}
+
 	static bool is_numeric_primitive(StructSymbol* type, const SymbolTable& table)
 	{
 		if (type == table.get_integer_primitive())
@@ -199,6 +217,52 @@ bool ExpressionBinder::bind_nullable_value_comparison(const BinaryExpressionSynt
 	return true;
 }
 
+StructSymbol* ExpressionBinder::bind_lifted_operator(const BinaryExpressionSyntax* node, TokenType op, StructSymbol* leftType, StructSymbol* rightType)
+{
+	bool leftNullable = leftType != nullptr && leftType->get_kind() == SyntaxKind::NullableType;
+	bool rightNullable = rightType != nullptr && rightType->get_kind() == SyntaxKind::NullableType;
+
+	if (!leftNullable && !rightNullable)
+		return nullptr;
+
+	if (!is_lifted_operator(op))
+		return nullptr;
+
+	StructSymbol* leftUnderlaying = leftNullable ? static_cast<NullableTypeSymbol*>(leftType)->get_underlaying_type() : leftType;
+	StructSymbol* rightUnderlaying = rightNullable ? static_cast<NullableTypeSymbol*>(rightType)->get_underlaying_type() : rightType;
+	if ((leftUnderlaying == nullptr) || (rightUnderlaying == nullptr))
+		return nullptr;
+
+	if (!SemanticModel::are_types_equal(leftUnderlaying, rightUnderlaying))
+		return nullptr;
+
+	SymbolTable& table = get_symbol_table();
+	SemanticModel& model = get_model();
+
+	bool arithmetic = is_binary_arithmetic_operator(op);
+	bool bit = is_binary_bit_operator(op);
+	bool integral = is_integral_primitive(leftUnderlaying, table);
+
+	if (arithmetic && !is_numeric_primitive(leftUnderlaying, table))
+		return nullptr;
+
+	if (bit && !integral)
+		return nullptr;
+
+	bool relational = !arithmetic && !bit;
+	if (relational && !are_types_comparable(leftUnderlaying, rightUnderlaying, false, table, model))
+		return nullptr;
+
+	// the plain side is wrapped first, so both operands are wrappers of one type
+	if (!leftNullable)
+		record_conversion(node->get_left(), table.find_or_create_nullable_type(leftUnderlaying), leftUnderlaying);
+
+	if (!rightNullable)
+		record_conversion(node->get_right(), table.find_or_create_nullable_type(rightUnderlaying), rightUnderlaying);
+
+	return relational ? table.get_boolean_primitive() : table.find_or_create_nullable_type(leftUnderlaying);
+}
+
 StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpressionSyntax* node)
 {
 	const TokenType op = node->get_operator_token().get_type();
@@ -317,6 +381,10 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		record_conversion(node->get_right(), underlaying, rightType);
 		return underlaying;
 	}
+
+	StructSymbol* lifted = bind_lifted_operator(node, op, leftType, rightType);
+	if (lifted != nullptr)
+		return lifted;
 
 	bool bothPrimitive = false;
 	if (!leftIsNull && !rightIsNull)

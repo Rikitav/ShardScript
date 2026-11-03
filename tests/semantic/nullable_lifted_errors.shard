@@ -1,0 +1,9 @@
+using stdio;
+
+func Main() -> void
+{
+    number: int? = 1;
+    real: double? = 2.0;
+    println(number + real ?? 0.0);
+    println(number + true);
+}

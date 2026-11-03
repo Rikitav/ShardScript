@@ -128,6 +128,9 @@ namespace shard
 		void emit_receiver(const ExpressionSyntax* receiver);
 		void emit_nullable_coalesce(const BinaryExpressionSyntax* node);
 		bool emit_nullable_comparison(const BinaryExpressionSyntax* node, TokenType op);
+		bool emit_lifted_operator(const BinaryExpressionSyntax* node, TokenType op);
+		bool emit_relational_op(TokenType type);
+		void emit_empty_lifted_result(StructSymbol* resultType, bool arithmetic);
 		void update_min_eval_payload();
 		void emit_assignment(const BinaryExpressionSyntax* node);
 		void emit_store_to(const ExpressionSyntax* target);

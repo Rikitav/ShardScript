@@ -1,0 +1,31 @@
+using stdio;
+
+func Main() -> void
+{
+    a: int? = 4;
+    b: int? = 2;
+    empty: int? = null;
+
+    println(a + b ?? 0);
+    println(a - b ?? 0);
+    println(a * b ?? 0);
+    println(a / b ?? 0);
+    println(a % b ?? 0);
+    println(a + 3 ?? 0);
+    println(3 + a ?? 0);
+
+    println(a + empty == null);
+    println(empty + a == null);
+    println(empty + empty == null);
+
+    println(a > b);
+    println(a < b);
+    println(a >= b);
+    println(a <= b);
+    println(empty > b);
+    println(a > empty);
+    println(a > 1);
+
+    real: double? = 1.5;
+    println(real * 2.0 ?? 0.0);
+}
