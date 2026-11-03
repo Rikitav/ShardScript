@@ -210,7 +210,17 @@ static bool signature_type_matches(const StructSymbol* contract, const StructSym
 	return (candidate != nullptr) && (candidate->get_kind() == SyntaxKind::TypeParameter);
 }
 
-static bool parameters_match(const gmt::vector<ParameterSymbol*>& contractParameters, const gmt::vector<ParameterSymbol*>& candidateParameters)
+// a constructed interface substitutes its own arguments into the contract, so
+// GetEnumerator() -> IEnumerator<T> matches -> IEnumerator<int>
+static StructSymbol* contract_type(SemanticModel& model, StructSymbol* type, GenericTypeSymbol* within)
+{
+	if ((type == nullptr) || (within == nullptr))
+		return type;
+
+	return model.substitute_type(type, within);
+}
+
+static bool parameters_match(SemanticModel& model, GenericTypeSymbol* within, const gmt::vector<ParameterSymbol*>& contractParameters, const gmt::vector<ParameterSymbol*>& candidateParameters)
 {
 	if (contractParameters.size() != candidateParameters.size())
 		return false;
@@ -220,7 +230,7 @@ static bool parameters_match(const gmt::vector<ParameterSymbol*>& contractParame
 		const ParameterSymbol* left = contractParameters[i];
 		const ParameterSymbol* right = candidateParameters[i];
 
-		StructSymbol* leftType = (left == nullptr) ? nullptr : left->get_type();
+		StructSymbol* leftType = (left == nullptr) ? nullptr : contract_type(model, left->get_type(), within);
 		StructSymbol* rightType = (right == nullptr) ? nullptr : right->get_type();
 
 		if (!signature_type_matches(leftType, rightType))
@@ -562,7 +572,7 @@ gmt::wstring SemanticModel::get_type_display_name(const StructSymbol* type) cons
 	return gmt::wstring(type->get_name());
 }
 
-MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receiverType, MethodSymbol* interfaceMethod)
+MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receiverType, MethodSymbol* interfaceMethod, GenericTypeSymbol* interfaceWithin)
 {
 	if ((receiverType == nullptr) || (interfaceMethod == nullptr))
 		return nullptr;
@@ -582,7 +592,7 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 			if ((property == nullptr) || (property->get_name() != interfaceProperty->get_name()))
 				continue;
 
-			if (!signature_type_matches(interfaceProperty->get_return_type(), property->get_return_type()))
+			if (!signature_type_matches(contract_type(*this, interfaceProperty->get_return_type(), interfaceWithin), property->get_return_type()))
 				continue;
 
 			return asGetter ? static_cast<MethodSymbol*>(property->get_getter()) : static_cast<MethodSymbol*>(property->get_setter());
@@ -601,10 +611,10 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 			if (indexator == nullptr)
 				continue;
 
-			if (!signature_type_matches(interfaceIndexator->get_return_type(), indexator->get_return_type()))
+			if (!signature_type_matches(contract_type(*this, interfaceIndexator->get_return_type(), interfaceWithin), indexator->get_return_type()))
 				continue;
 
-			if (!parameters_match(interfaceIndexator->get_parameters(), indexator->get_parameters()))
+			if (!parameters_match(*this, interfaceWithin, interfaceIndexator->get_parameters(), indexator->get_parameters()))
 				continue;
 
 			return asGetter ? static_cast<MethodSymbol*>(indexator->get_getter()) : static_cast<MethodSymbol*>(indexator->get_setter());
@@ -622,10 +632,10 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 		if (candidate->get_linking() != LINK_INSTANCE)
 			continue;
 
-		if (!signature_type_matches(interfaceMethod->get_return_type(), candidate->get_return_type()))
+		if (!signature_type_matches(contract_type(*this, interfaceMethod->get_return_type(), interfaceWithin), candidate->get_return_type()))
 			continue;
 
-		if (!parameters_match(interfaceMethod->get_parameters(), candidate->get_parameters()))
+		if (!parameters_match(*this, interfaceWithin, interfaceMethod->get_parameters(), candidate->get_parameters()))
 			continue;
 
 		return candidate;

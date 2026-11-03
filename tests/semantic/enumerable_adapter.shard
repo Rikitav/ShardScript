@@ -1,0 +1,84 @@
+using stdio;
+
+struct IntEnumerator : IEnumerator<int>
+{
+    public Items: int[];
+    public Index: int;
+
+    public func MoveNext() -> bool
+    {
+        this.Index = this.Index + 1;
+        return this.Index < this.Items.Length;
+    }
+
+    public Current -> int
+    {
+        get
+        {
+            return this.Items[this.Index];
+        }
+    }
+}
+
+struct IntSequence : IEnumerable<int>
+{
+    public Items: int[];
+
+    public func GetEnumerator() -> IEnumerator<int>
+    {
+        cursor: IntEnumerator = new IntEnumerator();
+        cursor.Items = this.Items;
+        cursor.Index = -1;
+        return cursor;
+    }
+}
+
+struct AngryEnumerator : IEnumerator<int>
+{
+    public func MoveNext() -> bool
+    {
+        throw new RuntimeException();
+    }
+
+    public Current -> int
+    {
+        get
+        {
+            return 0;
+        }
+    }
+}
+
+struct AngrySequence : IEnumerable<int>
+{
+    public func GetEnumerator() -> IEnumerator<int>
+    {
+        return new AngryEnumerator();
+    }
+}
+
+func Main() -> void
+{
+    numbers: int[] = [1, 2, 3, 4];
+    sequence: IntSequence = new IntSequence();
+    sequence.Items = numbers;
+    println(sum(sequence));
+
+    zeroed: IntSequence = new IntSequence();
+    zeroed.Items = [default(int), default(int)];
+    println(sum(zeroed));
+
+    empty: IntSequence = new IntSequence();
+    empty.Items = new int[0];
+    println(sum(empty));
+
+    angry: AngrySequence = new AngrySequence();
+    try
+    {
+        println(sum(angry));
+    }
+    catch error: RuntimeException
+    {
+        println("caught");
+    }
+}

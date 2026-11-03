@@ -438,17 +438,20 @@ void TypeBinder::validate_interface_conformance(StructSymbol* symbol, const Stru
 		if (interfaceType == nullptr)
 			continue;
 
-		// a constructed interface keeps its members on the definition
-		StructSymbol* definition = interfaceType;
-		if (definition->get_kind() == SyntaxKind::GenericType)
-			definition = static_cast<GenericTypeSymbol*>(definition)->get_underlaying_type();
+		// a constructed interface keeps its members on the definition, but its
+		// arguments still substitute the contract when matching a member
+		GenericTypeSymbol* constructed = nullptr;
+		if (interfaceType->get_kind() == SyntaxKind::GenericType)
+			constructed = static_cast<GenericTypeSymbol*>(interfaceType);
+
+		StructSymbol* definition = constructed != nullptr ? constructed->get_underlaying_type() : interfaceType;
 
 		if (definition == nullptr)
 			continue;
 
 		for (MethodSymbol* member : definition->methods)
 		{
-			if ((member == nullptr) || model.find_interface_implementation(symbol, member) != nullptr)
+			if ((member == nullptr) || model.find_interface_implementation(symbol, member, constructed) != nullptr)
 				continue;
 
 			report_missing(definition, member->get_name());
@@ -461,10 +464,10 @@ void TypeBinder::validate_interface_conformance(StructSymbol* symbol, const Stru
 
 			bool satisfied = true;
 			if (property->get_getter() != nullptr)
-				satisfied = model.find_interface_implementation(symbol, property->get_getter()) != nullptr;
+				satisfied = model.find_interface_implementation(symbol, property->get_getter(), constructed) != nullptr;
 
 			if (satisfied && (property->get_setter() != nullptr))
-				satisfied = model.find_interface_implementation(symbol, property->get_setter()) != nullptr;
+				satisfied = model.find_interface_implementation(symbol, property->get_setter(), constructed) != nullptr;
 
 			if (!satisfied)
 				report_missing(definition, property->get_name());
@@ -477,10 +480,10 @@ void TypeBinder::validate_interface_conformance(StructSymbol* symbol, const Stru
 
 			bool satisfied = true;
 			if (indexator->get_getter() != nullptr)
-				satisfied = model.find_interface_implementation(symbol, indexator->get_getter()) != nullptr;
+				satisfied = model.find_interface_implementation(symbol, indexator->get_getter(), constructed) != nullptr;
 
 			if (satisfied && (indexator->get_setter() != nullptr))
-				satisfied = model.find_interface_implementation(symbol, indexator->get_setter()) != nullptr;
+				satisfied = model.find_interface_implementation(symbol, indexator->get_setter(), constructed) != nullptr;
 
 			if (!satisfied)
 				report_missing(definition, indexator->get_name());

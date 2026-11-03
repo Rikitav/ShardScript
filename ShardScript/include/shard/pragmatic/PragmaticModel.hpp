@@ -23,6 +23,7 @@ namespace shard
 {
 	class ExpressionSyntax;
 	class MethodSymbol;
+	class GenericTypeSymbol;
 	class SemanticModel;
 	class StructSymbol;
 
@@ -101,7 +102,7 @@ namespace shard
 	private:
 		void fill_vtable(SemanticModel& model, TypeShape* shape);
 		void fill_vtable_for_interfaces(SemanticModel& model, StructSymbol* concrete, StructSymbol* source, gmt::vector<MethodSymbol*>& entries, gmt::unordered_set<StructSymbol*>& visited);
-		void fill_vtable_for_interface(SemanticModel& model, StructSymbol* concrete, StructSymbol* interfaceType, gmt::vector<MethodSymbol*>& entries);
-		void assign_vtable_entry(SemanticModel& model, StructSymbol* concrete, MethodSymbol* member, gmt::vector<MethodSymbol*>& entries);
+		void fill_vtable_for_interface(SemanticModel& model, StructSymbol* concrete, StructSymbol* interfaceType, GenericTypeSymbol* interfaceWithin, gmt::vector<MethodSymbol*>& entries);
+		void assign_vtable_entry(SemanticModel& model, StructSymbol* concrete, MethodSymbol* member, GenericTypeSymbol* interfaceWithin, gmt::vector<MethodSymbol*>& entries);
 	};
 }

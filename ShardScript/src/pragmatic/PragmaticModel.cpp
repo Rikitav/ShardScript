@@ -169,30 +169,33 @@ void PragmaticModel::fill_vtable_for_interfaces(SemanticModel& model, StructSymb
 		if (interfaceType == nullptr)
 			continue;
 
-		// a constructed interface keeps its members on the definition
+		// a constructed interface keeps its members on the definition, but its
+		// arguments still substitute the contract when matching a member
+		GenericTypeSymbol* constructed = nullptr;
 		if (interfaceType->get_kind() == SyntaxKind::GenericType)
-			interfaceType = static_cast<GenericTypeSymbol*>(interfaceType)->get_underlaying_type();
+			constructed = static_cast<GenericTypeSymbol*>(interfaceType);
 
-		if ((interfaceType == nullptr) || !visited.insert(interfaceType).second)
+		StructSymbol* definition = constructed != nullptr ? constructed->get_underlaying_type() : interfaceType;
+		if ((definition == nullptr) || !visited.insert(definition).second)
 			continue;
 
-		fill_vtable_for_interface(model, concrete, interfaceType, entries);
-		fill_vtable_for_interfaces(model, concrete, interfaceType, entries, visited);
+		fill_vtable_for_interface(model, concrete, definition, constructed, entries);
+		fill_vtable_for_interfaces(model, concrete, definition, entries, visited);
 	}
 }
 
-void PragmaticModel::fill_vtable_for_interface(SemanticModel& model, StructSymbol* concrete, StructSymbol* interfaceType, gmt::vector<MethodSymbol*>& entries)
+void PragmaticModel::fill_vtable_for_interface(SemanticModel& model, StructSymbol* concrete, StructSymbol* interfaceType, GenericTypeSymbol* interfaceWithin, gmt::vector<MethodSymbol*>& entries)
 {
 	for (MethodSymbol* member : interfaceType->methods)
-		assign_vtable_entry(model, concrete, member, entries);
+		assign_vtable_entry(model, concrete, member, interfaceWithin, entries);
 
 	for (PropertySymbol* property : interfaceType->properties)
 	{
 		if (property == nullptr)
 			continue;
 
-		assign_vtable_entry(model, concrete, property->get_getter(), entries);
-		assign_vtable_entry(model, concrete, property->get_setter(), entries);
+		assign_vtable_entry(model, concrete, property->get_getter(), interfaceWithin, entries);
+		assign_vtable_entry(model, concrete, property->get_setter(), interfaceWithin, entries);
 	}
 
 	for (IndexatorSymbol* indexator : interfaceType->indexators)
@@ -200,12 +203,12 @@ void PragmaticModel::fill_vtable_for_interface(SemanticModel& model, StructSymbo
 		if (indexator == nullptr)
 			continue;
 
-		assign_vtable_entry(model, concrete, indexator->get_getter(), entries);
-		assign_vtable_entry(model, concrete, indexator->get_setter(), entries);
+		assign_vtable_entry(model, concrete, indexator->get_getter(), interfaceWithin, entries);
+		assign_vtable_entry(model, concrete, indexator->get_setter(), interfaceWithin, entries);
 	}
 }
 
-void PragmaticModel::assign_vtable_entry(SemanticModel& model, StructSymbol* concrete, MethodSymbol* member, gmt::vector<MethodSymbol*>& entries)
+void PragmaticModel::assign_vtable_entry(SemanticModel& model, StructSymbol* concrete, MethodSymbol* member, GenericTypeSymbol* interfaceWithin, gmt::vector<MethodSymbol*>& entries)
 {
 	if (member == nullptr)
 		return;
@@ -214,8 +217,7 @@ void PragmaticModel::assign_vtable_entry(SemanticModel& model, StructSymbol* con
 	if (!slot.has_value() || *slot >= entries.size())
 		return;
 
-	entries[*slot] = model.find_interface_implementation(concrete, member);
-
+	entries[*slot] = model.find_interface_implementation(concrete, member, interfaceWithin);
 }
 
 FrameLayout* PragmaticModel::find_frame_layout(MethodSymbol* method) const
