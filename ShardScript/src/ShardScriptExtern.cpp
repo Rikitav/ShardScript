@@ -48968,43 +48968,6 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_interface(shard_shard_ByteCodeEncoder_t self, const void* p0)
-	{
-		if (!self)
-		{
-			return SHARD_STATUS_ERROR_NULL_POINTER;
-		}
-		try
-		{
-			self->emit_call_interface(*static_cast<shard::MethodSymbol* const*>(p0));
-			return SHARD_STATUS_OK;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
-
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_into(shard_shard_ByteCodeEncoder_t self, const void* p0, std::uint16_t p1)
 	{
 		if (!self)
@@ -49042,7 +49005,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_symbol(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_symbol(shard_shard_ByteCodeEncoder_t self, const void* p0, std::uint32_t p1)
 	{
 		if (!self)
 		{
@@ -49050,7 +49013,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_call_method_symbol(*static_cast<shard::MethodSymbol* const*>(p0));
+			self->emit_call_method_symbol(*static_cast<shard::MethodSymbol* const*>(p0), p1);
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)

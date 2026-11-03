@@ -138,6 +138,7 @@ namespace shard
 		FieldSymbol* capture_field_of(SyntaxSymbol* bound) const;
 		void emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
 		void emit_method_call_into(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
+		void emit_call_method(MethodSymbol* method);
 		bool is_extension_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments);
 		MethodSymbol* into_call_method(const ExpressionSyntax* expression);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);

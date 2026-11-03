@@ -1,0 +1,64 @@
+using stdio;
+
+struct Label : IPrintable
+{
+    public Text: string;
+
+    public new(text: string)
+    {
+        this.Text = text;
+    }
+
+    public func ToString() -> string
+    {
+        return this.Text;
+    }
+}
+
+func Main() -> void
+{
+    number: int? = 5;
+    println(number);
+
+    missingNumber: int? = null;
+    println(missingNumber);
+
+    flag: bool? = true;
+    println(flag);
+
+    missingFlag: bool? = null;
+    println(missingFlag);
+
+    real: double? = 2.5;
+    println(real);
+
+    character: char? = 'x';
+    println(character);
+
+    size: byte? = default(byte);
+    println(size);
+
+    address: nint? = 9 as nint;
+    println(address);
+
+    text: string? = "text";
+    println(text);
+
+    missingText: string? = null;
+    println(missingText);
+
+    print(text);
+    println("");
+
+    label: Label = new Label("hello");
+    println(label);
+
+    printable: IPrintable = label;
+    println(printable);
+
+    maybePrintable: IPrintable? = label;
+    println(maybePrintable);
+
+    missingPrintable: IPrintable? = null;
+    println(missingPrintable);
+}

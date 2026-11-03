@@ -94,6 +94,14 @@ namespace
 
 			return std::span<const ObjectInstance>(m_heap.data(), m_heap.size());
 		}
+
+		std::span<ObjectInstance> entries()
+		{
+			if (m_size <= InlineCapacity)
+				return std::span<ObjectInstance>(m_inline, m_size);
+
+			return std::span<ObjectInstance>(m_heap.data(), m_heap.size());
+		}
 	};
 
 	std::size_t native_argument_count(MethodSymbol* method)
@@ -400,22 +408,11 @@ void VirtualMachine::inject_stack_trace(ObjectInstance exception, CallStackFrame
 	AccessorSymbol* setter = nullptr;
 	if (stackTraceField == nullptr)
 	{
-		SyntaxSymbol* interfaceGetter = table.get_standard_type(StandardTypes::IThrowable_getStackTrace);
-		if ((interfaceGetter == nullptr) || !interfaceGetter->is_method())
+		SyntaxSymbol* interfaceSetter = table.get_standard_type(StandardTypes::IThrowable_setStackTrace);
+		if ((interfaceSetter == nullptr) || !interfaceSetter->is_method())
 			return;
 
-		const SyntaxSymbol* owner = interfaceGetter->get_parent();
-		if ((owner == nullptr) || owner->get_kind() != SyntaxKind::PropertyDeclaration)
-			return;
-
-		PropertySymbol* interfaceProperty = gmt::as<PropertySymbol>(owner);
-		PropertySymbol* concreteProperty = m_model.resolve_virtual_property(baseType, interfaceProperty, nullptr);
-		if (concreteProperty == nullptr)
-			return;
-
-		setter = concreteProperty->get_setter();
-		if (setter == nullptr)
-			return;
+		setter = static_cast<AccessorSymbol*>(interfaceSetter);
 	}
 
 	// the allocations below may trigger a collection; keep the exception alive
@@ -681,8 +678,11 @@ ObjectInstance VirtualMachine::invoke_native(MethodSymbol* method, std::span<con
 	return result;
 }
 
-ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout)
+ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout, std::uint32_t interfaceSlot)
 {
+	if (method->get_is_virtual())
+		return invoke_virtual(method, arguments, interfaceSlot);
+
 	if (method->get_is_async() && method->get_calling_convention() == CallingConvention::Managed)
 		return invoke_async_method(method, arguments, layout);
 
@@ -691,7 +691,7 @@ ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<con
 	{
 		case CallingConvention::Managed:
 			return invoke_managed(method, arguments, layout);
-
+			
 		case CallingConvention::ShardDecl:
 			return invoke_native(method, arguments);
 
@@ -700,6 +700,78 @@ ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<con
 	}
 
 	throw std::runtime_error(("Method calling convention was 'None': " + gmt::string(method->get_name().begin(), method->get_name().end())).c_str());
+}
+
+ObjectInstance VirtualMachine::invoke_virtual(MethodSymbol* interfaceMethod, std::span<const ObjectInstance> arguments, std::uint32_t interfaceSlot)
+{
+	if (arguments.empty())
+	{
+		raise_runtime_exception(gmt::concat(L"virtual member '", interfaceMethod->get_name(), L"' was invoked without a receiver"));
+		return ObjectInstance::null();
+	}
+
+	// callers that hold an instruction stream carry the slot as an operand;
+	// native callers only have the member symbol, so the slot comes from the
+	// table the emitter encoded it from
+	if (interfaceSlot == DirectCallSlot)
+	{
+		std::optional<std::uint32_t> slot = m_pragmatic.get_interface_slot(interfaceMethod);
+		if (!slot.has_value())
+		{
+			raise_runtime_exception(gmt::concat(L"virtual member '", interfaceMethod->get_name(), L"' has no vtable slot"));
+			return ObjectInstance::null();
+		}
+
+		interfaceSlot = *slot;
+	}
+
+	ObjectInstance receiver;
+	MethodSymbol* implementation = resolve_interface_target(arguments, interfaceMethod, interfaceSlot, receiver);
+	if (implementation == nullptr)
+		return ObjectInstance::null();
+
+	if (receiver.get_shape() == arguments.front().get_shape())
+		return invoke_method(implementation, arguments);
+
+	PoppedArguments swapped;
+	swapped.push_back(receiver);
+	for (std::size_t i = 1; i < arguments.size(); ++i)
+		swapped.push_back(arguments[i]);
+
+	return invoke_method(implementation, swapped.view());
+}
+
+MethodSymbol* VirtualMachine::resolve_interface_target(std::span<const ObjectInstance> arguments, MethodSymbol* interfaceMethod, std::uint32_t interfaceSlot, ObjectInstance& outReceiver)
+{
+	ObjectInstance receiver = arguments.front();
+	if (receiver == nullptr)
+	{
+		raise_runtime_exception(L"NullReferenceException");
+		return nullptr;
+	}
+
+	// the eval entry carries the static interface shape; the concrete type and
+	// its vtable come from the object's own header
+	const TypeShape* receiverShape = receiver.get_shape();
+	bool heapBacked = m_collector.is_heap_backed(receiver.get_memory());
+	if (heapBacked)
+		receiverShape = GarbageCollector::get_header(receiver.get_memory())->shape;
+
+	// the invoked implementation sees the receiver's concrete shape, not the
+	// static interface shape the eval entry was tagged with
+	outReceiver = ObjectInstance(receiverShape, receiver.get_memory());
+
+	MethodSymbol* implementation = receiverShape->get_vtable_entry(interfaceSlot);
+	if (implementation != nullptr)
+		return implementation;
+
+	// a miss is a compiler bug, not a dispatch failure
+	if (heapBacked)
+		raise_runtime_exception(gmt::concat(L"interface method '", interfaceMethod->get_name(), L"' has no vtable entry"));
+	else
+		raise_runtime_exception(gmt::concat(L"interface method '", interfaceMethod->get_name(), L"' was called on a value that is not heap-allocated"));
+
+	return nullptr;
 }
 
 ObjectInstance VirtualMachine::try_invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, ObjectInstance& outException)
@@ -1032,7 +1104,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			break;
 		}
 
-		case OpCode::BR_NULL:
+		case OpCode::JUMP_NULL:
 		{
 			std::size_t target = decoder.absorb_jump();
 			if ((frame->pop_entry() == nullptr))
@@ -1625,6 +1697,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		case OpCode::CALLMETHODSYMBOL:
 		{
 			MethodSymbol* method = decoder.absorb_method_symbol();
+			std::uint32_t interfaceSlot = decoder.absorb_uint32();
 
 			std::size_t argumentCount;
 			FrameLayout* layout = m_pragmatic.find_frame_layout(method);
@@ -1637,7 +1710,19 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			for (std::size_t i = 0; i < argumentCount; ++i)
 				arguments.push_back(frame->pop_entry());
 
-			ObjectInstance result = invoke_method(method, arguments.view(), layout);
+			MethodSymbol* target = method;
+			if (interfaceSlot != DirectCallSlot)
+			{
+				ObjectInstance receiver;
+				target = resolve_interface_target(arguments.view(), method, interfaceSlot, receiver);
+				if (target == nullptr)
+					break;
+
+				arguments[0] = receiver;
+				layout = m_pragmatic.find_frame_layout(target);
+			}
+
+			ObjectInstance result = invoke_method(target, arguments.view(), layout, interfaceSlot);
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
 				break;
 
@@ -1674,127 +1759,6 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			break;
 		}
 
-		case OpCode::CALLINTERFACE:
-		{
-			MethodSymbol* interfaceMethod = decoder.absorb_method_symbol();
-
-			std::size_t argumentCount;
-			FrameLayout* layout = m_pragmatic.find_frame_layout(interfaceMethod);
-			if (layout != nullptr)
-				argumentCount = layout->get_argument_count();
-			else
-				argumentCount = native_argument_count(interfaceMethod);
-
-			PoppedArguments arguments;
-			for (std::size_t i = 0; i < argumentCount; ++i)
-				arguments.push_back(frame->pop_entry());
-
-			ObjectInstance receiver = arguments.view().front();
-			if (receiver == nullptr)
-			{
-				raise_runtime_exception(L"NullReferenceException");
-				break;
-			}
-
-			// the eval entry carries the static interface shape; the concrete
-			// type comes from the object's own header when it is heap-backed
-			const TypeShape* receiverShape = receiver.get_shape();
-			if (m_collector.is_heap_backed(receiver.get_memory()))
-				receiverShape = GarbageCollector::get_header(receiver.get_memory())->shape;
-
-			StructSymbol* receiverType = receiverShape->get_base_type();
-			if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::GenericType)
-				receiverType = static_cast<GenericTypeSymbol*>(receiverType)->get_underlaying_type();
-
-			// the invoked implementation sees the receiver's concrete shape,
-			// not the static interface shape the eval entry was tagged with
-			if (receiverShape != receiver.get_shape())
-				arguments[0] = ObjectInstance(receiverShape, receiver.get_memory());
-
-			MethodSymbol* implementation = nullptr;
-
-			const std::size_t dispatchIndex =
-				((reinterpret_cast<std::uintptr_t>(receiverType) >> 4) ^
-					(reinterpret_cast<std::uintptr_t>(interfaceMethod) * 0x9E3779B97F4A7C15ull)) &
-				(InterfaceDispatchCacheSize - 1);
-
-			InterfaceDispatchEntry& dispatch = m_interfaceDispatch[dispatchIndex];
-			if (dispatch.receiverType == receiverType && dispatch.interfaceMethod == interfaceMethod)
-				implementation = dispatch.implementation;
-
-			if (implementation == nullptr)
-			{
-				// accessors resolve through their owning member: the receiver's
-				// property or indexator that matches the interface member's owner
-				const SyntaxSymbol* interfaceOwner = interfaceMethod->get_parent();
-				SyntaxKind interfaceOwnerKind = (interfaceOwner == nullptr) ? SyntaxKind::Unknown : interfaceOwner->get_kind();
-
-				if (interfaceOwnerKind == SyntaxKind::PropertyDeclaration)
-				{
-					const PropertySymbol* interfaceProperty = gmt::as<PropertySymbol>(interfaceOwner);
-					bool asGetter = interfaceProperty->get_getter() == interfaceMethod;
-
-					for (PropertySymbol* property : receiverType->properties)
-					{
-						if ((property == nullptr) || property->get_name() != interfaceProperty->get_name())
-							continue;
-
-						implementation = asGetter ? static_cast<MethodSymbol*>(property->get_getter()) : static_cast<MethodSymbol*>(property->get_setter());
-						break;
-					}
-				}
-				else if (interfaceOwnerKind == SyntaxKind::IndexatorDeclaration)
-				{
-					const IndexatorSymbol* interfaceIndexator = gmt::as<IndexatorSymbol>(interfaceOwner);
-					bool asGetter = interfaceIndexator->get_getter() == interfaceMethod;
-
-					for (IndexatorSymbol* indexator : receiverType->indexators)
-					{
-						if ((indexator == nullptr) || indexator->get_parameters().size() != interfaceIndexator->get_parameters().size())
-							continue;
-
-						implementation = asGetter ? static_cast<MethodSymbol*>(indexator->get_getter()) : static_cast<MethodSymbol*>(indexator->get_setter());
-						break;
-					}
-				}
-				else
-				{
-					for (MethodSymbol* candidate : receiverType->methods)
-					{
-						if ((candidate == nullptr) || candidate->get_name() != interfaceMethod->get_name())
-							continue;
-
-						if (candidate->get_parameters().size() != interfaceMethod->get_parameters().size())
-							continue;
-
-						implementation = candidate;
-						break;
-					}
-				}
-
-				if (implementation != nullptr)
-				{
-					dispatch.receiverType = receiverType;
-					dispatch.interfaceMethod = interfaceMethod;
-					dispatch.implementation = implementation;
-				}
-			}
-
-			if (implementation == nullptr)
-			{
-				raise_runtime_exception(gmt::concat(L"interface method '", interfaceMethod->get_name(), L"' is not implemented"));
-				break;
-			}
-
-			ObjectInstance result = invoke_method(implementation, arguments.view());
-			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
-				break;
-
-			if (implementation->get_is_async() || !is_void_method(interfaceMethod))
-				push_instance(frame, result);
-
-			break;
-		}
 
 		case OpCode::NEWDELEGATE:
 		{

@@ -62,7 +62,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 				eval_push(sizeof(void*));
 			}
 
-			m_encoder.emit_call_method_symbol(setter);
+			emit_call_method(setter);
 			eval_pop(symbol->get_parameters().size() + 2);
 			return;
 		}
@@ -240,12 +240,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			eval_push(sizeof(void*));
 		}
 
-		const SyntaxSymbol* owner = property->get_parent();
-		bool interfaceDispatch = owner != nullptr && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
-		if (interfaceDispatch)
-			m_encoder.emit_call_interface(setter);
-		else
-			m_encoder.emit_call_method_symbol(setter);
+		emit_call_method(setter);
 
 		eval_pop(2);
 

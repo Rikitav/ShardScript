@@ -76,6 +76,7 @@ namespace shard
 
 		void bind_where_clauses(const WhereClausesListSyntax* clauses, const gmt::vector<TypeParameterSymbol*>& typeParameters);
 		void bind_base_types(StructSymbol* symbol, const BaseTypesListSyntax* baseTypes);
+		void validate_interface_conformance(StructSymbol* symbol, const StructDeclarationSyntax* node);
 
 	public:
 		TypeBinder(SemanticModel& model, DiagnosticsContext& diagnostics);

@@ -69,6 +69,9 @@ namespace shard
 		bool is_null_type(const StructSymbol* type) const;
 		bool is_reference_shaped(const StructSymbol* type) const;
 		bool type_implements_interface(StructSymbol* type, InterfaceSymbol* interface) const;
+		
+		// the concrete member that implements an interface member on a type
+		MethodSymbol* find_interface_implementation(StructSymbol* receiverType, MethodSymbol* interfaceMethod);
 		bool type_satisfies_constraint(StructSymbol* typeArgument, StructSymbol* constraint) const;
 		bool is_primitive_type(const StructSymbol* type) const;
 		bool is_task_or_task_like(StructSymbol* type);

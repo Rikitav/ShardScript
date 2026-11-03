@@ -55,6 +55,22 @@ const TypeShape* ByteCodeEmitter::shape_of(StructSymbol* type)
 	return m_pragmatic.find_or_create_type_shape(get_model(), type);
 }
 
+void ByteCodeEmitter::emit_call_method(MethodSymbol* method)
+{
+	std::uint32_t interfaceSlot = DirectCallSlot;
+
+	// an interface member is a dispatch stub: the bytecode carries its vtable
+	// slot so the runtime never resolves the implementation by name
+	if (method->get_is_virtual())
+	{
+		std::optional<std::uint32_t> slot = m_pragmatic.get_interface_slot(method);
+		if (slot.has_value())
+			interfaceSlot = *slot;
+	}
+
+	m_encoder.emit_call_method_symbol(method, interfaceSlot);
+}
+
 std::size_t ByteCodeEmitter::payload_of(StructSymbol* type)
 {
 	const TypeShape* shape = shape_of(type);

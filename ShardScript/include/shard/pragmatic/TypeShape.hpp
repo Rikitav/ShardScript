@@ -12,6 +12,7 @@
 namespace shard
 {
 	class StructSymbol;
+	class MethodSymbol;
 
 	class SHARD_API TypeShape
 	{
@@ -30,6 +31,7 @@ namespace shard
 		std::size_t m_size = 0;
 		bool m_isReference = false; // reference storage is the baseline (spec 1.7)
 		gmt::vector<SlotInfo> m_slots;
+		gmt::vector<MethodSymbol*> m_vtable; // interface member slot -> implementation
 
 	public:
 		TypeShape(StructSymbol* baseType, std::span<StructSymbol* const> genericArguments);
@@ -44,5 +46,10 @@ namespace shard
 		bool is_reference() const;
 		std::size_t get_slot_count() const;
 		const SlotInfo& get_slot(std::uint32_t slotIndex) const;
+
+		bool has_vtable() const;
+		std::size_t get_vtable_size() const;
+		MethodSymbol* get_vtable_entry(std::uint32_t slot) const;
+		void set_vtable(gmt::vector<MethodSymbol*> entries);
 	};
 }

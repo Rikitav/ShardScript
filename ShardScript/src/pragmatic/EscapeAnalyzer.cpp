@@ -33,7 +33,9 @@
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
@@ -57,6 +59,39 @@ namespace
 		default:
 			return false;
 		}
+	}
+
+	// interface storage keeps only the reference: the concrete type has to stay
+	// recoverable from the heap header, so such values cannot live on the stack
+	bool is_interface_storage(const StructSymbol* type)
+	{
+		if (type == nullptr)
+			return false;
+
+		if (type->get_kind() == SyntaxKind::NullableType)
+			type = static_cast<const NullableTypeSymbol*>(type)->get_underlaying_type();
+
+		if (type == nullptr)
+			return false;
+
+		if (type->get_kind() == SyntaxKind::GenericType)
+			type = static_cast<const GenericTypeSymbol*>(type)->get_underlaying_type();
+
+		return type != nullptr && type->get_kind() == SyntaxKind::InterfaceDeclaration;
+	}
+
+	StructSymbol* declared_type_of(SyntaxSymbol* symbol)
+	{
+		if (symbol == nullptr)
+			return nullptr;
+
+		if (symbol->get_kind() == SyntaxKind::VariableStatement)
+			return static_cast<VariableSymbol*>(symbol)->get_type();
+
+		if (symbol->get_kind() == SyntaxKind::Parameter)
+			return static_cast<ParameterSymbol*>(symbol)->get_type();
+
+		return nullptr;
 	}
 }
 
@@ -448,10 +483,31 @@ void EscapeAnalyzer::record_call_exposure(const ExpressionSyntax* expression, Me
 		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver, cold });
 }
 
+EscapeLevel EscapeAnalyzer::argument_escape_level(MethodSymbol* callee, std::size_t parameterIndex, EscapeLevel base) const
+{
+	if (callee == nullptr)
+		return base;
+
+	const gmt::vector<ParameterSymbol*>& parameters = callee->get_parameters();
+	if (parameterIndex >= parameters.size())
+		return base;
+
+	ParameterSymbol* parameter = parameters[parameterIndex];
+	if (parameter == nullptr)
+		return base;
+
+	return is_interface_storage(parameter->get_type()) ? EscapeLevel::GlobalEscape : base;
+}
+
 void EscapeAnalyzer::alias_into(SyntaxSymbol* target, const ExpressionSyntax* sourceExpression)
 {
 	if ((target == nullptr) || (sourceExpression == nullptr))
 		return;
+
+	// a copy into interface storage is a box: the slot keeps only the reference,
+	// so the value has to be recoverable from the heap header
+	if (is_interface_storage(declared_type_of(target)))
+		expose_expression(sourceExpression, EscapeLevel::GlobalEscape, EscapeChannel::Store);
 
 	mark_wrap_identity(sourceExpression);
 
@@ -835,7 +891,7 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 					continue;
 
 				const ExpressionSyntax* argumentExpression = argument->get_expression();
-				expose_expression(argumentExpression, argumentLevel, EscapeChannel::UnknownCallee);
+				expose_expression(argumentExpression, argument_escape_level(callee, i, argumentLevel), EscapeChannel::UnknownCallee);
 
 				if (knownConcrete)
 					record_call_exposure(argumentExpression, callee, parameterOffset + static_cast<std::uint16_t>(i), false);

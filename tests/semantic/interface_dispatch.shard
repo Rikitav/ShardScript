@@ -1,0 +1,78 @@
+using stdio;
+
+interface IWidget
+{
+    Count -> int { get; set; }
+    func Get() -> int;
+    func Name() -> string;
+}
+
+struct Widget : IWidget
+{
+    public Value: int;
+
+    public new(value: int)
+    {
+        this.Value = value;
+    }
+
+    public Count -> int
+    {
+        get
+        {
+            return this.Value;
+        }
+        set
+        {
+            this.Value = value;
+        }
+    }
+
+    public func Get() -> int
+    {
+        return this.Value;
+    }
+
+    public func Name() -> string
+    {
+        return "widget";
+    }
+}
+
+struct Resource : IDisposable
+{
+    public Closed: bool;
+
+    public func Dispose() -> void
+    {
+        this.Closed = true;
+    }
+}
+
+func Show(item: IWidget) -> void
+{
+    println(item.Get());
+    println(item.Count);
+    item.Count = 9;
+    println(item.Count);
+    println(item.Name());
+}
+
+func Cleanup(item: IDisposable) -> void
+{
+    item.Dispose();
+}
+
+func Main() -> void
+{
+    widget: Widget = new Widget(3);
+    Show(widget);
+
+    plain: Widget = new Widget(11);
+    stored: IWidget = plain;
+    println(stored.Get());
+
+    resource: Resource = new Resource();
+    Cleanup(resource);
+    println(resource.Closed);
+}
