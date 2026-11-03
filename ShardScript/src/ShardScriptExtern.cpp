@@ -586,7 +586,7 @@ extern "C"
 	// ----------------------------------------------------------------------
 	// core / platform
 	// ----------------------------------------------------------------------
-	SHARD_API shard_status_t shard_ApplicationDomain_ApplicationDomain_create(const void* p0, shard_shard_SemanticModel_t p1, shard_shard_PragmaticModel_t p2, shard_shard_ApplicationDomain_t* out_handle)
+	SHARD_API shard_status_t shard_ApplicationDomain_ApplicationDomain_create(const void* p0, shard_SemanticModel_t p1, shard_PragmaticModel_t p2, shard_ApplicationDomain_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -629,7 +629,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ApplicationDomain_ApplicationDomain_destroy(shard_shard_ApplicationDomain_t self)
+	SHARD_API void shard_ApplicationDomain_ApplicationDomain_destroy(shard_ApplicationDomain_t self)
 	{
 		if (!self)
 		{
@@ -644,7 +644,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_PragmaticModel_t shard_ApplicationDomain_get_pragmatic_model(shard_shard_ApplicationDomain_t self)
+	SHARD_API shard_PragmaticModel_t shard_ApplicationDomain_get_pragmatic_model(shard_ApplicationDomain_t self)
 	{
 		if (!self)
 		{
@@ -661,7 +661,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_VirtualProgramImage_t shard_ApplicationDomain_get_program(shard_shard_ApplicationDomain_t self)
+	SHARD_API shard_VirtualProgramImage_t shard_ApplicationDomain_get_program(shard_ApplicationDomain_t self)
 	{
 		if (!self)
 		{
@@ -678,7 +678,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SemanticModel_t shard_ApplicationDomain_get_semantic_model(shard_shard_ApplicationDomain_t self)
+	SHARD_API shard_SemanticModel_t shard_ApplicationDomain_get_semantic_model(shard_ApplicationDomain_t self)
 	{
 		if (!self)
 		{
@@ -695,7 +695,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_VirtualMachine_t shard_ApplicationDomain_get_virtual_machine(shard_shard_ApplicationDomain_t self)
+	SHARD_API shard_VirtualMachine_t shard_ApplicationDomain_get_virtual_machine(shard_ApplicationDomain_t self)
 	{
 		if (!self)
 		{
@@ -712,14 +712,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ApplicationDomain_operator_assign(shard_shard_ApplicationDomain_t self, shard_shard_ApplicationDomain_t p0)
+	SHARD_API shard_status_t shard_ApplicationDomain_operator_assign(shard_ApplicationDomain_t self, shard_ApplicationDomain_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_CompilationContext_create(shard_shard_CompilationContext_t* out_handle)
+	SHARD_API shard_status_t shard_CompilationContext_CompilationContext_create(shard_CompilationContext_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -762,7 +762,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_CompilationContext_CompilationContext_destroy(shard_shard_CompilationContext_t self)
+	SHARD_API void shard_CompilationContext_CompilationContext_destroy(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -777,7 +777,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_add_lib(shard_shard_CompilationContext_t self, const wchar_t* p0)
+	SHARD_API shard_status_t shard_CompilationContext_add_lib(shard_CompilationContext_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -814,7 +814,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_add_libraries(shard_shard_CompilationContext_t self, const void* p0)
+	SHARD_API shard_status_t shard_CompilationContext_add_libraries(shard_CompilationContext_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -851,7 +851,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_CompilationContext_analyze_tree(shard_shard_CompilationContext_t self)
+	SHARD_API int shard_CompilationContext_analyze_tree(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -868,7 +868,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_compile(shard_shard_CompilationContext_t self, void** out_value)
+	SHARD_API shard_status_t shard_CompilationContext_compile(shard_CompilationContext_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -916,7 +916,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_CompilationContext_emit_program(shard_shard_CompilationContext_t self)
+	SHARD_API int shard_CompilationContext_emit_program(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -933,7 +933,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_enrich_tree(shard_shard_CompilationContext_t self, shard_shard_SourceProvider_t p0)
+	SHARD_API shard_status_t shard_CompilationContext_enrich_tree(shard_CompilationContext_t self, shard_SourceProvider_t p0)
 	{
 		if (!self)
 		{
@@ -970,7 +970,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_DiagnosticsContext_t shard_CompilationContext_get_diagnostics(shard_shard_CompilationContext_t self)
+	SHARD_API shard_DiagnosticsContext_t shard_CompilationContext_get_diagnostics(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -987,7 +987,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_PragmaticModel_t shard_CompilationContext_get_pragmatic_model(shard_shard_CompilationContext_t self)
+	SHARD_API shard_PragmaticModel_t shard_CompilationContext_get_pragmatic_model(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -1004,7 +1004,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_VirtualProgramImage_t shard_CompilationContext_get_program(shard_shard_CompilationContext_t self)
+	SHARD_API shard_VirtualProgramImage_t shard_CompilationContext_get_program(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -1021,7 +1021,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SemanticModel_t shard_CompilationContext_get_semantic_model(shard_shard_CompilationContext_t self)
+	SHARD_API shard_SemanticModel_t shard_CompilationContext_get_semantic_model(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -1038,7 +1038,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SyntaxTree_t shard_CompilationContext_get_syntax_tree(shard_shard_CompilationContext_t self)
+	SHARD_API shard_SyntaxTree_t shard_CompilationContext_get_syntax_tree(shard_CompilationContext_t self)
 	{
 		if (!self)
 		{
@@ -1055,14 +1055,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_operator_assign(shard_shard_CompilationContext_t self, shard_shard_CompilationContext_t p0)
+	SHARD_API shard_status_t shard_CompilationContext_operator_assign(shard_CompilationContext_t self, shard_CompilationContext_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_parse_file(shard_shard_CompilationContext_t self, const wchar_t* p0)
+	SHARD_API shard_status_t shard_CompilationContext_parse_file(shard_CompilationContext_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -1099,7 +1099,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CompilationContext_parse_source(shard_shard_CompilationContext_t self, const wchar_t* p0, const wchar_t* p1)
+	SHARD_API shard_status_t shard_CompilationContext_parse_source(shard_CompilationContext_t self, const wchar_t* p0, const wchar_t* p1)
 	{
 		if (!self)
 		{
@@ -1136,7 +1136,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ShardLibDependencyInfo_ShardLibDependencyInfo_create(shard_shard_ShardLibDependencyInfo_t* out_handle)
+	SHARD_API shard_status_t shardLibDependencyInfo_ShardLibDependencyInfo_create(shard_ShardLibDependencyInfo_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -1179,7 +1179,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ShardLibDependencyInfo_ShardLibDependencyInfo_destroy(shard_shard_ShardLibDependencyInfo_t self)
+	SHARD_API void shardLibDependencyInfo_ShardLibDependencyInfo_destroy(shard_ShardLibDependencyInfo_t self)
 	{
 		if (!self)
 		{
@@ -1194,7 +1194,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ShardLibMetadata_ShardLibMetadata_create(shard_shard_ShardLibMetadata_t* out_handle)
+	SHARD_API shard_status_t shardLibMetadata_ShardLibMetadata_create(shard_ShardLibMetadata_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -1237,7 +1237,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ShardLibMetadata_ShardLibMetadata_destroy(shard_shard_ShardLibMetadata_t self)
+	SHARD_API void shardLibMetadata_ShardLibMetadata_destroy(shard_ShardLibMetadata_t self)
 	{
 		if (!self)
 		{
@@ -1255,7 +1255,7 @@ extern "C"
 	// ----------------------------------------------------------------------
 	// lexical
 	// ----------------------------------------------------------------------
-	SHARD_API shard_status_t shard_FileReader_FileReader_create(const char* p0, shard_shard_FileReader_t* out_handle)
+	SHARD_API shard_status_t shard_FileReader_FileReader_create(const char* p0, shard_FileReader_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -1298,7 +1298,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_FileReader_FileReader_destroy(shard_shard_FileReader_t self)
+	SHARD_API void shard_FileReader_FileReader_destroy(shard_FileReader_t self)
 	{
 		if (!self)
 		{
@@ -1313,7 +1313,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FileReader_get_name(shard_shard_FileReader_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_FileReader_get_name(shard_FileReader_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -1361,7 +1361,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_FileReader_peek_next(shard_shard_FileReader_t self, wchar_t* p0)
+	SHARD_API int shard_FileReader_peek_next(shard_FileReader_t self, wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -1378,7 +1378,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_FileReader_read_next(shard_shard_FileReader_t self, wchar_t* p0)
+	SHARD_API int shard_FileReader_read_next(shard_FileReader_t self, wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -1395,7 +1395,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalAnalyzer_LexicalAnalyzer_create(shard_shard_SourceTextProvider_t p0, shard_shard_LexicalAnalyzer_t* out_handle)
+	SHARD_API shard_status_t shard_LexicalAnalyzer_LexicalAnalyzer_create(shard_SourceTextProvider_t p0, shard_LexicalAnalyzer_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -1438,7 +1438,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_LexicalAnalyzer_LexicalAnalyzer_destroy(shard_shard_LexicalAnalyzer_t self)
+	SHARD_API void shard_LexicalAnalyzer_LexicalAnalyzer_destroy(shard_LexicalAnalyzer_t self)
 	{
 		if (!self)
 		{
@@ -1453,7 +1453,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_LexicalAnalyzer_can_consume(shard_shard_LexicalAnalyzer_t self)
+	SHARD_API int shard_LexicalAnalyzer_can_consume(shard_LexicalAnalyzer_t self)
 	{
 		if (!self)
 		{
@@ -1470,7 +1470,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_LexicalAnalyzer_can_peek(shard_shard_LexicalAnalyzer_t self)
+	SHARD_API int shard_LexicalAnalyzer_can_peek(shard_LexicalAnalyzer_t self)
 	{
 		if (!self)
 		{
@@ -1487,7 +1487,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalAnalyzer_consume(shard_shard_LexicalAnalyzer_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalAnalyzer_consume(shard_LexicalAnalyzer_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -1535,7 +1535,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalAnalyzer_current(shard_shard_LexicalAnalyzer_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalAnalyzer_current(shard_LexicalAnalyzer_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -1583,7 +1583,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalAnalyzer_peek(shard_shard_LexicalAnalyzer_t self, int p0, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalAnalyzer_peek(shard_LexicalAnalyzer_t self, int p0, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -1631,7 +1631,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalAnalyzer_put_back(shard_shard_LexicalAnalyzer_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_LexicalAnalyzer_put_back(shard_LexicalAnalyzer_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -1668,7 +1668,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_LexicalBuffer_create(shard_shard_LexicalBuffer_t* out_handle)
+	SHARD_API shard_status_t shard_LexicalBuffer_LexicalBuffer_create(shard_LexicalBuffer_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -1711,7 +1711,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_LexicalBuffer_LexicalBuffer_destroy(shard_shard_LexicalBuffer_t self)
+	SHARD_API void shard_LexicalBuffer_LexicalBuffer_destroy(shard_LexicalBuffer_t self)
 	{
 		if (!self)
 		{
@@ -1726,7 +1726,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_at(shard_shard_LexicalBuffer_t self, std::size_t p0, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_at(shard_LexicalBuffer_t self, std::size_t p0, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -1774,7 +1774,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_begin(shard_shard_LexicalBuffer_t self, void** out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_begin(shard_LexicalBuffer_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -1822,7 +1822,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_LexicalBuffer_can_consume(shard_shard_LexicalBuffer_t self)
+	SHARD_API int shard_LexicalBuffer_can_consume(shard_LexicalBuffer_t self)
 	{
 		if (!self)
 		{
@@ -1839,7 +1839,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_LexicalBuffer_can_peek(shard_shard_LexicalBuffer_t self)
+	SHARD_API int shard_LexicalBuffer_can_peek(shard_LexicalBuffer_t self)
 	{
 		if (!self)
 		{
@@ -1856,7 +1856,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_clear(shard_shard_LexicalBuffer_t self)
+	SHARD_API shard_status_t shard_LexicalBuffer_clear(shard_LexicalBuffer_t self)
 	{
 		if (!self)
 		{
@@ -1893,7 +1893,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_consume(shard_shard_LexicalBuffer_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_consume(shard_LexicalBuffer_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -1941,7 +1941,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_current(shard_shard_LexicalBuffer_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_current(shard_LexicalBuffer_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -1989,7 +1989,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_end(shard_shard_LexicalBuffer_t self, void** out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_end(shard_LexicalBuffer_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -2037,7 +2037,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_first(shard_shard_LexicalBuffer_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_first(shard_LexicalBuffer_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -2085,7 +2085,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_from(shard_shard_SourceProvider_t p0, shard_shard_LexicalBuffer_t* out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_from(shard_SourceProvider_t p0, shard_LexicalBuffer_t* out_value)
 	{
 		if (!out_value)
 		{
@@ -2129,7 +2129,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_LexicalBuffer_is_empty(shard_shard_LexicalBuffer_t self)
+	SHARD_API int shard_LexicalBuffer_is_empty(shard_LexicalBuffer_t self)
 	{
 		if (!self)
 		{
@@ -2146,7 +2146,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_last(shard_shard_LexicalBuffer_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_last(shard_LexicalBuffer_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -2194,7 +2194,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_peek(shard_shard_LexicalBuffer_t self, int p0, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LexicalBuffer_peek(shard_LexicalBuffer_t self, int p0, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -2242,7 +2242,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_populate_from(shard_shard_LexicalBuffer_t self, shard_shard_SourceProvider_t p0)
+	SHARD_API shard_status_t shard_LexicalBuffer_populate_from(shard_LexicalBuffer_t self, shard_SourceProvider_t p0)
 	{
 		if (!self)
 		{
@@ -2279,7 +2279,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_push_back(shard_shard_LexicalBuffer_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_LexicalBuffer_push_back(shard_LexicalBuffer_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -2316,7 +2316,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_put_back(shard_shard_LexicalBuffer_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_LexicalBuffer_put_back(shard_LexicalBuffer_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -2353,7 +2353,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_set_index(shard_shard_LexicalBuffer_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_LexicalBuffer_set_index(shard_LexicalBuffer_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -2390,7 +2390,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LexicalBuffer_set_sequence(shard_shard_LexicalBuffer_t self, const void* p0)
+	SHARD_API shard_status_t shard_LexicalBuffer_set_sequence(shard_LexicalBuffer_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -2427,7 +2427,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_LexicalBuffer_size(shard_shard_LexicalBuffer_t self)
+	SHARD_API std::size_t shard_LexicalBuffer_size(shard_LexicalBuffer_t self)
 	{
 		if (!self)
 		{
@@ -2444,7 +2444,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceProvider_SourceProvider_create(shard_shard_SourceProvider_t* out_handle)
+	SHARD_API shard_status_t shard_SourceProvider_SourceProvider_create(shard_SourceProvider_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -2487,7 +2487,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SourceProvider_SourceProvider_destroy(shard_shard_SourceProvider_t self)
+	SHARD_API void shard_SourceProvider_SourceProvider_destroy(shard_SourceProvider_t self)
 	{
 		if (!self)
 		{
@@ -2502,7 +2502,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SourceProvider_can_consume(shard_shard_SourceProvider_t self)
+	SHARD_API int shard_SourceProvider_can_consume(shard_SourceProvider_t self)
 	{
 		if (!self)
 		{
@@ -2519,7 +2519,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SourceProvider_can_peek(shard_shard_SourceProvider_t self)
+	SHARD_API int shard_SourceProvider_can_peek(shard_SourceProvider_t self)
 	{
 		if (!self)
 		{
@@ -2536,7 +2536,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceProvider_consume(shard_shard_SourceProvider_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_SourceProvider_consume(shard_SourceProvider_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -2584,7 +2584,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceProvider_current(shard_shard_SourceProvider_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_SourceProvider_current(shard_SourceProvider_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -2632,7 +2632,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceProvider_peek(shard_shard_SourceProvider_t self, int p0, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_SourceProvider_peek(shard_SourceProvider_t self, int p0, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -2680,7 +2680,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceProvider_put_back(shard_shard_SourceProvider_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_SourceProvider_put_back(shard_SourceProvider_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -2717,7 +2717,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceTextProvider_SourceTextProvider_create(shard_shard_SourceTextProvider_t* out_handle)
+	SHARD_API shard_status_t shard_SourceTextProvider_SourceTextProvider_create(shard_SourceTextProvider_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -2760,7 +2760,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SourceTextProvider_SourceTextProvider_destroy(shard_shard_SourceTextProvider_t self)
+	SHARD_API void shard_SourceTextProvider_SourceTextProvider_destroy(shard_SourceTextProvider_t self)
 	{
 		if (!self)
 		{
@@ -2775,7 +2775,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceTextProvider_get_name(shard_shard_SourceTextProvider_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_SourceTextProvider_get_name(shard_SourceTextProvider_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -2823,7 +2823,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SourceTextProvider_peek_next(shard_shard_SourceTextProvider_t self, wchar_t* p0)
+	SHARD_API int shard_SourceTextProvider_peek_next(shard_SourceTextProvider_t self, wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -2840,7 +2840,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SourceTextProvider_read_next(shard_shard_SourceTextProvider_t self, wchar_t* p0)
+	SHARD_API int shard_SourceTextProvider_read_next(shard_SourceTextProvider_t self, wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -2857,7 +2857,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StringStreamReader_StringStreamReader_create(const wchar_t* p0, void* p1, shard_shard_StringStreamReader_t* out_handle)
+	SHARD_API shard_status_t shard_StringStreamReader_StringStreamReader_create(const wchar_t* p0, void* p1, shard_StringStreamReader_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -2900,7 +2900,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_StringStreamReader_StringStreamReader_destroy(shard_shard_StringStreamReader_t self)
+	SHARD_API void shard_StringStreamReader_StringStreamReader_destroy(shard_StringStreamReader_t self)
 	{
 		if (!self)
 		{
@@ -2915,7 +2915,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StringStreamReader_get_name(shard_shard_StringStreamReader_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_StringStreamReader_get_name(shard_StringStreamReader_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -2963,7 +2963,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_StringStreamReader_peek_next(shard_shard_StringStreamReader_t self, wchar_t* p0)
+	SHARD_API int shard_StringStreamReader_peek_next(shard_StringStreamReader_t self, wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -2980,7 +2980,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_StringStreamReader_read_next(shard_shard_StringStreamReader_t self, wchar_t* p0)
+	SHARD_API int shard_StringStreamReader_read_next(shard_StringStreamReader_t self, wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -3446,7 +3446,7 @@ extern "C"
 	// ----------------------------------------------------------------------
 	// parsing
 	// ----------------------------------------------------------------------
-	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_AccessorDeclarationSyntax_create(const void* p0, shard_shard_AccessorDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_AccessorDeclarationSyntax_create(const void* p0, shard_AccessorDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -3489,7 +3489,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_AccessorDeclarationSyntax_AccessorDeclarationSyntax_destroy(shard_shard_AccessorDeclarationSyntax_t self)
+	SHARD_API void shard_AccessorDeclarationSyntax_AccessorDeclarationSyntax_destroy(shard_AccessorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -3504,7 +3504,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_accept(shard_shard_AccessorDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_accept(shard_AccessorDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -3541,7 +3541,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_get_keyword(shard_shard_AccessorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_get_keyword(shard_AccessorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -3589,7 +3589,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_get_location(shard_shard_AccessorDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_get_location(shard_AccessorDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -3637,7 +3637,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_get_semicolon(shard_shard_AccessorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_get_semicolon(shard_AccessorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -3685,7 +3685,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_set_keyword(shard_shard_AccessorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_set_keyword(shard_AccessorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -3722,7 +3722,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_set_semicolon(shard_shard_AccessorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AccessorDeclarationSyntax_set_semicolon(shard_AccessorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -3759,7 +3759,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentSyntax_ArgumentSyntax_create(const void* p0, shard_shard_ArgumentSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ArgumentSyntax_ArgumentSyntax_create(const void* p0, shard_ArgumentSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -3802,7 +3802,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ArgumentSyntax_ArgumentSyntax_destroy(shard_shard_ArgumentSyntax_t self)
+	SHARD_API void shard_ArgumentSyntax_ArgumentSyntax_destroy(shard_ArgumentSyntax_t self)
 	{
 		if (!self)
 		{
@@ -3817,7 +3817,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentSyntax_accept(shard_shard_ArgumentSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ArgumentSyntax_accept(shard_ArgumentSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -3854,7 +3854,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ArgumentSyntax_get_expression(shard_shard_ArgumentSyntax_t self)
+	SHARD_API void* shard_ArgumentSyntax_get_expression(shard_ArgumentSyntax_t self)
 	{
 		if (!self)
 		{
@@ -3871,7 +3871,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentSyntax_get_location(shard_shard_ArgumentSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ArgumentSyntax_get_location(shard_ArgumentSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -3919,7 +3919,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentSyntax_set_expression(shard_shard_ArgumentSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ArgumentSyntax_set_expression(shard_ArgumentSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -3956,7 +3956,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_ArgumentsListSyntax_create(const void* p0, shard_shard_ArgumentsListSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_ArgumentsListSyntax_create(const void* p0, shard_ArgumentsListSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -3999,7 +3999,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ArgumentsListSyntax_ArgumentsListSyntax_destroy(shard_shard_ArgumentsListSyntax_t self)
+	SHARD_API void shard_ArgumentsListSyntax_ArgumentsListSyntax_destroy(shard_ArgumentsListSyntax_t self)
 	{
 		if (!self)
 		{
@@ -4014,7 +4014,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_accept(shard_shard_ArgumentsListSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_accept(shard_ArgumentsListSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -4051,7 +4051,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_arguments(shard_shard_ArgumentsListSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_arguments(shard_ArgumentsListSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -4099,7 +4099,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_close_token(shard_shard_ArgumentsListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_close_token(shard_ArgumentsListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -4147,7 +4147,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_location(shard_shard_ArgumentsListSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_location(shard_ArgumentsListSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -4195,7 +4195,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_open_token(shard_shard_ArgumentsListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_get_open_token(shard_ArgumentsListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -4243,7 +4243,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_set_arguments(shard_shard_ArgumentsListSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_set_arguments(shard_ArgumentsListSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -4280,7 +4280,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_set_close_token(shard_shard_ArgumentsListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_set_close_token(shard_ArgumentsListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -4317,7 +4317,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArgumentsListSyntax_set_open_token(shard_shard_ArgumentsListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ArgumentsListSyntax_set_open_token(shard_ArgumentsListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -4354,7 +4354,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_ArrayTypeSyntax_create(const void* p0, shard_shard_ArrayTypeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_ArrayTypeSyntax_create(const void* p0, shard_ArrayTypeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -4397,7 +4397,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ArrayTypeSyntax_ArrayTypeSyntax_destroy(shard_shard_ArrayTypeSyntax_t self)
+	SHARD_API void shard_ArrayTypeSyntax_ArrayTypeSyntax_destroy(shard_ArrayTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -4412,7 +4412,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_accept(shard_shard_ArrayTypeSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_accept(shard_ArrayTypeSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -4449,7 +4449,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_close_bracket(shard_shard_ArrayTypeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_close_bracket(shard_ArrayTypeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -4497,7 +4497,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_location(shard_shard_ArrayTypeSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_location(shard_ArrayTypeSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -4545,7 +4545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_open_bracket(shard_shard_ArrayTypeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_open_bracket(shard_ArrayTypeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -4593,7 +4593,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_qualifier(shard_shard_ArrayTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_get_qualifier(shard_ArrayTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -4641,7 +4641,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ArrayTypeSyntax_get_underlaying_type(shard_shard_ArrayTypeSyntax_t self)
+	SHARD_API void* shard_ArrayTypeSyntax_get_underlaying_type(shard_ArrayTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -4658,7 +4658,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_set_close_bracket(shard_shard_ArrayTypeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_set_close_bracket(shard_ArrayTypeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -4695,7 +4695,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_set_open_bracket(shard_shard_ArrayTypeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_set_open_bracket(shard_ArrayTypeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -4732,7 +4732,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSyntax_set_underlaying_type(shard_shard_ArrayTypeSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ArrayTypeSyntax_set_underlaying_type(shard_ArrayTypeSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -4769,7 +4769,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrowClauseSyntax_ArrowClauseSyntax_create(const void* p0, shard_shard_ArrowClauseSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ArrowClauseSyntax_ArrowClauseSyntax_create(const void* p0, shard_ArrowClauseSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -4812,7 +4812,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ArrowClauseSyntax_ArrowClauseSyntax_destroy(shard_shard_ArrowClauseSyntax_t self)
+	SHARD_API void shard_ArrowClauseSyntax_ArrowClauseSyntax_destroy(shard_ArrowClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -4827,7 +4827,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrowClauseSyntax_accept(shard_shard_ArrowClauseSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ArrowClauseSyntax_accept(shard_ArrowClauseSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -4864,7 +4864,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrowClauseSyntax_get_arrow_token(shard_shard_ArrowClauseSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ArrowClauseSyntax_get_arrow_token(shard_ArrowClauseSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -4912,7 +4912,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ArrowClauseSyntax_get_expression(shard_shard_ArrowClauseSyntax_t self)
+	SHARD_API void* shard_ArrowClauseSyntax_get_expression(shard_ArrowClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -4929,7 +4929,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrowClauseSyntax_get_location(shard_shard_ArrowClauseSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ArrowClauseSyntax_get_location(shard_ArrowClauseSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -4977,7 +4977,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrowClauseSyntax_set_arrow_token(shard_shard_ArrowClauseSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ArrowClauseSyntax_set_arrow_token(shard_ArrowClauseSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -5014,7 +5014,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrowClauseSyntax_set_expression(shard_shard_ArrowClauseSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ArrowClauseSyntax_set_expression(shard_ArrowClauseSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -5051,7 +5051,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_AttributeSyntax_create(const void* p0, shard_shard_AttributeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_AttributeSyntax_AttributeSyntax_create(const void* p0, shard_AttributeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -5094,7 +5094,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_AttributeSyntax_AttributeSyntax_destroy(shard_shard_AttributeSyntax_t self)
+	SHARD_API void shard_AttributeSyntax_AttributeSyntax_destroy(shard_AttributeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -5109,7 +5109,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_accept(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_AttributeSyntax_accept(shard_AttributeSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -5146,7 +5146,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_get_arguments(shard_shard_AttributeSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_AttributeSyntax_get_arguments(shard_AttributeSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -5194,7 +5194,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_get_close_bracket(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AttributeSyntax_get_close_bracket(shard_AttributeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -5242,7 +5242,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_get_close_curl(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AttributeSyntax_get_close_curl(shard_AttributeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -5290,7 +5290,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_get_location(shard_shard_AttributeSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_AttributeSyntax_get_location(shard_AttributeSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -5338,7 +5338,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_get_name(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AttributeSyntax_get_name(shard_AttributeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -5386,7 +5386,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_get_open_bracket(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AttributeSyntax_get_open_bracket(shard_AttributeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -5434,7 +5434,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_get_open_curl(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AttributeSyntax_get_open_curl(shard_AttributeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -5482,7 +5482,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_set_arguments(shard_shard_AttributeSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_AttributeSyntax_set_arguments(shard_AttributeSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -5519,7 +5519,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_set_close_bracket(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AttributeSyntax_set_close_bracket(shard_AttributeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -5556,7 +5556,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_set_close_curl(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AttributeSyntax_set_close_curl(shard_AttributeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -5593,7 +5593,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_set_name(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AttributeSyntax_set_name(shard_AttributeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -5630,7 +5630,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_set_open_bracket(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AttributeSyntax_set_open_bracket(shard_AttributeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -5667,7 +5667,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributeSyntax_set_open_curl(shard_shard_AttributeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AttributeSyntax_set_open_curl(shard_AttributeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -5704,7 +5704,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_AttributesListSyntax_create(const void* p0, shard_shard_AttributesListSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_AttributesListSyntax_AttributesListSyntax_create(const void* p0, shard_AttributesListSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -5747,7 +5747,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_AttributesListSyntax_AttributesListSyntax_destroy(shard_shard_AttributesListSyntax_t self)
+	SHARD_API void shard_AttributesListSyntax_AttributesListSyntax_destroy(shard_AttributesListSyntax_t self)
 	{
 		if (!self)
 		{
@@ -5762,7 +5762,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_accept(shard_shard_AttributesListSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_AttributesListSyntax_accept(shard_AttributesListSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -5799,7 +5799,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_get_attributes(shard_shard_AttributesListSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_AttributesListSyntax_get_attributes(shard_AttributesListSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -5847,7 +5847,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_get_close_token(shard_shard_AttributesListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AttributesListSyntax_get_close_token(shard_AttributesListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -5895,7 +5895,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_get_location(shard_shard_AttributesListSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_AttributesListSyntax_get_location(shard_AttributesListSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -5943,7 +5943,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_get_open_token(shard_shard_AttributesListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AttributesListSyntax_get_open_token(shard_AttributesListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -5991,7 +5991,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_set_attributes(shard_shard_AttributesListSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_AttributesListSyntax_set_attributes(shard_AttributesListSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -6028,7 +6028,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_set_close_token(shard_shard_AttributesListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AttributesListSyntax_set_close_token(shard_AttributesListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -6065,7 +6065,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AttributesListSyntax_set_open_token(shard_shard_AttributesListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AttributesListSyntax_set_open_token(shard_AttributesListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -6102,7 +6102,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AwaitExpressionSyntax_AwaitExpressionSyntax_create(const void* p0, shard_shard_AwaitExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_AwaitExpressionSyntax_AwaitExpressionSyntax_create(const void* p0, shard_AwaitExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -6145,7 +6145,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_AwaitExpressionSyntax_AwaitExpressionSyntax_destroy(shard_shard_AwaitExpressionSyntax_t self)
+	SHARD_API void shard_AwaitExpressionSyntax_AwaitExpressionSyntax_destroy(shard_AwaitExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -6160,7 +6160,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AwaitExpressionSyntax_accept(shard_shard_AwaitExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_AwaitExpressionSyntax_accept(shard_AwaitExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -6197,7 +6197,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AwaitExpressionSyntax_get_await_keyword(shard_shard_AwaitExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_AwaitExpressionSyntax_get_await_keyword(shard_AwaitExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -6245,7 +6245,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_AwaitExpressionSyntax_get_expression(shard_shard_AwaitExpressionSyntax_t self)
+	SHARD_API void* shard_AwaitExpressionSyntax_get_expression(shard_AwaitExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -6262,7 +6262,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AwaitExpressionSyntax_get_location(shard_shard_AwaitExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_AwaitExpressionSyntax_get_location(shard_AwaitExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -6310,7 +6310,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AwaitExpressionSyntax_set_await_keyword(shard_shard_AwaitExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_AwaitExpressionSyntax_set_await_keyword(shard_AwaitExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -6347,7 +6347,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AwaitExpressionSyntax_set_expression(shard_shard_AwaitExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_AwaitExpressionSyntax_set_expression(shard_AwaitExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -6384,7 +6384,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BaseTypesListSyntax_BaseTypesListSyntax_create(const void* p0, shard_shard_BaseTypesListSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_BaseTypesListSyntax_BaseTypesListSyntax_create(const void* p0, shard_BaseTypesListSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -6427,7 +6427,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_BaseTypesListSyntax_BaseTypesListSyntax_destroy(shard_shard_BaseTypesListSyntax_t self)
+	SHARD_API void shard_BaseTypesListSyntax_BaseTypesListSyntax_destroy(shard_BaseTypesListSyntax_t self)
 	{
 		if (!self)
 		{
@@ -6442,7 +6442,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BaseTypesListSyntax_accept(shard_shard_BaseTypesListSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_BaseTypesListSyntax_accept(shard_BaseTypesListSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -6479,7 +6479,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BaseTypesListSyntax_get_location(shard_shard_BaseTypesListSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_BaseTypesListSyntax_get_location(shard_BaseTypesListSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -6527,7 +6527,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BaseTypesListSyntax_get_types(shard_shard_BaseTypesListSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_BaseTypesListSyntax_get_types(shard_BaseTypesListSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -6575,7 +6575,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BaseTypesListSyntax_set_types(shard_shard_BaseTypesListSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_BaseTypesListSyntax_set_types(shard_BaseTypesListSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -6612,7 +6612,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BinaryExpressionSyntax_BinaryExpressionSyntax_create(const void* p0, shard_shard_BinaryExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_BinaryExpressionSyntax_BinaryExpressionSyntax_create(const void* p0, shard_BinaryExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -6655,7 +6655,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_BinaryExpressionSyntax_BinaryExpressionSyntax_destroy(shard_shard_BinaryExpressionSyntax_t self)
+	SHARD_API void shard_BinaryExpressionSyntax_BinaryExpressionSyntax_destroy(shard_BinaryExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -6670,7 +6670,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BinaryExpressionSyntax_accept(shard_shard_BinaryExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_BinaryExpressionSyntax_accept(shard_BinaryExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -6707,7 +6707,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_BinaryExpressionSyntax_get_left(shard_shard_BinaryExpressionSyntax_t self)
+	SHARD_API void* shard_BinaryExpressionSyntax_get_left(shard_BinaryExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -6724,7 +6724,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BinaryExpressionSyntax_get_location(shard_shard_BinaryExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_BinaryExpressionSyntax_get_location(shard_BinaryExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -6772,7 +6772,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BinaryExpressionSyntax_get_operator_token(shard_shard_BinaryExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_BinaryExpressionSyntax_get_operator_token(shard_BinaryExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -6820,7 +6820,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_BinaryExpressionSyntax_get_right(shard_shard_BinaryExpressionSyntax_t self)
+	SHARD_API void* shard_BinaryExpressionSyntax_get_right(shard_BinaryExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -6837,7 +6837,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BinaryExpressionSyntax_set_left(shard_shard_BinaryExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_BinaryExpressionSyntax_set_left(shard_BinaryExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -6874,7 +6874,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BinaryExpressionSyntax_set_operator_token(shard_shard_BinaryExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_BinaryExpressionSyntax_set_operator_token(shard_BinaryExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -6911,7 +6911,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BinaryExpressionSyntax_set_right(shard_shard_BinaryExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_BinaryExpressionSyntax_set_right(shard_BinaryExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -6948,7 +6948,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BlockSyntax_BlockSyntax_create(int p0, const void* p1, shard_shard_BlockSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_BlockSyntax_BlockSyntax_create(int p0, const void* p1, shard_BlockSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -6991,7 +6991,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_BlockSyntax_BlockSyntax_destroy(shard_shard_BlockSyntax_t self)
+	SHARD_API void shard_BlockSyntax_BlockSyntax_destroy(shard_BlockSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7006,7 +7006,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_BreakStatementSyntax_create(const void* p0, shard_shard_BreakStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_BreakStatementSyntax_create(const void* p0, shard_BreakStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -7049,7 +7049,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_BreakStatementSyntax_BreakStatementSyntax_destroy(shard_shard_BreakStatementSyntax_t self)
+	SHARD_API void shard_BreakStatementSyntax_BreakStatementSyntax_destroy(shard_BreakStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7064,7 +7064,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_accept(shard_shard_BreakStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_accept(shard_BreakStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -7101,7 +7101,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_get_break_keyword(shard_shard_BreakStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_get_break_keyword(shard_BreakStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -7149,7 +7149,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_get_location(shard_shard_BreakStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_get_location(shard_BreakStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -7197,7 +7197,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_get_semicolon(shard_shard_BreakStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_get_semicolon(shard_BreakStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -7245,7 +7245,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_get_tag(shard_shard_BreakStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_get_tag(shard_BreakStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -7293,7 +7293,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_set_break_keyword(shard_shard_BreakStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_set_break_keyword(shard_BreakStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -7330,7 +7330,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_set_semicolon(shard_shard_BreakStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_set_semicolon(shard_BreakStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -7367,7 +7367,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_BreakStatementSyntax_set_tag(shard_shard_BreakStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_BreakStatementSyntax_set_tag(shard_BreakStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -7404,7 +7404,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CastExpressionSyntax_CastExpressionSyntax_create(const void* p0, shard_shard_CastExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_CastExpressionSyntax_CastExpressionSyntax_create(const void* p0, shard_CastExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -7447,7 +7447,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_CastExpressionSyntax_CastExpressionSyntax_destroy(shard_shard_CastExpressionSyntax_t self)
+	SHARD_API void shard_CastExpressionSyntax_CastExpressionSyntax_destroy(shard_CastExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7462,7 +7462,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CastExpressionSyntax_accept(shard_shard_CastExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_CastExpressionSyntax_accept(shard_CastExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -7499,7 +7499,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_CastExpressionSyntax_get_expression(shard_shard_CastExpressionSyntax_t self)
+	SHARD_API void* shard_CastExpressionSyntax_get_expression(shard_CastExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7516,7 +7516,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CastExpressionSyntax_get_location(shard_shard_CastExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_CastExpressionSyntax_get_location(shard_CastExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -7564,7 +7564,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CastExpressionSyntax_get_operator_token(shard_shard_CastExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_CastExpressionSyntax_get_operator_token(shard_CastExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -7612,7 +7612,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_CastExpressionSyntax_get_target_type(shard_shard_CastExpressionSyntax_t self)
+	SHARD_API void* shard_CastExpressionSyntax_get_target_type(shard_CastExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7629,7 +7629,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CastExpressionSyntax_set_expression(shard_shard_CastExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_CastExpressionSyntax_set_expression(shard_CastExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -7666,7 +7666,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CastExpressionSyntax_set_operator_token(shard_shard_CastExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_CastExpressionSyntax_set_operator_token(shard_CastExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -7703,7 +7703,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CastExpressionSyntax_set_target_type(shard_shard_CastExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_CastExpressionSyntax_set_target_type(shard_CastExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -7740,7 +7740,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_CatchClauseSyntax_create(const void* p0, shard_shard_CatchClauseSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_CatchClauseSyntax_create(const void* p0, shard_CatchClauseSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -7783,7 +7783,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_CatchClauseSyntax_CatchClauseSyntax_destroy(shard_shard_CatchClauseSyntax_t self)
+	SHARD_API void shard_CatchClauseSyntax_CatchClauseSyntax_destroy(shard_CatchClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7798,7 +7798,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_accept(shard_shard_CatchClauseSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_accept(shard_CatchClauseSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -7835,7 +7835,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_CatchClauseSyntax_get_body(shard_shard_CatchClauseSyntax_t self)
+	SHARD_API void* shard_CatchClauseSyntax_get_body(shard_CatchClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7852,7 +7852,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_get_catch_keyword(shard_shard_CatchClauseSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_get_catch_keyword(shard_CatchClauseSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -7900,7 +7900,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_get_colon(shard_shard_CatchClauseSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_get_colon(shard_CatchClauseSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -7948,7 +7948,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_CatchClauseSyntax_get_exception_type(shard_shard_CatchClauseSyntax_t self)
+	SHARD_API void* shard_CatchClauseSyntax_get_exception_type(shard_CatchClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -7965,7 +7965,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_get_identifier(shard_shard_CatchClauseSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_get_identifier(shard_CatchClauseSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -8013,7 +8013,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_get_location(shard_shard_CatchClauseSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_get_location(shard_CatchClauseSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -8061,7 +8061,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_set_body(shard_shard_CatchClauseSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_set_body(shard_CatchClauseSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -8098,7 +8098,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_set_catch_keyword(shard_shard_CatchClauseSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_set_catch_keyword(shard_CatchClauseSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -8135,7 +8135,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_set_colon(shard_shard_CatchClauseSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_set_colon(shard_CatchClauseSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -8172,7 +8172,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_set_exception_type(shard_shard_CatchClauseSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_set_exception_type(shard_CatchClauseSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -8209,7 +8209,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CatchClauseSyntax_set_identifier(shard_shard_CatchClauseSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_CatchClauseSyntax_set_identifier(shard_CatchClauseSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -8246,7 +8246,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_CollectionExpressionSyntax_create(const void* p0, shard_shard_CollectionExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_CollectionExpressionSyntax_create(const void* p0, shard_CollectionExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -8289,7 +8289,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_CollectionExpressionSyntax_CollectionExpressionSyntax_destroy(shard_shard_CollectionExpressionSyntax_t self)
+	SHARD_API void shard_CollectionExpressionSyntax_CollectionExpressionSyntax_destroy(shard_CollectionExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -8304,7 +8304,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_accept(shard_shard_CollectionExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_accept(shard_CollectionExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -8341,7 +8341,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_close_bracket(shard_shard_CollectionExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_close_bracket(shard_CollectionExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -8389,7 +8389,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_location(shard_shard_CollectionExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_location(shard_CollectionExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -8437,7 +8437,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_open_bracket(shard_shard_CollectionExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_open_bracket(shard_CollectionExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -8485,7 +8485,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_values(shard_shard_CollectionExpressionSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_get_values(shard_CollectionExpressionSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -8533,7 +8533,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_set_close_bracket(shard_shard_CollectionExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_set_close_bracket(shard_CollectionExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -8570,7 +8570,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_set_open_bracket(shard_shard_CollectionExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_set_open_bracket(shard_CollectionExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -8607,7 +8607,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CollectionExpressionSyntax_set_values(shard_shard_CollectionExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_CollectionExpressionSyntax_set_values(shard_CollectionExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -8644,7 +8644,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConditionalClauseBaseSyntax_ConditionalClauseBaseSyntax_create(int p0, const void* p1, shard_shard_ConditionalClauseBaseSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ConditionalClauseBaseSyntax_ConditionalClauseBaseSyntax_create(int p0, const void* p1, shard_ConditionalClauseBaseSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -8687,7 +8687,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ConditionalClauseBaseSyntax_ConditionalClauseBaseSyntax_destroy(shard_shard_ConditionalClauseBaseSyntax_t self)
+	SHARD_API void shard_ConditionalClauseBaseSyntax_ConditionalClauseBaseSyntax_destroy(shard_ConditionalClauseBaseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -8702,7 +8702,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ConditionalClauseBaseSyntax_get_block(shard_shard_ConditionalClauseBaseSyntax_t self)
+	SHARD_API void* shard_ConditionalClauseBaseSyntax_get_block(shard_ConditionalClauseBaseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -8719,7 +8719,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ConditionalClauseBaseSyntax_get_next(shard_shard_ConditionalClauseBaseSyntax_t self)
+	SHARD_API void* shard_ConditionalClauseBaseSyntax_get_next(shard_ConditionalClauseBaseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -8736,7 +8736,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConditionalClauseBaseSyntax_set_block(shard_shard_ConditionalClauseBaseSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ConditionalClauseBaseSyntax_set_block(shard_ConditionalClauseBaseSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -8773,7 +8773,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConditionalClauseBaseSyntax_set_next(shard_shard_ConditionalClauseBaseSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ConditionalClauseBaseSyntax_set_next(shard_ConditionalClauseBaseSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -8810,7 +8810,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConditionalClauseSyntax_ConditionalClauseSyntax_create(int p0, const void* p1, shard_shard_ConditionalClauseSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ConditionalClauseSyntax_ConditionalClauseSyntax_create(int p0, const void* p1, shard_ConditionalClauseSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -8853,7 +8853,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ConditionalClauseSyntax_ConditionalClauseSyntax_destroy(shard_shard_ConditionalClauseSyntax_t self)
+	SHARD_API void shard_ConditionalClauseSyntax_ConditionalClauseSyntax_destroy(shard_ConditionalClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -8868,7 +8868,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ConditionalClauseSyntax_get_condition(shard_shard_ConditionalClauseSyntax_t self)
+	SHARD_API void* shard_ConditionalClauseSyntax_get_condition(shard_ConditionalClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -8885,7 +8885,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConditionalClauseSyntax_set_condition(shard_shard_ConditionalClauseSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ConditionalClauseSyntax_set_condition(shard_ConditionalClauseSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -8922,7 +8922,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_ConstructorDeclarationSyntax_create(const void* p0, shard_shard_ConstructorDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_ConstructorDeclarationSyntax_create(const void* p0, shard_ConstructorDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -8965,7 +8965,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ConstructorDeclarationSyntax_ConstructorDeclarationSyntax_destroy(shard_shard_ConstructorDeclarationSyntax_t self)
+	SHARD_API void shard_ConstructorDeclarationSyntax_ConstructorDeclarationSyntax_destroy(shard_ConstructorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -8980,7 +8980,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_accept(shard_shard_ConstructorDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_accept(shard_ConstructorDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -9017,7 +9017,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ConstructorDeclarationSyntax_get_body(shard_shard_ConstructorDeclarationSyntax_t self)
+	SHARD_API void* shard_ConstructorDeclarationSyntax_get_body(shard_ConstructorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -9034,7 +9034,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_get_location(shard_shard_ConstructorDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_get_location(shard_ConstructorDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -9082,7 +9082,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ConstructorDeclarationSyntax_get_parameters_list(shard_shard_ConstructorDeclarationSyntax_t self)
+	SHARD_API void* shard_ConstructorDeclarationSyntax_get_parameters_list(shard_ConstructorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -9099,7 +9099,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_get_semicolon(shard_shard_ConstructorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_get_semicolon(shard_ConstructorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -9147,7 +9147,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_set_body(shard_shard_ConstructorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_set_body(shard_ConstructorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -9184,7 +9184,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_set_parameters_list(shard_shard_ConstructorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_set_parameters_list(shard_ConstructorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -9221,7 +9221,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_set_semicolon(shard_shard_ConstructorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ConstructorDeclarationSyntax_set_semicolon(shard_ConstructorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -9258,7 +9258,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_ContinueStatementSyntax_create(const void* p0, shard_shard_ContinueStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_ContinueStatementSyntax_create(const void* p0, shard_ContinueStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -9301,7 +9301,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ContinueStatementSyntax_ContinueStatementSyntax_destroy(shard_shard_ContinueStatementSyntax_t self)
+	SHARD_API void shard_ContinueStatementSyntax_ContinueStatementSyntax_destroy(shard_ContinueStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -9316,7 +9316,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_accept(shard_shard_ContinueStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_accept(shard_ContinueStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -9353,7 +9353,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_continue_keyword(shard_shard_ContinueStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_continue_keyword(shard_ContinueStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -9401,7 +9401,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_location(shard_shard_ContinueStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_location(shard_ContinueStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -9449,7 +9449,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_semicolon(shard_shard_ContinueStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_semicolon(shard_ContinueStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -9497,7 +9497,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_tag(shard_shard_ContinueStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_get_tag(shard_ContinueStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -9545,7 +9545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_set_continue_keyword(shard_shard_ContinueStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_set_continue_keyword(shard_ContinueStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -9582,7 +9582,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_set_semicolon(shard_shard_ContinueStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_set_semicolon(shard_ContinueStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -9619,7 +9619,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ContinueStatementSyntax_set_tag(shard_shard_ContinueStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ContinueStatementSyntax_set_tag(shard_ContinueStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -9656,7 +9656,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferBlockSyntax_DeferBlockSyntax_create(const void* p0, shard_shard_DeferBlockSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_DeferBlockSyntax_DeferBlockSyntax_create(const void* p0, shard_DeferBlockSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -9699,7 +9699,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DeferBlockSyntax_DeferBlockSyntax_destroy(shard_shard_DeferBlockSyntax_t self)
+	SHARD_API void shard_DeferBlockSyntax_DeferBlockSyntax_destroy(shard_DeferBlockSyntax_t self)
 	{
 		if (!self)
 		{
@@ -9714,7 +9714,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferBlockSyntax_accept(shard_shard_DeferBlockSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_DeferBlockSyntax_accept(shard_DeferBlockSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -9751,7 +9751,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DeferBlockSyntax_get_block(shard_shard_DeferBlockSyntax_t self)
+	SHARD_API void* shard_DeferBlockSyntax_get_block(shard_DeferBlockSyntax_t self)
 	{
 		if (!self)
 		{
@@ -9768,7 +9768,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferBlockSyntax_get_defer_keyword(shard_shard_DeferBlockSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_DeferBlockSyntax_get_defer_keyword(shard_DeferBlockSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -9816,7 +9816,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferBlockSyntax_get_location(shard_shard_DeferBlockSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_DeferBlockSyntax_get_location(shard_DeferBlockSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -9864,7 +9864,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferBlockSyntax_set_block(shard_shard_DeferBlockSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_DeferBlockSyntax_set_block(shard_DeferBlockSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -9901,7 +9901,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferBlockSyntax_set_defer_keyword(shard_shard_DeferBlockSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_DeferBlockSyntax_set_defer_keyword(shard_DeferBlockSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -9938,7 +9938,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_DeferStatementSyntax_create(const void* p0, shard_shard_DeferStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_DeferStatementSyntax_create(const void* p0, shard_DeferStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -9981,7 +9981,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DeferStatementSyntax_DeferStatementSyntax_destroy(shard_shard_DeferStatementSyntax_t self)
+	SHARD_API void shard_DeferStatementSyntax_DeferStatementSyntax_destroy(shard_DeferStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -9996,7 +9996,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_accept(shard_shard_DeferStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_accept(shard_DeferStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -10033,7 +10033,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_get_defer_keyword(shard_shard_DeferStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_get_defer_keyword(shard_DeferStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -10081,7 +10081,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DeferStatementSyntax_get_expression(shard_shard_DeferStatementSyntax_t self)
+	SHARD_API void* shard_DeferStatementSyntax_get_expression(shard_DeferStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -10098,7 +10098,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_get_location(shard_shard_DeferStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_get_location(shard_DeferStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -10146,7 +10146,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_get_semicolon(shard_shard_DeferStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_get_semicolon(shard_DeferStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -10194,7 +10194,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_set_defer_keyword(shard_shard_DeferStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_set_defer_keyword(shard_DeferStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -10231,7 +10231,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_set_expression(shard_shard_DeferStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_set_expression(shard_DeferStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -10268,7 +10268,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferStatementSyntax_set_semicolon(shard_shard_DeferStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_DeferStatementSyntax_set_semicolon(shard_DeferStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -10305,7 +10305,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferVariableSyntax_DeferVariableSyntax_create(const void* p0, shard_shard_DeferVariableSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_DeferVariableSyntax_DeferVariableSyntax_create(const void* p0, shard_DeferVariableSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -10348,7 +10348,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DeferVariableSyntax_DeferVariableSyntax_destroy(shard_shard_DeferVariableSyntax_t self)
+	SHARD_API void shard_DeferVariableSyntax_DeferVariableSyntax_destroy(shard_DeferVariableSyntax_t self)
 	{
 		if (!self)
 		{
@@ -10363,7 +10363,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferVariableSyntax_accept(shard_shard_DeferVariableSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_DeferVariableSyntax_accept(shard_DeferVariableSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -10400,7 +10400,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferVariableSyntax_get_defer_keyword(shard_shard_DeferVariableSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_DeferVariableSyntax_get_defer_keyword(shard_DeferVariableSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -10448,7 +10448,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferVariableSyntax_get_location(shard_shard_DeferVariableSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_DeferVariableSyntax_get_location(shard_DeferVariableSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -10496,7 +10496,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DeferVariableSyntax_get_variable(shard_shard_DeferVariableSyntax_t self)
+	SHARD_API void* shard_DeferVariableSyntax_get_variable(shard_DeferVariableSyntax_t self)
 	{
 		if (!self)
 		{
@@ -10513,7 +10513,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferVariableSyntax_set_defer_keyword(shard_shard_DeferVariableSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_DeferVariableSyntax_set_defer_keyword(shard_DeferVariableSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -10550,7 +10550,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeferVariableSyntax_set_variable(shard_shard_DeferVariableSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_DeferVariableSyntax_set_variable(shard_DeferVariableSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -10587,7 +10587,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_DelegateDeclarationSyntax_create(const void* p0, shard_shard_DelegateDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_DelegateDeclarationSyntax_create(const void* p0, shard_DelegateDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -10630,7 +10630,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DelegateDeclarationSyntax_DelegateDeclarationSyntax_destroy(shard_shard_DelegateDeclarationSyntax_t self)
+	SHARD_API void shard_DelegateDeclarationSyntax_DelegateDeclarationSyntax_destroy(shard_DelegateDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -10645,7 +10645,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_accept(shard_shard_DelegateDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_accept(shard_DelegateDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -10682,7 +10682,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_get_location(shard_shard_DelegateDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_get_location(shard_DelegateDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -10730,7 +10730,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DelegateDeclarationSyntax_get_parameters_list(shard_shard_DelegateDeclarationSyntax_t self)
+	SHARD_API void* shard_DelegateDeclarationSyntax_get_parameters_list(shard_DelegateDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -10747,7 +10747,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DelegateDeclarationSyntax_get_return_type(shard_shard_DelegateDeclarationSyntax_t self)
+	SHARD_API void* shard_DelegateDeclarationSyntax_get_return_type(shard_DelegateDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -10764,7 +10764,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_get_semicolon(shard_shard_DelegateDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_get_semicolon(shard_DelegateDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -10812,7 +10812,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_set_parameters_list(shard_shard_DelegateDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_set_parameters_list(shard_DelegateDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -10849,7 +10849,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_set_return_type(shard_shard_DelegateDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_set_return_type(shard_DelegateDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -10886,7 +10886,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_set_semicolon(shard_shard_DelegateDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_DelegateDeclarationSyntax_set_semicolon(shard_DelegateDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -10928,7 +10928,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_Diagnostic_Diagnostic_create(shard_shard_SyntaxToken_t p0, int p1, const wchar_t* p2, shard_shard_Diagnostic_t* out_handle)
+	SHARD_API shard_status_t shard_Diagnostic_Diagnostic_create(shard_SyntaxToken_t p0, int p1, const wchar_t* p2, shard_Diagnostic_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -10971,7 +10971,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_Diagnostic_Diagnostic_destroy(shard_shard_Diagnostic_t self)
+	SHARD_API void shard_Diagnostic_Diagnostic_destroy(shard_Diagnostic_t self)
 	{
 		if (!self)
 		{
@@ -10986,7 +10986,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_Diagnostic_get_blame_token(shard_shard_Diagnostic_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_Diagnostic_get_blame_token(shard_Diagnostic_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -11034,7 +11034,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API const wchar_t* shard_Diagnostic_get_description(shard_shard_Diagnostic_t self)
+	SHARD_API const wchar_t* shard_Diagnostic_get_description(shard_Diagnostic_t self)
 	{
 		if (!self)
 		{
@@ -11051,7 +11051,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_Diagnostic_get_location(shard_shard_Diagnostic_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_Diagnostic_get_location(shard_Diagnostic_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -11099,7 +11099,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_Diagnostic_get_severity(shard_shard_Diagnostic_t self)
+	SHARD_API int shard_Diagnostic_get_severity(shard_Diagnostic_t self)
 	{
 		if (!self)
 		{
@@ -11116,7 +11116,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_DiagnosticsContext_create(shard_shard_DiagnosticsContext_t* out_handle)
+	SHARD_API shard_status_t shard_DiagnosticsContext_DiagnosticsContext_create(shard_DiagnosticsContext_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -11159,7 +11159,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DiagnosticsContext_DiagnosticsContext_destroy(shard_shard_DiagnosticsContext_t self)
+	SHARD_API void shard_DiagnosticsContext_DiagnosticsContext_destroy(shard_DiagnosticsContext_t self)
 	{
 		if (!self)
 		{
@@ -11174,7 +11174,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_get_diagnostics(shard_shard_DiagnosticsContext_t self, void** out_value)
+	SHARD_API shard_status_t shard_DiagnosticsContext_get_diagnostics(shard_DiagnosticsContext_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -11222,7 +11222,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_DiagnosticsContext_has_errors(shard_shard_DiagnosticsContext_t self)
+	SHARD_API int shard_DiagnosticsContext_has_errors(shard_DiagnosticsContext_t self)
 	{
 		if (!self)
 		{
@@ -11239,7 +11239,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_DiagnosticsContext_has_warns(shard_shard_DiagnosticsContext_t self)
+	SHARD_API int shard_DiagnosticsContext_has_warns(shard_DiagnosticsContext_t self)
 	{
 		if (!self)
 		{
@@ -11256,7 +11256,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_report_error(shard_shard_DiagnosticsContext_t self, shard_shard_SyntaxToken_t p0, const wchar_t* p1)
+	SHARD_API shard_status_t shard_DiagnosticsContext_report_error(shard_DiagnosticsContext_t self, shard_SyntaxToken_t p0, const wchar_t* p1)
 	{
 		if (!self)
 		{
@@ -11293,7 +11293,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_report_info(shard_shard_DiagnosticsContext_t self, shard_shard_SyntaxToken_t p0, const wchar_t* p1)
+	SHARD_API shard_status_t shard_DiagnosticsContext_report_info(shard_DiagnosticsContext_t self, shard_SyntaxToken_t p0, const wchar_t* p1)
 	{
 		if (!self)
 		{
@@ -11330,7 +11330,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_report_warning(shard_shard_DiagnosticsContext_t self, shard_shard_SyntaxToken_t p0, const wchar_t* p1)
+	SHARD_API shard_status_t shard_DiagnosticsContext_report_warning(shard_DiagnosticsContext_t self, shard_SyntaxToken_t p0, const wchar_t* p1)
 	{
 		if (!self)
 		{
@@ -11367,7 +11367,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_reset(shard_shard_DiagnosticsContext_t self)
+	SHARD_API shard_status_t shard_DiagnosticsContext_reset(shard_DiagnosticsContext_t self)
 	{
 		if (!self)
 		{
@@ -11404,7 +11404,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_write_diagnostic_pretty(shard_shard_DiagnosticsContext_t self, void* p0, shard_shard_Diagnostic_t p1)
+	SHARD_API shard_status_t shard_DiagnosticsContext_write_diagnostic_pretty(shard_DiagnosticsContext_t self, void* p0, shard_Diagnostic_t p1)
 	{
 		if (!self)
 		{
@@ -11441,7 +11441,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_write_diagnostics(shard_shard_DiagnosticsContext_t self, void* p0)
+	SHARD_API shard_status_t shard_DiagnosticsContext_write_diagnostics(shard_DiagnosticsContext_t self, void* p0)
 	{
 		if (!self)
 		{
@@ -11478,7 +11478,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DiagnosticsContext_write_diagnostics_pretty(shard_shard_DiagnosticsContext_t self, void* p0)
+	SHARD_API shard_status_t shard_DiagnosticsContext_write_diagnostics_pretty(shard_DiagnosticsContext_t self, void* p0)
 	{
 		if (!self)
 		{
@@ -11515,7 +11515,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ElseStatementSyntax_ElseStatementSyntax_create(const void* p0, shard_shard_ElseStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ElseStatementSyntax_ElseStatementSyntax_create(const void* p0, shard_ElseStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -11558,7 +11558,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ElseStatementSyntax_ElseStatementSyntax_destroy(shard_shard_ElseStatementSyntax_t self)
+	SHARD_API void shard_ElseStatementSyntax_ElseStatementSyntax_destroy(shard_ElseStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -11573,7 +11573,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ElseStatementSyntax_accept(shard_shard_ElseStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ElseStatementSyntax_accept(shard_ElseStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -11610,7 +11610,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ElseStatementSyntax_get_else_keyword(shard_shard_ElseStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ElseStatementSyntax_get_else_keyword(shard_ElseStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -11658,7 +11658,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ElseStatementSyntax_get_location(shard_shard_ElseStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ElseStatementSyntax_get_location(shard_ElseStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -11706,7 +11706,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ElseStatementSyntax_set_else_keyword(shard_shard_ElseStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ElseStatementSyntax_set_else_keyword(shard_ElseStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -11743,7 +11743,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_EnumDeclarationSyntax_create(const void* p0, shard_shard_EnumDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_EnumDeclarationSyntax_create(const void* p0, shard_EnumDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -11786,7 +11786,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_EnumDeclarationSyntax_EnumDeclarationSyntax_destroy(shard_shard_EnumDeclarationSyntax_t self)
+	SHARD_API void shard_EnumDeclarationSyntax_EnumDeclarationSyntax_destroy(shard_EnumDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -11801,7 +11801,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_accept(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_accept(shard_EnumDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -11838,7 +11838,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_close_bracket(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_close_bracket(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -11886,7 +11886,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_colon(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_colon(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -11934,7 +11934,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_fields(shard_shard_EnumDeclarationSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_fields(shard_EnumDeclarationSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -11982,7 +11982,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_EnumDeclarationSyntax_get_is_flags(shard_shard_EnumDeclarationSyntax_t self)
+	SHARD_API int shard_EnumDeclarationSyntax_get_is_flags(shard_EnumDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -11999,7 +11999,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_location(shard_shard_EnumDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_location(shard_EnumDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -12047,7 +12047,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_open_bracket(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_open_bracket(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -12095,7 +12095,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_semicolon(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_semicolon(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -12143,7 +12143,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_underlying_type(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_get_underlying_type(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -12191,7 +12191,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_close_bracket(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_close_bracket(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -12228,7 +12228,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_colon(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_colon(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -12265,7 +12265,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_fields(shard_shard_EnumDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_fields(shard_EnumDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -12302,7 +12302,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_is_flags(shard_shard_EnumDeclarationSyntax_t self, int p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_is_flags(shard_EnumDeclarationSyntax_t self, int p0)
 	{
 		if (!self)
 		{
@@ -12339,7 +12339,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_open_bracket(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_open_bracket(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -12376,7 +12376,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_semicolon(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_semicolon(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -12413,7 +12413,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_underlying_type(shard_shard_EnumDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_EnumDeclarationSyntax_set_underlying_type(shard_EnumDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -12450,7 +12450,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_EnumFieldDeclarationSyntax_create(const void* p0, shard_shard_EnumFieldDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_EnumFieldDeclarationSyntax_create(const void* p0, shard_EnumFieldDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -12493,7 +12493,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_EnumFieldDeclarationSyntax_EnumFieldDeclarationSyntax_destroy(shard_shard_EnumFieldDeclarationSyntax_t self)
+	SHARD_API void shard_EnumFieldDeclarationSyntax_EnumFieldDeclarationSyntax_destroy(shard_EnumFieldDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -12508,7 +12508,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_accept(shard_shard_EnumFieldDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_accept(shard_EnumFieldDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -12545,7 +12545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_get_assign_token(shard_shard_EnumFieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_get_assign_token(shard_EnumFieldDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -12593,7 +12593,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_EnumFieldDeclarationSyntax_get_expression(shard_shard_EnumFieldDeclarationSyntax_t self)
+	SHARD_API void* shard_EnumFieldDeclarationSyntax_get_expression(shard_EnumFieldDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -12610,7 +12610,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_get_identifier(shard_shard_EnumFieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_get_identifier(shard_EnumFieldDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -12658,7 +12658,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_get_location(shard_shard_EnumFieldDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_get_location(shard_EnumFieldDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -12706,7 +12706,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_set_assign_token(shard_shard_EnumFieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_set_assign_token(shard_EnumFieldDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -12743,7 +12743,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_set_expression(shard_shard_EnumFieldDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_set_expression(shard_EnumFieldDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -12780,7 +12780,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_set_identifier(shard_shard_EnumFieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_EnumFieldDeclarationSyntax_set_identifier(shard_EnumFieldDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -12817,7 +12817,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionStatementSyntax_ExpressionStatementSyntax_create(const void* p0, shard_shard_ExpressionStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ExpressionStatementSyntax_ExpressionStatementSyntax_create(const void* p0, shard_ExpressionStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -12860,7 +12860,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ExpressionStatementSyntax_ExpressionStatementSyntax_destroy(shard_shard_ExpressionStatementSyntax_t self)
+	SHARD_API void shard_ExpressionStatementSyntax_ExpressionStatementSyntax_destroy(shard_ExpressionStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -12875,7 +12875,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionStatementSyntax_accept(shard_shard_ExpressionStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ExpressionStatementSyntax_accept(shard_ExpressionStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -12912,7 +12912,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ExpressionStatementSyntax_get_expression(shard_shard_ExpressionStatementSyntax_t self)
+	SHARD_API void* shard_ExpressionStatementSyntax_get_expression(shard_ExpressionStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -12929,7 +12929,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionStatementSyntax_get_location(shard_shard_ExpressionStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ExpressionStatementSyntax_get_location(shard_ExpressionStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -12977,7 +12977,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionStatementSyntax_get_semicolon(shard_shard_ExpressionStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ExpressionStatementSyntax_get_semicolon(shard_ExpressionStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -13025,7 +13025,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionStatementSyntax_set_expression(shard_shard_ExpressionStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ExpressionStatementSyntax_set_expression(shard_ExpressionStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -13062,7 +13062,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionStatementSyntax_set_semicolon(shard_shard_ExpressionStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ExpressionStatementSyntax_set_semicolon(shard_ExpressionStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -13099,7 +13099,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionSyntax_ExpressionSyntax_create(int p0, const void* p1, shard_shard_ExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ExpressionSyntax_ExpressionSyntax_create(int p0, const void* p1, shard_ExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -13142,7 +13142,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ExpressionSyntax_ExpressionSyntax_destroy(shard_shard_ExpressionSyntax_t self)
+	SHARD_API void shard_ExpressionSyntax_ExpressionSyntax_destroy(shard_ExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -13157,7 +13157,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_FieldDeclarationSyntax_create(const void* p0, shard_shard_FieldDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_FieldDeclarationSyntax_create(const void* p0, shard_FieldDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -13200,7 +13200,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_FieldDeclarationSyntax_FieldDeclarationSyntax_destroy(shard_shard_FieldDeclarationSyntax_t self)
+	SHARD_API void shard_FieldDeclarationSyntax_FieldDeclarationSyntax_destroy(shard_FieldDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -13215,7 +13215,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_accept(shard_shard_FieldDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_accept(shard_FieldDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -13252,7 +13252,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_assign_token(shard_shard_FieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_assign_token(shard_FieldDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -13300,7 +13300,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_colon(shard_shard_FieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_colon(shard_FieldDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -13348,7 +13348,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FieldDeclarationSyntax_get_expression(shard_shard_FieldDeclarationSyntax_t self)
+	SHARD_API void* shard_FieldDeclarationSyntax_get_expression(shard_FieldDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -13365,7 +13365,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_location(shard_shard_FieldDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_location(shard_FieldDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -13413,7 +13413,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_semicolon(shard_shard_FieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_get_semicolon(shard_FieldDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -13461,7 +13461,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FieldDeclarationSyntax_get_type(shard_shard_FieldDeclarationSyntax_t self)
+	SHARD_API void* shard_FieldDeclarationSyntax_get_type(shard_FieldDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -13478,7 +13478,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_assign_token(shard_shard_FieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_assign_token(shard_FieldDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -13515,7 +13515,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_colon(shard_shard_FieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_colon(shard_FieldDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -13552,7 +13552,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_expression(shard_shard_FieldDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_expression(shard_FieldDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -13589,7 +13589,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_semicolon(shard_shard_FieldDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_semicolon(shard_FieldDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -13626,7 +13626,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_type(shard_shard_FieldDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_FieldDeclarationSyntax_set_type(shard_FieldDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -13663,7 +13663,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_ForInStatementSyntax_create(const void* p0, shard_shard_ForInStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_ForInStatementSyntax_create(const void* p0, shard_ForInStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -13706,7 +13706,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ForInStatementSyntax_ForInStatementSyntax_destroy(shard_shard_ForInStatementSyntax_t self)
+	SHARD_API void shard_ForInStatementSyntax_ForInStatementSyntax_destroy(shard_ForInStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -13721,7 +13721,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_accept(shard_shard_ForInStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_accept(shard_ForInStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -13758,7 +13758,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ForInStatementSyntax_get_block(shard_shard_ForInStatementSyntax_t self)
+	SHARD_API void* shard_ForInStatementSyntax_get_block(shard_ForInStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -13775,7 +13775,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_get_for_keyword(shard_shard_ForInStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_get_for_keyword(shard_ForInStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -13823,7 +13823,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_get_identifier(shard_shard_ForInStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_get_identifier(shard_ForInStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -13871,7 +13871,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_get_in_keyword(shard_shard_ForInStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_get_in_keyword(shard_ForInStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -13919,7 +13919,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_get_location(shard_shard_ForInStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_get_location(shard_ForInStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -13967,7 +13967,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ForInStatementSyntax_get_range_expression(shard_shard_ForInStatementSyntax_t self)
+	SHARD_API void* shard_ForInStatementSyntax_get_range_expression(shard_ForInStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -13984,7 +13984,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_set_block(shard_shard_ForInStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_set_block(shard_ForInStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -14021,7 +14021,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_set_for_keyword(shard_shard_ForInStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_set_for_keyword(shard_ForInStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -14058,7 +14058,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_set_identifier(shard_shard_ForInStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_set_identifier(shard_ForInStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -14095,7 +14095,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_set_in_keyword(shard_shard_ForInStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_set_in_keyword(shard_ForInStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -14132,7 +14132,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ForInStatementSyntax_set_range_expression(shard_shard_ForInStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ForInStatementSyntax_set_range_expression(shard_ForInStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -14169,7 +14169,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_FunctionDeclarationSyntax_create(const void* p0, shard_shard_FunctionDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_FunctionDeclarationSyntax_create(const void* p0, shard_FunctionDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -14212,7 +14212,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_FunctionDeclarationSyntax_FunctionDeclarationSyntax_destroy(shard_shard_FunctionDeclarationSyntax_t self)
+	SHARD_API void shard_FunctionDeclarationSyntax_FunctionDeclarationSyntax_destroy(shard_FunctionDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14227,7 +14227,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_accept(shard_shard_FunctionDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_accept(shard_FunctionDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -14264,7 +14264,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FunctionDeclarationSyntax_get_body(shard_shard_FunctionDeclarationSyntax_t self)
+	SHARD_API void* shard_FunctionDeclarationSyntax_get_body(shard_FunctionDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14281,7 +14281,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_get_location(shard_shard_FunctionDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_get_location(shard_FunctionDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -14329,7 +14329,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FunctionDeclarationSyntax_get_parameters_list(shard_shard_FunctionDeclarationSyntax_t self)
+	SHARD_API void* shard_FunctionDeclarationSyntax_get_parameters_list(shard_FunctionDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14346,7 +14346,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FunctionDeclarationSyntax_get_return_type(shard_shard_FunctionDeclarationSyntax_t self)
+	SHARD_API void* shard_FunctionDeclarationSyntax_get_return_type(shard_FunctionDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14363,7 +14363,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_set_body(shard_shard_FunctionDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_set_body(shard_FunctionDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -14400,7 +14400,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_set_parameters_list(shard_shard_FunctionDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_set_parameters_list(shard_FunctionDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -14437,7 +14437,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_set_return_type(shard_shard_FunctionDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_FunctionDeclarationSyntax_set_return_type(shard_FunctionDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -14474,7 +14474,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSyntax_GenericTypeSyntax_create(const void* p0, shard_shard_GenericTypeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_GenericTypeSyntax_GenericTypeSyntax_create(const void* p0, shard_GenericTypeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -14517,7 +14517,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_GenericTypeSyntax_GenericTypeSyntax_destroy(shard_shard_GenericTypeSyntax_t self)
+	SHARD_API void shard_GenericTypeSyntax_GenericTypeSyntax_destroy(shard_GenericTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14532,7 +14532,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSyntax_accept(shard_shard_GenericTypeSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_GenericTypeSyntax_accept(shard_GenericTypeSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -14569,7 +14569,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSyntax_get_location(shard_shard_GenericTypeSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_GenericTypeSyntax_get_location(shard_GenericTypeSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -14617,7 +14617,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSyntax_get_qualifier(shard_shard_GenericTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_GenericTypeSyntax_get_qualifier(shard_GenericTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -14665,7 +14665,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_GenericTypeSyntax_get_type_arguments(shard_shard_GenericTypeSyntax_t self)
+	SHARD_API void* shard_GenericTypeSyntax_get_type_arguments(shard_GenericTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14682,7 +14682,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_GenericTypeSyntax_get_underlaying_type(shard_shard_GenericTypeSyntax_t self)
+	SHARD_API void* shard_GenericTypeSyntax_get_underlaying_type(shard_GenericTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14699,7 +14699,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSyntax_set_type_arguments(shard_shard_GenericTypeSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_GenericTypeSyntax_set_type_arguments(shard_GenericTypeSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -14736,7 +14736,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSyntax_set_underlaying_type(shard_shard_GenericTypeSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_GenericTypeSyntax_set_underlaying_type(shard_GenericTypeSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -14773,7 +14773,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_IdentifierNameTypeSyntax_create(const void* p0, shard_shard_IdentifierNameTypeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_IdentifierNameTypeSyntax_create(const void* p0, shard_IdentifierNameTypeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -14816,7 +14816,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_IdentifierNameTypeSyntax_IdentifierNameTypeSyntax_destroy(shard_shard_IdentifierNameTypeSyntax_t self)
+	SHARD_API void shard_IdentifierNameTypeSyntax_IdentifierNameTypeSyntax_destroy(shard_IdentifierNameTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -14831,7 +14831,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_accept(shard_shard_IdentifierNameTypeSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_accept(shard_IdentifierNameTypeSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -14868,7 +14868,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_get_identifier(shard_shard_IdentifierNameTypeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_get_identifier(shard_IdentifierNameTypeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -14916,7 +14916,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_get_location(shard_shard_IdentifierNameTypeSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_get_location(shard_IdentifierNameTypeSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -14964,7 +14964,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_get_qualifier(shard_shard_IdentifierNameTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_get_qualifier(shard_IdentifierNameTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -15012,7 +15012,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_set_identifier(shard_shard_IdentifierNameTypeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IdentifierNameTypeSyntax_set_identifier(shard_IdentifierNameTypeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -15049,7 +15049,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_IfExpressionSyntax_create(const void* p0, shard_shard_IfExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_IfExpressionSyntax_create(const void* p0, shard_IfExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -15092,7 +15092,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_IfExpressionSyntax_IfExpressionSyntax_destroy(shard_shard_IfExpressionSyntax_t self)
+	SHARD_API void shard_IfExpressionSyntax_IfExpressionSyntax_destroy(shard_IfExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -15107,7 +15107,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_accept(shard_shard_IfExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_accept(shard_IfExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -15144,7 +15144,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IfExpressionSyntax_get_condition(shard_shard_IfExpressionSyntax_t self)
+	SHARD_API void* shard_IfExpressionSyntax_get_condition(shard_IfExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -15161,7 +15161,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IfExpressionSyntax_get_else_expression(shard_shard_IfExpressionSyntax_t self)
+	SHARD_API void* shard_IfExpressionSyntax_get_else_expression(shard_IfExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -15178,7 +15178,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_get_else_keyword(shard_shard_IfExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_get_else_keyword(shard_IfExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -15226,7 +15226,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_get_if_keyword(shard_shard_IfExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_get_if_keyword(shard_IfExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -15274,7 +15274,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_get_location(shard_shard_IfExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_get_location(shard_IfExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -15322,7 +15322,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IfExpressionSyntax_get_then_expression(shard_shard_IfExpressionSyntax_t self)
+	SHARD_API void* shard_IfExpressionSyntax_get_then_expression(shard_IfExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -15339,7 +15339,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_set_condition(shard_shard_IfExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_set_condition(shard_IfExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -15376,7 +15376,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_set_else_expression(shard_shard_IfExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_set_else_expression(shard_IfExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -15413,7 +15413,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_set_else_keyword(shard_shard_IfExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_set_else_keyword(shard_IfExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -15450,7 +15450,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_set_if_keyword(shard_shard_IfExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_set_if_keyword(shard_IfExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -15487,7 +15487,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfExpressionSyntax_set_then_expression(shard_shard_IfExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IfExpressionSyntax_set_then_expression(shard_IfExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -15524,7 +15524,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfStatementSyntax_IfStatementSyntax_create(const void* p0, shard_shard_IfStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_IfStatementSyntax_IfStatementSyntax_create(const void* p0, shard_IfStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -15567,7 +15567,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_IfStatementSyntax_IfStatementSyntax_destroy(shard_shard_IfStatementSyntax_t self)
+	SHARD_API void shard_IfStatementSyntax_IfStatementSyntax_destroy(shard_IfStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -15582,7 +15582,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfStatementSyntax_accept(shard_shard_IfStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_IfStatementSyntax_accept(shard_IfStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -15619,7 +15619,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfStatementSyntax_get_if_keyword(shard_shard_IfStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IfStatementSyntax_get_if_keyword(shard_IfStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -15667,7 +15667,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfStatementSyntax_get_location(shard_shard_IfStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_IfStatementSyntax_get_location(shard_IfStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -15715,7 +15715,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IfStatementSyntax_set_if_keyword(shard_shard_IfStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IfStatementSyntax_set_if_keyword(shard_IfStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -15752,7 +15752,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_IndexatorDeclarationSyntax_create(const void* p0, shard_shard_IndexatorDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_IndexatorDeclarationSyntax_create(const void* p0, shard_IndexatorDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -15795,7 +15795,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_IndexatorDeclarationSyntax_IndexatorDeclarationSyntax_destroy(shard_shard_IndexatorDeclarationSyntax_t self)
+	SHARD_API void shard_IndexatorDeclarationSyntax_IndexatorDeclarationSyntax_destroy(shard_IndexatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -15810,7 +15810,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_accept(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_accept(shard_IndexatorDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -15847,7 +15847,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_arrow(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_arrow(shard_IndexatorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -15895,7 +15895,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_close_bracket(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_close_bracket(shard_IndexatorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -15943,7 +15943,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IndexatorDeclarationSyntax_get_getter(shard_shard_IndexatorDeclarationSyntax_t self)
+	SHARD_API void* shard_IndexatorDeclarationSyntax_get_getter(shard_IndexatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -15960,7 +15960,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_location(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_location(shard_IndexatorDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -16008,7 +16008,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_open_bracket(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_get_open_bracket(shard_IndexatorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -16056,7 +16056,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IndexatorDeclarationSyntax_get_parameters_list(shard_shard_IndexatorDeclarationSyntax_t self)
+	SHARD_API void* shard_IndexatorDeclarationSyntax_get_parameters_list(shard_IndexatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16073,7 +16073,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IndexatorDeclarationSyntax_get_setter(shard_shard_IndexatorDeclarationSyntax_t self)
+	SHARD_API void* shard_IndexatorDeclarationSyntax_get_setter(shard_IndexatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16090,7 +16090,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IndexatorDeclarationSyntax_get_type(shard_shard_IndexatorDeclarationSyntax_t self)
+	SHARD_API void* shard_IndexatorDeclarationSyntax_get_type(shard_IndexatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16107,7 +16107,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_arrow(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_arrow(shard_IndexatorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -16144,7 +16144,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_close_bracket(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_close_bracket(shard_IndexatorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -16181,7 +16181,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_getter(shard_shard_IndexatorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_getter(shard_IndexatorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -16218,7 +16218,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_open_bracket(shard_shard_IndexatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_open_bracket(shard_IndexatorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -16255,7 +16255,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_parameters_list(shard_shard_IndexatorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_parameters_list(shard_IndexatorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -16292,7 +16292,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_setter(shard_shard_IndexatorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_setter(shard_IndexatorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -16329,7 +16329,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_type(shard_shard_IndexatorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IndexatorDeclarationSyntax_set_type(shard_IndexatorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -16366,7 +16366,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_IndexatorExpressionSyntax_create(const void* p0, shard_shard_IndexatorExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_IndexatorExpressionSyntax_create(const void* p0, shard_IndexatorExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -16409,7 +16409,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_IndexatorExpressionSyntax_IndexatorExpressionSyntax_destroy(shard_shard_IndexatorExpressionSyntax_t self)
+	SHARD_API void shard_IndexatorExpressionSyntax_IndexatorExpressionSyntax_destroy(shard_IndexatorExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16424,7 +16424,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_accept(shard_shard_IndexatorExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_accept(shard_IndexatorExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -16461,7 +16461,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IndexatorExpressionSyntax_get_arguments(shard_shard_IndexatorExpressionSyntax_t self)
+	SHARD_API void* shard_IndexatorExpressionSyntax_get_arguments(shard_IndexatorExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16478,7 +16478,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_get_delimeter_token(shard_shard_IndexatorExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_get_delimeter_token(shard_IndexatorExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -16526,7 +16526,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_get_location(shard_shard_IndexatorExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_get_location(shard_IndexatorExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -16574,7 +16574,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IndexatorExpressionSyntax_get_previous(shard_shard_IndexatorExpressionSyntax_t self)
+	SHARD_API void* shard_IndexatorExpressionSyntax_get_previous(shard_IndexatorExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16591,7 +16591,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_set_arguments(shard_shard_IndexatorExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_set_arguments(shard_IndexatorExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -16628,7 +16628,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_set_delimeter_token(shard_shard_IndexatorExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_set_delimeter_token(shard_IndexatorExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -16665,7 +16665,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_set_previous(shard_shard_IndexatorExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IndexatorExpressionSyntax_set_previous(shard_IndexatorExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -16702,7 +16702,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InterfaceDeclarationSyntax_InterfaceDeclarationSyntax_create(const void* p0, shard_shard_InterfaceDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_InterfaceDeclarationSyntax_InterfaceDeclarationSyntax_create(const void* p0, shard_InterfaceDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -16745,7 +16745,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_InterfaceDeclarationSyntax_InterfaceDeclarationSyntax_destroy(shard_shard_InterfaceDeclarationSyntax_t self)
+	SHARD_API void shard_InterfaceDeclarationSyntax_InterfaceDeclarationSyntax_destroy(shard_InterfaceDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16760,7 +16760,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InterfaceDeclarationSyntax_accept(shard_shard_InterfaceDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_InterfaceDeclarationSyntax_accept(shard_InterfaceDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -16797,7 +16797,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InterfaceDeclarationSyntax_get_location(shard_shard_InterfaceDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_InterfaceDeclarationSyntax_get_location(shard_InterfaceDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -16845,7 +16845,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_InvokationExpressionSyntax_create(const void* p0, shard_shard_InvokationExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_InvokationExpressionSyntax_create(const void* p0, shard_InvokationExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -16888,7 +16888,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_InvokationExpressionSyntax_InvokationExpressionSyntax_destroy(shard_shard_InvokationExpressionSyntax_t self)
+	SHARD_API void shard_InvokationExpressionSyntax_InvokationExpressionSyntax_destroy(shard_InvokationExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16903,7 +16903,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_accept(shard_shard_InvokationExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_accept(shard_InvokationExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -16940,7 +16940,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_InvokationExpressionSyntax_get_arguments(shard_shard_InvokationExpressionSyntax_t self)
+	SHARD_API void* shard_InvokationExpressionSyntax_get_arguments(shard_InvokationExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -16957,7 +16957,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_get_delimeter_token(shard_shard_InvokationExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_get_delimeter_token(shard_InvokationExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -17005,7 +17005,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_get_identifier(shard_shard_InvokationExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_get_identifier(shard_InvokationExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -17053,7 +17053,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_get_location(shard_shard_InvokationExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_get_location(shard_InvokationExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -17101,7 +17101,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_InvokationExpressionSyntax_get_previous(shard_shard_InvokationExpressionSyntax_t self)
+	SHARD_API void* shard_InvokationExpressionSyntax_get_previous(shard_InvokationExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17118,7 +17118,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_InvokationExpressionSyntax_get_type_arguments(shard_shard_InvokationExpressionSyntax_t self)
+	SHARD_API void* shard_InvokationExpressionSyntax_get_type_arguments(shard_InvokationExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17135,7 +17135,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_arguments(shard_shard_InvokationExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_arguments(shard_InvokationExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -17172,7 +17172,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_delimeter_token(shard_shard_InvokationExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_delimeter_token(shard_InvokationExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -17209,7 +17209,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_identifier(shard_shard_InvokationExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_identifier(shard_InvokationExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -17246,7 +17246,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_previous(shard_shard_InvokationExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_previous(shard_InvokationExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -17283,7 +17283,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_type_arguments(shard_shard_InvokationExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_InvokationExpressionSyntax_set_type_arguments(shard_InvokationExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -17320,7 +17320,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IsExpressionSyntax_IsExpressionSyntax_create(const void* p0, shard_shard_IsExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_IsExpressionSyntax_IsExpressionSyntax_create(const void* p0, shard_IsExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -17363,7 +17363,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_IsExpressionSyntax_IsExpressionSyntax_destroy(shard_shard_IsExpressionSyntax_t self)
+	SHARD_API void shard_IsExpressionSyntax_IsExpressionSyntax_destroy(shard_IsExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17378,7 +17378,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IsExpressionSyntax_accept(shard_shard_IsExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_IsExpressionSyntax_accept(shard_IsExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -17415,7 +17415,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IsExpressionSyntax_get_expression(shard_shard_IsExpressionSyntax_t self)
+	SHARD_API void* shard_IsExpressionSyntax_get_expression(shard_IsExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17432,7 +17432,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IsExpressionSyntax_get_location(shard_shard_IsExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_IsExpressionSyntax_get_location(shard_IsExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -17480,7 +17480,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IsExpressionSyntax_get_operator_token(shard_shard_IsExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_IsExpressionSyntax_get_operator_token(shard_IsExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -17528,7 +17528,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IsExpressionSyntax_get_target_type(shard_shard_IsExpressionSyntax_t self)
+	SHARD_API void* shard_IsExpressionSyntax_get_target_type(shard_IsExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17545,7 +17545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IsExpressionSyntax_set_expression(shard_shard_IsExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IsExpressionSyntax_set_expression(shard_IsExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -17582,7 +17582,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IsExpressionSyntax_set_operator_token(shard_shard_IsExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_IsExpressionSyntax_set_operator_token(shard_IsExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -17619,7 +17619,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IsExpressionSyntax_set_target_type(shard_shard_IsExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_IsExpressionSyntax_set_target_type(shard_IsExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -17656,7 +17656,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LambdaExpressionSyntax_LambdaExpressionSyntax_create(const void* p0, shard_shard_LambdaExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_LambdaExpressionSyntax_LambdaExpressionSyntax_create(const void* p0, shard_LambdaExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -17699,7 +17699,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_LambdaExpressionSyntax_LambdaExpressionSyntax_destroy(shard_shard_LambdaExpressionSyntax_t self)
+	SHARD_API void shard_LambdaExpressionSyntax_LambdaExpressionSyntax_destroy(shard_LambdaExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17714,7 +17714,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LambdaExpressionSyntax_accept(shard_shard_LambdaExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_LambdaExpressionSyntax_accept(shard_LambdaExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -17751,7 +17751,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_LambdaExpressionSyntax_get_body(shard_shard_LambdaExpressionSyntax_t self)
+	SHARD_API void* shard_LambdaExpressionSyntax_get_body(shard_LambdaExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17768,7 +17768,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LambdaExpressionSyntax_get_location(shard_shard_LambdaExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_LambdaExpressionSyntax_get_location(shard_LambdaExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -17816,7 +17816,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_LambdaExpressionSyntax_get_parameters(shard_shard_LambdaExpressionSyntax_t self)
+	SHARD_API void* shard_LambdaExpressionSyntax_get_parameters(shard_LambdaExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17833,7 +17833,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LambdaExpressionSyntax_set_body(shard_shard_LambdaExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_LambdaExpressionSyntax_set_body(shard_LambdaExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -17870,7 +17870,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LambdaExpressionSyntax_set_parameters(shard_shard_LambdaExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_LambdaExpressionSyntax_set_parameters(shard_LambdaExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -17907,7 +17907,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralExpressionSyntax_LiteralExpressionSyntax_create(const void* p0, shard_shard_LiteralExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_LiteralExpressionSyntax_LiteralExpressionSyntax_create(const void* p0, shard_LiteralExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -17950,7 +17950,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_LiteralExpressionSyntax_LiteralExpressionSyntax_destroy(shard_shard_LiteralExpressionSyntax_t self)
+	SHARD_API void shard_LiteralExpressionSyntax_LiteralExpressionSyntax_destroy(shard_LiteralExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -17965,7 +17965,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralExpressionSyntax_accept(shard_shard_LiteralExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_LiteralExpressionSyntax_accept(shard_LiteralExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -18002,7 +18002,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralExpressionSyntax_get_literal(shard_shard_LiteralExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_LiteralExpressionSyntax_get_literal(shard_LiteralExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -18050,7 +18050,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralExpressionSyntax_get_location(shard_shard_LiteralExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_LiteralExpressionSyntax_get_location(shard_LiteralExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -18098,7 +18098,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralExpressionSyntax_set_literal(shard_shard_LiteralExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_LiteralExpressionSyntax_set_literal(shard_LiteralExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -18135,7 +18135,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_MemberAccessExpressionSyntax_create(const void* p0, shard_shard_MemberAccessExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_MemberAccessExpressionSyntax_create(const void* p0, shard_MemberAccessExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -18178,7 +18178,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_MemberAccessExpressionSyntax_MemberAccessExpressionSyntax_destroy(shard_shard_MemberAccessExpressionSyntax_t self)
+	SHARD_API void shard_MemberAccessExpressionSyntax_MemberAccessExpressionSyntax_destroy(shard_MemberAccessExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -18193,7 +18193,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_accept(shard_shard_MemberAccessExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_accept(shard_MemberAccessExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -18230,7 +18230,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_get_delimeter_token(shard_shard_MemberAccessExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_get_delimeter_token(shard_MemberAccessExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -18278,7 +18278,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_get_identifier(shard_shard_MemberAccessExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_get_identifier(shard_MemberAccessExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -18326,7 +18326,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_get_location(shard_shard_MemberAccessExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_get_location(shard_MemberAccessExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -18374,7 +18374,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_MemberAccessExpressionSyntax_get_previous(shard_shard_MemberAccessExpressionSyntax_t self)
+	SHARD_API void* shard_MemberAccessExpressionSyntax_get_previous(shard_MemberAccessExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -18391,7 +18391,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_set_delimeter_token(shard_shard_MemberAccessExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_set_delimeter_token(shard_MemberAccessExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -18428,7 +18428,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_set_identifier(shard_shard_MemberAccessExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_set_identifier(shard_MemberAccessExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -18465,7 +18465,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_set_previous(shard_shard_MemberAccessExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_MemberAccessExpressionSyntax_set_previous(shard_MemberAccessExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -18502,7 +18502,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_MemberDeclarationSyntax_create(int p0, const void* p1, shard_shard_MemberDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_MemberDeclarationSyntax_create(int p0, const void* p1, shard_MemberDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -18545,7 +18545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_MemberDeclarationSyntax_MemberDeclarationSyntax_destroy(shard_shard_MemberDeclarationSyntax_t self)
+	SHARD_API void shard_MemberDeclarationSyntax_MemberDeclarationSyntax_destroy(shard_MemberDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -18560,7 +18560,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_MemberDeclarationSyntax_get_attributes(shard_shard_MemberDeclarationSyntax_t self)
+	SHARD_API void* shard_MemberDeclarationSyntax_get_attributes(shard_MemberDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -18577,7 +18577,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_get_declare_token(shard_shard_MemberDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_get_declare_token(shard_MemberDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -18625,7 +18625,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_get_identifier(shard_shard_MemberDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_get_identifier(shard_MemberDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -18673,7 +18673,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_get_modifiers(shard_shard_MemberDeclarationSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_get_modifiers(shard_MemberDeclarationSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -18721,7 +18721,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_attributes(shard_shard_MemberDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_attributes(shard_MemberDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -18758,7 +18758,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_declare_token(shard_shard_MemberDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_declare_token(shard_MemberDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -18795,7 +18795,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_identifier(shard_shard_MemberDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_identifier(shard_MemberDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -18832,7 +18832,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_modifiers(shard_shard_MemberDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_MemberDeclarationSyntax_set_modifiers(shard_MemberDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -18869,7 +18869,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_NamespaceDirectiveSyntax_create(const void* p0, shard_shard_NamespaceDirectiveSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_NamespaceDirectiveSyntax_create(const void* p0, shard_NamespaceDirectiveSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -18912,7 +18912,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_NamespaceDirectiveSyntax_NamespaceDirectiveSyntax_destroy(shard_shard_NamespaceDirectiveSyntax_t self)
+	SHARD_API void shard_NamespaceDirectiveSyntax_NamespaceDirectiveSyntax_destroy(shard_NamespaceDirectiveSyntax_t self)
 	{
 		if (!self)
 		{
@@ -18927,7 +18927,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_accept(shard_shard_NamespaceDirectiveSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_accept(shard_NamespaceDirectiveSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -18964,7 +18964,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_location(shard_shard_NamespaceDirectiveSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_location(shard_NamespaceDirectiveSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -19012,7 +19012,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_namespace_keyword(shard_shard_NamespaceDirectiveSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_namespace_keyword(shard_NamespaceDirectiveSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -19060,7 +19060,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_qualifier(shard_shard_NamespaceDirectiveSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_qualifier(shard_NamespaceDirectiveSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -19108,7 +19108,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_qualifier_string(shard_shard_NamespaceDirectiveSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_qualifier_string(shard_NamespaceDirectiveSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -19156,7 +19156,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_semicolon(shard_shard_NamespaceDirectiveSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_get_semicolon(shard_NamespaceDirectiveSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -19204,7 +19204,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_set_namespace_keyword(shard_shard_NamespaceDirectiveSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_set_namespace_keyword(shard_NamespaceDirectiveSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -19241,7 +19241,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_set_qualifier(shard_shard_NamespaceDirectiveSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_set_qualifier(shard_NamespaceDirectiveSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -19278,7 +19278,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_set_semicolon(shard_shard_NamespaceDirectiveSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_NamespaceDirectiveSyntax_set_semicolon(shard_NamespaceDirectiveSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -19315,7 +19315,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSyntax_NullableTypeSyntax_create(const void* p0, shard_shard_NullableTypeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_NullableTypeSyntax_NullableTypeSyntax_create(const void* p0, shard_NullableTypeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -19358,7 +19358,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_NullableTypeSyntax_NullableTypeSyntax_destroy(shard_shard_NullableTypeSyntax_t self)
+	SHARD_API void shard_NullableTypeSyntax_NullableTypeSyntax_destroy(shard_NullableTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -19373,7 +19373,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSyntax_accept(shard_shard_NullableTypeSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_NullableTypeSyntax_accept(shard_NullableTypeSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -19410,7 +19410,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSyntax_get_location(shard_shard_NullableTypeSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_NullableTypeSyntax_get_location(shard_NullableTypeSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -19458,7 +19458,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSyntax_get_qualifier(shard_shard_NullableTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_NullableTypeSyntax_get_qualifier(shard_NullableTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -19506,7 +19506,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSyntax_get_question_token(shard_shard_NullableTypeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_NullableTypeSyntax_get_question_token(shard_NullableTypeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -19554,7 +19554,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_NullableTypeSyntax_get_underlaying_type(shard_shard_NullableTypeSyntax_t self)
+	SHARD_API void* shard_NullableTypeSyntax_get_underlaying_type(shard_NullableTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -19571,7 +19571,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSyntax_set_question_token(shard_shard_NullableTypeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_NullableTypeSyntax_set_question_token(shard_NullableTypeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -19608,7 +19608,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSyntax_set_underlaying_type(shard_shard_NullableTypeSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_NullableTypeSyntax_set_underlaying_type(shard_NullableTypeSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -19645,7 +19645,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_ObjectExpressionSyntax_create(const void* p0, shard_shard_ObjectExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_ObjectExpressionSyntax_create(const void* p0, shard_ObjectExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -19688,7 +19688,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ObjectExpressionSyntax_ObjectExpressionSyntax_destroy(shard_shard_ObjectExpressionSyntax_t self)
+	SHARD_API void shard_ObjectExpressionSyntax_ObjectExpressionSyntax_destroy(shard_ObjectExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -19703,7 +19703,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_accept(shard_shard_ObjectExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_accept(shard_ObjectExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -19740,7 +19740,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ObjectExpressionSyntax_get_arguments(shard_shard_ObjectExpressionSyntax_t self)
+	SHARD_API void* shard_ObjectExpressionSyntax_get_arguments(shard_ObjectExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -19757,7 +19757,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ObjectExpressionSyntax_get_array_size(shard_shard_ObjectExpressionSyntax_t self)
+	SHARD_API void* shard_ObjectExpressionSyntax_get_array_size(shard_ObjectExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -19774,7 +19774,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_get_location(shard_shard_ObjectExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_get_location(shard_ObjectExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -19822,7 +19822,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_get_new_token(shard_shard_ObjectExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_get_new_token(shard_ObjectExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -19870,7 +19870,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ObjectExpressionSyntax_get_type(shard_shard_ObjectExpressionSyntax_t self)
+	SHARD_API void* shard_ObjectExpressionSyntax_get_type(shard_ObjectExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -19887,7 +19887,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_ObjectExpressionSyntax_is_array_creation(shard_shard_ObjectExpressionSyntax_t self)
+	SHARD_API int shard_ObjectExpressionSyntax_is_array_creation(shard_ObjectExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -19904,7 +19904,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_arguments(shard_shard_ObjectExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_arguments(shard_ObjectExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -19941,7 +19941,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_array_size(shard_shard_ObjectExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_array_size(shard_ObjectExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -19978,7 +19978,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_new_token(shard_shard_ObjectExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_new_token(shard_ObjectExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -20015,7 +20015,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_type(shard_shard_ObjectExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ObjectExpressionSyntax_set_type(shard_ObjectExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -20052,7 +20052,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_OperatorDeclarationSyntax_create(const void* p0, shard_shard_OperatorDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_OperatorDeclarationSyntax_create(const void* p0, shard_OperatorDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -20095,7 +20095,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_OperatorDeclarationSyntax_OperatorDeclarationSyntax_destroy(shard_shard_OperatorDeclarationSyntax_t self)
+	SHARD_API void shard_OperatorDeclarationSyntax_OperatorDeclarationSyntax_destroy(shard_OperatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -20110,7 +20110,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_accept(shard_shard_OperatorDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_accept(shard_OperatorDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -20147,7 +20147,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_OperatorDeclarationSyntax_get_body(shard_shard_OperatorDeclarationSyntax_t self)
+	SHARD_API void* shard_OperatorDeclarationSyntax_get_body(shard_OperatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -20164,7 +20164,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_get_location(shard_shard_OperatorDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_get_location(shard_OperatorDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -20212,7 +20212,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_get_operator_token(shard_shard_OperatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_get_operator_token(shard_OperatorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -20260,7 +20260,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_OperatorDeclarationSyntax_get_parameters_list(shard_shard_OperatorDeclarationSyntax_t self)
+	SHARD_API void* shard_OperatorDeclarationSyntax_get_parameters_list(shard_OperatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -20277,7 +20277,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_OperatorDeclarationSyntax_get_return_type(shard_shard_OperatorDeclarationSyntax_t self)
+	SHARD_API void* shard_OperatorDeclarationSyntax_get_return_type(shard_OperatorDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -20294,7 +20294,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_get_semicolon(shard_shard_OperatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_get_semicolon(shard_OperatorDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -20342,7 +20342,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_body(shard_shard_OperatorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_body(shard_OperatorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -20379,7 +20379,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_operator_token(shard_shard_OperatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_operator_token(shard_OperatorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -20416,7 +20416,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_parameters_list(shard_shard_OperatorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_parameters_list(shard_OperatorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -20453,7 +20453,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_return_type(shard_shard_OperatorDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_return_type(shard_OperatorDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -20490,7 +20490,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_semicolon(shard_shard_OperatorDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_OperatorDeclarationSyntax_set_semicolon(shard_OperatorDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -20527,7 +20527,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSyntax_ParameterSyntax_create(const void* p0, shard_shard_ParameterSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ParameterSyntax_ParameterSyntax_create(const void* p0, shard_ParameterSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -20570,7 +20570,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ParameterSyntax_ParameterSyntax_destroy(shard_shard_ParameterSyntax_t self)
+	SHARD_API void shard_ParameterSyntax_ParameterSyntax_destroy(shard_ParameterSyntax_t self)
 	{
 		if (!self)
 		{
@@ -20585,7 +20585,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSyntax_accept(shard_shard_ParameterSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ParameterSyntax_accept(shard_ParameterSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -20622,7 +20622,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSyntax_get_identifier(shard_shard_ParameterSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ParameterSyntax_get_identifier(shard_ParameterSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -20670,7 +20670,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSyntax_get_location(shard_shard_ParameterSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ParameterSyntax_get_location(shard_ParameterSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -20718,7 +20718,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ParameterSyntax_get_type(shard_shard_ParameterSyntax_t self)
+	SHARD_API void* shard_ParameterSyntax_get_type(shard_ParameterSyntax_t self)
 	{
 		if (!self)
 		{
@@ -20735,7 +20735,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSyntax_set_identifier(shard_shard_ParameterSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ParameterSyntax_set_identifier(shard_ParameterSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -20772,7 +20772,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSyntax_set_type(shard_shard_ParameterSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ParameterSyntax_set_type(shard_ParameterSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -20809,7 +20809,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_ParametersListSyntax_create(const void* p0, shard_shard_ParametersListSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ParametersListSyntax_ParametersListSyntax_create(const void* p0, shard_ParametersListSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -20852,7 +20852,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ParametersListSyntax_ParametersListSyntax_destroy(shard_shard_ParametersListSyntax_t self)
+	SHARD_API void shard_ParametersListSyntax_ParametersListSyntax_destroy(shard_ParametersListSyntax_t self)
 	{
 		if (!self)
 		{
@@ -20867,7 +20867,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_accept(shard_shard_ParametersListSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ParametersListSyntax_accept(shard_ParametersListSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -20904,7 +20904,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_get_close_token(shard_shard_ParametersListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ParametersListSyntax_get_close_token(shard_ParametersListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -20952,7 +20952,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_get_location(shard_shard_ParametersListSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ParametersListSyntax_get_location(shard_ParametersListSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -21000,7 +21000,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_get_open_token(shard_shard_ParametersListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ParametersListSyntax_get_open_token(shard_ParametersListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -21048,7 +21048,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_get_parameters(shard_shard_ParametersListSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_ParametersListSyntax_get_parameters(shard_ParametersListSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -21096,7 +21096,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_set_close_token(shard_shard_ParametersListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ParametersListSyntax_set_close_token(shard_ParametersListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -21133,7 +21133,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_set_open_token(shard_shard_ParametersListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ParametersListSyntax_set_open_token(shard_ParametersListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -21170,7 +21170,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParametersListSyntax_set_parameters(shard_shard_ParametersListSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ParametersListSyntax_set_parameters(shard_ParametersListSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -21207,7 +21207,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PredefinedTypeSyntax_PredefinedTypeSyntax_create(const void* p0, shard_shard_PredefinedTypeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_PredefinedTypeSyntax_PredefinedTypeSyntax_create(const void* p0, shard_PredefinedTypeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -21250,7 +21250,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_PredefinedTypeSyntax_PredefinedTypeSyntax_destroy(shard_shard_PredefinedTypeSyntax_t self)
+	SHARD_API void shard_PredefinedTypeSyntax_PredefinedTypeSyntax_destroy(shard_PredefinedTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -21265,7 +21265,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PredefinedTypeSyntax_accept(shard_shard_PredefinedTypeSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_PredefinedTypeSyntax_accept(shard_PredefinedTypeSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -21302,7 +21302,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PredefinedTypeSyntax_get_location(shard_shard_PredefinedTypeSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_PredefinedTypeSyntax_get_location(shard_PredefinedTypeSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -21350,7 +21350,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PredefinedTypeSyntax_get_qualifier(shard_shard_PredefinedTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_PredefinedTypeSyntax_get_qualifier(shard_PredefinedTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -21398,7 +21398,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PredefinedTypeSyntax_get_type_token(shard_shard_PredefinedTypeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_PredefinedTypeSyntax_get_type_token(shard_PredefinedTypeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -21446,7 +21446,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PredefinedTypeSyntax_set_type_token(shard_shard_PredefinedTypeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_PredefinedTypeSyntax_set_type_token(shard_PredefinedTypeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -21483,7 +21483,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_PropertyDeclarationSyntax_create(const void* p0, shard_shard_PropertyDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_PropertyDeclarationSyntax_create(const void* p0, shard_PropertyDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -21526,7 +21526,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_PropertyDeclarationSyntax_PropertyDeclarationSyntax_destroy(shard_shard_PropertyDeclarationSyntax_t self)
+	SHARD_API void shard_PropertyDeclarationSyntax_PropertyDeclarationSyntax_destroy(shard_PropertyDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -21541,7 +21541,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_accept(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_accept(shard_PropertyDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -21578,7 +21578,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_arrow(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_arrow(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -21626,7 +21626,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_assign_token(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_assign_token(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -21674,7 +21674,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_close_bracket(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_close_bracket(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -21722,7 +21722,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertyDeclarationSyntax_get_expression(shard_shard_PropertyDeclarationSyntax_t self)
+	SHARD_API void* shard_PropertyDeclarationSyntax_get_expression(shard_PropertyDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -21739,7 +21739,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertyDeclarationSyntax_get_getter(shard_shard_PropertyDeclarationSyntax_t self)
+	SHARD_API void* shard_PropertyDeclarationSyntax_get_getter(shard_PropertyDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -21756,7 +21756,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_location(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_location(shard_PropertyDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -21804,7 +21804,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_open_bracket(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_open_bracket(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -21852,7 +21852,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_semicolon(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_get_semicolon(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -21900,7 +21900,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertyDeclarationSyntax_get_setter(shard_shard_PropertyDeclarationSyntax_t self)
+	SHARD_API void* shard_PropertyDeclarationSyntax_get_setter(shard_PropertyDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -21917,7 +21917,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertyDeclarationSyntax_get_type(shard_shard_PropertyDeclarationSyntax_t self)
+	SHARD_API void* shard_PropertyDeclarationSyntax_get_type(shard_PropertyDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -21934,7 +21934,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_arrow(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_arrow(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -21971,7 +21971,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_assign_token(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_assign_token(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -22008,7 +22008,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_close_bracket(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_close_bracket(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -22045,7 +22045,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_expression(shard_shard_PropertyDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_expression(shard_PropertyDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -22082,7 +22082,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_getter(shard_shard_PropertyDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_getter(shard_PropertyDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -22119,7 +22119,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_open_bracket(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_open_bracket(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -22156,7 +22156,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_semicolon(shard_shard_PropertyDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_semicolon(shard_PropertyDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -22193,7 +22193,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_setter(shard_shard_PropertyDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_setter(shard_PropertyDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -22230,7 +22230,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_type(shard_shard_PropertyDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertyDeclarationSyntax_set_type(shard_PropertyDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -22267,7 +22267,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_QualifiedNameTypeSyntax_create(const void* p0, shard_shard_QualifiedNameTypeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_QualifiedNameTypeSyntax_create(const void* p0, shard_QualifiedNameTypeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -22310,7 +22310,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_QualifiedNameTypeSyntax_QualifiedNameTypeSyntax_destroy(shard_shard_QualifiedNameTypeSyntax_t self)
+	SHARD_API void shard_QualifiedNameTypeSyntax_QualifiedNameTypeSyntax_destroy(shard_QualifiedNameTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -22325,7 +22325,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_accept(shard_shard_QualifiedNameTypeSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_accept(shard_QualifiedNameTypeSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -22362,7 +22362,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_identifier(shard_shard_QualifiedNameTypeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_identifier(shard_QualifiedNameTypeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -22410,7 +22410,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_QualifiedNameTypeSyntax_get_left(shard_shard_QualifiedNameTypeSyntax_t self)
+	SHARD_API void* shard_QualifiedNameTypeSyntax_get_left(shard_QualifiedNameTypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -22427,7 +22427,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_location(shard_shard_QualifiedNameTypeSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_location(shard_QualifiedNameTypeSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -22475,7 +22475,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_qualifier(shard_shard_QualifiedNameTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_qualifier(shard_QualifiedNameTypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -22523,7 +22523,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_qualifier_token(shard_shard_QualifiedNameTypeSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_get_qualifier_token(shard_QualifiedNameTypeSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -22571,7 +22571,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_set_identifier(shard_shard_QualifiedNameTypeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_set_identifier(shard_QualifiedNameTypeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -22608,7 +22608,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_set_left(shard_shard_QualifiedNameTypeSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_set_left(shard_QualifiedNameTypeSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -22645,7 +22645,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_set_qualifier_token(shard_shard_QualifiedNameTypeSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_QualifiedNameTypeSyntax_set_qualifier_token(shard_QualifiedNameTypeSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -22682,7 +22682,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_RangeExpressionSyntax_RangeExpressionSyntax_create(const void* p0, shard_shard_RangeExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_RangeExpressionSyntax_RangeExpressionSyntax_create(const void* p0, shard_RangeExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -22725,7 +22725,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_RangeExpressionSyntax_RangeExpressionSyntax_destroy(shard_shard_RangeExpressionSyntax_t self)
+	SHARD_API void shard_RangeExpressionSyntax_RangeExpressionSyntax_destroy(shard_RangeExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -22740,7 +22740,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_RangeExpressionSyntax_accept(shard_shard_RangeExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_RangeExpressionSyntax_accept(shard_RangeExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -22777,7 +22777,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_RangeExpressionSyntax_get_left(shard_shard_RangeExpressionSyntax_t self)
+	SHARD_API void* shard_RangeExpressionSyntax_get_left(shard_RangeExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -22794,7 +22794,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_RangeExpressionSyntax_get_location(shard_shard_RangeExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_RangeExpressionSyntax_get_location(shard_RangeExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -22842,7 +22842,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_RangeExpressionSyntax_get_operator_token(shard_shard_RangeExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_RangeExpressionSyntax_get_operator_token(shard_RangeExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -22890,7 +22890,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_RangeExpressionSyntax_get_right(shard_shard_RangeExpressionSyntax_t self)
+	SHARD_API void* shard_RangeExpressionSyntax_get_right(shard_RangeExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -22907,7 +22907,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_RangeExpressionSyntax_is_inclusive(shard_shard_RangeExpressionSyntax_t self)
+	SHARD_API int shard_RangeExpressionSyntax_is_inclusive(shard_RangeExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -22924,7 +22924,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_RangeExpressionSyntax_set_left(shard_shard_RangeExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_RangeExpressionSyntax_set_left(shard_RangeExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -22961,7 +22961,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_RangeExpressionSyntax_set_operator_token(shard_shard_RangeExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_RangeExpressionSyntax_set_operator_token(shard_RangeExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -22998,7 +22998,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_RangeExpressionSyntax_set_right(shard_shard_RangeExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_RangeExpressionSyntax_set_right(shard_RangeExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -23035,7 +23035,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_ReturnStatementSyntax_create(const void* p0, shard_shard_ReturnStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_ReturnStatementSyntax_create(const void* p0, shard_ReturnStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -23078,7 +23078,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ReturnStatementSyntax_ReturnStatementSyntax_destroy(shard_shard_ReturnStatementSyntax_t self)
+	SHARD_API void shard_ReturnStatementSyntax_ReturnStatementSyntax_destroy(shard_ReturnStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -23093,7 +23093,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_accept(shard_shard_ReturnStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_accept(shard_ReturnStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -23130,7 +23130,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ReturnStatementSyntax_get_expression(shard_shard_ReturnStatementSyntax_t self)
+	SHARD_API void* shard_ReturnStatementSyntax_get_expression(shard_ReturnStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -23147,7 +23147,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_get_location(shard_shard_ReturnStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_get_location(shard_ReturnStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -23195,7 +23195,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_get_return_keyword(shard_shard_ReturnStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_get_return_keyword(shard_ReturnStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -23243,7 +23243,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_get_semicolon(shard_shard_ReturnStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_get_semicolon(shard_ReturnStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -23291,7 +23291,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_expression(shard_shard_ReturnStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_expression(shard_ReturnStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -23328,7 +23328,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_return_keyword(shard_shard_ReturnStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_return_keyword(shard_ReturnStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -23365,7 +23365,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_semicolon(shard_shard_ReturnStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_semicolon(shard_ReturnStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -23402,7 +23402,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SourceParser_FromSourceProvider(shard_shard_SourceParser_t self, shard_shard_SourceProvider_t p0)
+	SHARD_API shard_status_t shard_SourceParser_FromSourceProvider(shard_SourceParser_t self, shard_SourceProvider_t p0)
 	{
 		if (!self)
 		{
@@ -23596,7 +23596,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API shard_status_t shard_SourceParser_SourceParser_create(shard_shard_SyntaxTree_t p0, shard_shard_DiagnosticsContext_t p1, shard_shard_SourceParser_t* out_handle)
+	SHARD_API shard_status_t shard_SourceParser_SourceParser_create(shard_SyntaxTree_t p0, shard_DiagnosticsContext_t p1, shard_SourceParser_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -23639,7 +23639,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SourceParser_SourceParser_destroy(shard_shard_SourceParser_t self)
+	SHARD_API void shard_SourceParser_SourceParser_destroy(shard_SourceParser_t self)
 	{
 		if (!self)
 		{
@@ -23654,7 +23654,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementSyntax_StatementSyntax_create(int p0, const void* p1, shard_shard_StatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_StatementSyntax_StatementSyntax_create(int p0, const void* p1, shard_StatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -23697,7 +23697,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_StatementSyntax_StatementSyntax_destroy(shard_shard_StatementSyntax_t self)
+	SHARD_API void shard_StatementSyntax_StatementSyntax_destroy(shard_StatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -23712,7 +23712,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_StatementsBlockSyntax_create(const void* p0, shard_shard_StatementsBlockSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_StatementsBlockSyntax_create(const void* p0, shard_StatementsBlockSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -23755,7 +23755,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_StatementsBlockSyntax_StatementsBlockSyntax_destroy(shard_shard_StatementsBlockSyntax_t self)
+	SHARD_API void shard_StatementsBlockSyntax_StatementsBlockSyntax_destroy(shard_StatementsBlockSyntax_t self)
 	{
 		if (!self)
 		{
@@ -23770,7 +23770,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_accept(shard_shard_StatementsBlockSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_accept(shard_StatementsBlockSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -23807,7 +23807,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_close_bracket(shard_shard_StatementsBlockSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_close_bracket(shard_StatementsBlockSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -23855,7 +23855,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_location(shard_shard_StatementsBlockSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_location(shard_StatementsBlockSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -23903,7 +23903,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_open_bracket(shard_shard_StatementsBlockSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_open_bracket(shard_StatementsBlockSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -23951,7 +23951,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_statements(shard_shard_StatementsBlockSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_get_statements(shard_StatementsBlockSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -23999,7 +23999,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_set_close_bracket(shard_shard_StatementsBlockSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_set_close_bracket(shard_StatementsBlockSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -24036,7 +24036,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_set_open_bracket(shard_shard_StatementsBlockSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_set_open_bracket(shard_StatementsBlockSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -24073,7 +24073,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StatementsBlockSyntax_set_statements(shard_shard_StatementsBlockSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_StatementsBlockSyntax_set_statements(shard_StatementsBlockSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -24110,7 +24110,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StructDeclarationSyntax_StructDeclarationSyntax_create(const void* p0, shard_shard_StructDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_StructDeclarationSyntax_StructDeclarationSyntax_create(const void* p0, shard_StructDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -24153,7 +24153,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_StructDeclarationSyntax_StructDeclarationSyntax_destroy(shard_shard_StructDeclarationSyntax_t self)
+	SHARD_API void shard_StructDeclarationSyntax_StructDeclarationSyntax_destroy(shard_StructDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -24168,7 +24168,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StructDeclarationSyntax_accept(shard_shard_StructDeclarationSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_StructDeclarationSyntax_accept(shard_StructDeclarationSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -24205,7 +24205,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StructDeclarationSyntax_get_location(shard_shard_StructDeclarationSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_StructDeclarationSyntax_get_location(shard_StructDeclarationSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -24258,7 +24258,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_SyntaxNode_SyntaxNode_create(int p0, const void* p1, shard_shard_SyntaxNode_t* out_handle)
+	SHARD_API shard_status_t shard_SyntaxNode_SyntaxNode_create(int p0, const void* p1, shard_SyntaxNode_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -24301,7 +24301,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SyntaxNode_SyntaxNode_destroy(shard_shard_SyntaxNode_t self)
+	SHARD_API void shard_SyntaxNode_SyntaxNode_destroy(shard_SyntaxNode_t self)
 	{
 		if (!self)
 		{
@@ -24316,7 +24316,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxNode_accept(shard_shard_SyntaxNode_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_SyntaxNode_accept(shard_SyntaxNode_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -24353,7 +24353,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SyntaxNode_get_kind(shard_shard_SyntaxNode_t self)
+	SHARD_API int shard_SyntaxNode_get_kind(shard_SyntaxNode_t self)
 	{
 		if (!self)
 		{
@@ -24370,7 +24370,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxNode_get_location(shard_shard_SyntaxNode_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_SyntaxNode_get_location(shard_SyntaxNode_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -24418,7 +24418,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SyntaxNode_get_parent(shard_shard_SyntaxNode_t self)
+	SHARD_API void* shard_SyntaxNode_get_parent(shard_SyntaxNode_t self)
 	{
 		if (!self)
 		{
@@ -24435,14 +24435,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxNode_operator_assign(shard_shard_SyntaxNode_t self, shard_shard_SyntaxNode_t p0)
+	SHARD_API shard_status_t shard_SyntaxNode_operator_assign(shard_SyntaxNode_t self, shard_SyntaxNode_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_SyntaxToken_SyntaxToken_create(shard_shard_SyntaxToken_t* out_handle)
+	SHARD_API shard_status_t shard_SyntaxToken_SyntaxToken_create(shard_SyntaxToken_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -24485,7 +24485,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SyntaxToken_SyntaxToken_destroy(shard_shard_SyntaxToken_t self)
+	SHARD_API void shard_SyntaxToken_SyntaxToken_destroy(shard_SyntaxToken_t self)
 	{
 		if (!self)
 		{
@@ -24500,7 +24500,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxToken_get_lexeme(shard_shard_SyntaxToken_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_SyntaxToken_get_lexeme(shard_SyntaxToken_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -24548,7 +24548,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TextLocation_t shard_SyntaxToken_get_location(shard_shard_SyntaxToken_t self)
+	SHARD_API shard_TextLocation_t shard_SyntaxToken_get_location(shard_SyntaxToken_t self)
 	{
 		if (!self)
 		{
@@ -24565,7 +24565,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SyntaxToken_get_type(shard_shard_SyntaxToken_t self)
+	SHARD_API int shard_SyntaxToken_get_type(shard_SyntaxToken_t self)
 	{
 		if (!self)
 		{
@@ -24582,7 +24582,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SyntaxToken_is_missing(shard_shard_SyntaxToken_t self)
+	SHARD_API int shard_SyntaxToken_is_missing(shard_SyntaxToken_t self)
 	{
 		if (!self)
 		{
@@ -24599,7 +24599,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxTree_SyntaxTree_create(shard_shard_SyntaxTree_t* out_handle)
+	SHARD_API shard_status_t shard_SyntaxTree_SyntaxTree_create(shard_SyntaxTree_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -24642,7 +24642,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SyntaxTree_SyntaxTree_destroy(shard_shard_SyntaxTree_t self)
+	SHARD_API void shard_SyntaxTree_SyntaxTree_destroy(shard_SyntaxTree_t self)
 	{
 		if (!self)
 		{
@@ -24657,7 +24657,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxTree_add_unit(shard_shard_SyntaxTree_t self, const void* p0)
+	SHARD_API shard_status_t shard_SyntaxTree_add_unit(shard_SyntaxTree_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -24694,7 +24694,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_gmt_Arena_t shard_SyntaxTree_get_arena(shard_shard_SyntaxTree_t self)
+	SHARD_API shard_gmt_Arena_t shard_SyntaxTree_get_arena(shard_SyntaxTree_t self)
 	{
 		if (!self)
 		{
@@ -24711,7 +24711,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxTree_get_units(shard_shard_SyntaxTree_t self, void** out_value)
+	SHARD_API shard_status_t shard_SyntaxTree_get_units(shard_SyntaxTree_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -24759,14 +24759,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxTree_operator_assign(shard_shard_SyntaxTree_t self, shard_shard_SyntaxTree_t p0)
+	SHARD_API shard_status_t shard_SyntaxTree_operator_assign(shard_SyntaxTree_t self, shard_SyntaxTree_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_SyntaxVisitor_create(shard_shard_SyntaxVisitor_t* out_handle)
+	SHARD_API shard_status_t shard_SyntaxVisitor_SyntaxVisitor_create(shard_SyntaxVisitor_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -24809,7 +24809,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SyntaxVisitor_SyntaxVisitor_destroy(shard_shard_SyntaxVisitor_t self)
+	SHARD_API void shard_SyntaxVisitor_SyntaxVisitor_destroy(shard_SyntaxVisitor_t self)
 	{
 		if (!self)
 		{
@@ -24824,7 +24824,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_accessor_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_AccessorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_accessor_declaration(shard_SyntaxVisitor_t self, shard_AccessorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -24861,7 +24861,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_argument(shard_shard_SyntaxVisitor_t self, shard_shard_ArgumentSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_argument(shard_SyntaxVisitor_t self, shard_ArgumentSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -24898,7 +24898,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_arguments_list(shard_shard_SyntaxVisitor_t self, shard_shard_ArgumentsListSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_arguments_list(shard_SyntaxVisitor_t self, shard_ArgumentsListSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -24935,7 +24935,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_array_type(shard_shard_SyntaxVisitor_t self, shard_shard_ArrayTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_array_type(shard_SyntaxVisitor_t self, shard_ArrayTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -24972,7 +24972,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_arrow_clause(shard_shard_SyntaxVisitor_t self, shard_shard_ArrowClauseSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_arrow_clause(shard_SyntaxVisitor_t self, shard_ArrowClauseSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25009,7 +25009,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_attribute(shard_shard_SyntaxVisitor_t self, shard_shard_AttributeSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_attribute(shard_SyntaxVisitor_t self, shard_AttributeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25046,7 +25046,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_attributes_list(shard_shard_SyntaxVisitor_t self, shard_shard_AttributesListSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_attributes_list(shard_SyntaxVisitor_t self, shard_AttributesListSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25083,7 +25083,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_await_expression(shard_shard_SyntaxVisitor_t self, shard_shard_AwaitExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_await_expression(shard_SyntaxVisitor_t self, shard_AwaitExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25120,7 +25120,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_base_types_list(shard_shard_SyntaxVisitor_t self, shard_shard_BaseTypesListSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_base_types_list(shard_SyntaxVisitor_t self, shard_BaseTypesListSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25157,7 +25157,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_binary_expression(shard_shard_SyntaxVisitor_t self, shard_shard_BinaryExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_binary_expression(shard_SyntaxVisitor_t self, shard_BinaryExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25194,7 +25194,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_break_statement(shard_shard_SyntaxVisitor_t self, shard_shard_BreakStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_break_statement(shard_SyntaxVisitor_t self, shard_BreakStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25231,7 +25231,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_cast_expression(shard_shard_SyntaxVisitor_t self, shard_shard_CastExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_cast_expression(shard_SyntaxVisitor_t self, shard_CastExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25268,7 +25268,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_catch_clause(shard_shard_SyntaxVisitor_t self, shard_shard_CatchClauseSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_catch_clause(shard_SyntaxVisitor_t self, shard_CatchClauseSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25305,7 +25305,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_collection_expression(shard_shard_SyntaxVisitor_t self, shard_shard_CollectionExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_collection_expression(shard_SyntaxVisitor_t self, shard_CollectionExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25342,7 +25342,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_constructor_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_ConstructorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_constructor_declaration(shard_SyntaxVisitor_t self, shard_ConstructorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25379,7 +25379,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_continue_statement(shard_shard_SyntaxVisitor_t self, shard_shard_ContinueStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_continue_statement(shard_SyntaxVisitor_t self, shard_ContinueStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25416,7 +25416,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_defer_block(shard_shard_SyntaxVisitor_t self, shard_shard_DeferBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_defer_block(shard_SyntaxVisitor_t self, shard_DeferBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25453,7 +25453,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_defer_statement(shard_shard_SyntaxVisitor_t self, shard_shard_DeferStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_defer_statement(shard_SyntaxVisitor_t self, shard_DeferStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25490,7 +25490,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_defer_variable(shard_shard_SyntaxVisitor_t self, shard_shard_DeferVariableSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_defer_variable(shard_SyntaxVisitor_t self, shard_DeferVariableSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25527,7 +25527,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_delegate_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_DelegateDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_delegate_declaration(shard_SyntaxVisitor_t self, shard_DelegateDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25564,7 +25564,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_else_statement(shard_shard_SyntaxVisitor_t self, shard_shard_ElseStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_else_statement(shard_SyntaxVisitor_t self, shard_ElseStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25601,7 +25601,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_enum_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_EnumDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_enum_declaration(shard_SyntaxVisitor_t self, shard_EnumDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25638,7 +25638,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_enum_field_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_EnumFieldDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_enum_field_declaration(shard_SyntaxVisitor_t self, shard_EnumFieldDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25675,7 +25675,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_expression_statement(shard_shard_SyntaxVisitor_t self, shard_shard_ExpressionStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_expression_statement(shard_SyntaxVisitor_t self, shard_ExpressionStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25712,7 +25712,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_field_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_FieldDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_field_declaration(shard_SyntaxVisitor_t self, shard_FieldDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25749,7 +25749,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_for_in_statement(shard_shard_SyntaxVisitor_t self, shard_shard_ForInStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_for_in_statement(shard_SyntaxVisitor_t self, shard_ForInStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25786,7 +25786,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_function_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_FunctionDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_function_declaration(shard_SyntaxVisitor_t self, shard_FunctionDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25823,7 +25823,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_generic_type(shard_shard_SyntaxVisitor_t self, shard_shard_GenericTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_generic_type(shard_SyntaxVisitor_t self, shard_GenericTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25860,7 +25860,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_identifier_name_type(shard_shard_SyntaxVisitor_t self, shard_shard_IdentifierNameTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_identifier_name_type(shard_SyntaxVisitor_t self, shard_IdentifierNameTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25897,7 +25897,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_if_expression(shard_shard_SyntaxVisitor_t self, shard_shard_IfExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_if_expression(shard_SyntaxVisitor_t self, shard_IfExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25934,7 +25934,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_if_statement(shard_shard_SyntaxVisitor_t self, shard_shard_IfStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_if_statement(shard_SyntaxVisitor_t self, shard_IfStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -25971,7 +25971,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_indexator_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_IndexatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_indexator_declaration(shard_SyntaxVisitor_t self, shard_IndexatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26008,7 +26008,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_indexator_expression(shard_shard_SyntaxVisitor_t self, shard_shard_IndexatorExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_indexator_expression(shard_SyntaxVisitor_t self, shard_IndexatorExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26045,7 +26045,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_interface_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_InterfaceDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_interface_declaration(shard_SyntaxVisitor_t self, shard_InterfaceDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26082,7 +26082,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_invokation_expression(shard_shard_SyntaxVisitor_t self, shard_shard_InvokationExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_invokation_expression(shard_SyntaxVisitor_t self, shard_InvokationExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26119,7 +26119,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_is_expression(shard_shard_SyntaxVisitor_t self, shard_shard_IsExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_is_expression(shard_SyntaxVisitor_t self, shard_IsExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26156,7 +26156,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_lambda_expression(shard_shard_SyntaxVisitor_t self, shard_shard_LambdaExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_lambda_expression(shard_SyntaxVisitor_t self, shard_LambdaExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26193,7 +26193,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_literal_expression(shard_shard_SyntaxVisitor_t self, shard_shard_LiteralExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_literal_expression(shard_SyntaxVisitor_t self, shard_LiteralExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26230,7 +26230,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_member_access_expression(shard_shard_SyntaxVisitor_t self, shard_shard_MemberAccessExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_member_access_expression(shard_SyntaxVisitor_t self, shard_MemberAccessExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26267,7 +26267,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_namespace_directive(shard_shard_SyntaxVisitor_t self, shard_shard_NamespaceDirectiveSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_namespace_directive(shard_SyntaxVisitor_t self, shard_NamespaceDirectiveSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26304,7 +26304,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_nullable_type(shard_shard_SyntaxVisitor_t self, shard_shard_NullableTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_nullable_type(shard_SyntaxVisitor_t self, shard_NullableTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26341,7 +26341,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_object_creation_expression(shard_shard_SyntaxVisitor_t self, shard_shard_ObjectExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_object_creation_expression(shard_SyntaxVisitor_t self, shard_ObjectExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26378,7 +26378,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_operator_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_OperatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_operator_declaration(shard_SyntaxVisitor_t self, shard_OperatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26415,7 +26415,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_parameter(shard_shard_SyntaxVisitor_t self, shard_shard_ParameterSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_parameter(shard_SyntaxVisitor_t self, shard_ParameterSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26452,7 +26452,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_parameters_list(shard_shard_SyntaxVisitor_t self, shard_shard_ParametersListSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_parameters_list(shard_SyntaxVisitor_t self, shard_ParametersListSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26489,7 +26489,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_predefined_type(shard_shard_SyntaxVisitor_t self, shard_shard_PredefinedTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_predefined_type(shard_SyntaxVisitor_t self, shard_PredefinedTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26526,7 +26526,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_property_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_PropertyDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_property_declaration(shard_SyntaxVisitor_t self, shard_PropertyDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26563,7 +26563,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_qualified_name_type(shard_shard_SyntaxVisitor_t self, shard_shard_QualifiedNameTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_qualified_name_type(shard_SyntaxVisitor_t self, shard_QualifiedNameTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26600,7 +26600,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_range_expression(shard_shard_SyntaxVisitor_t self, shard_shard_RangeExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_range_expression(shard_SyntaxVisitor_t self, shard_RangeExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26637,7 +26637,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_return_statement(shard_shard_SyntaxVisitor_t self, shard_shard_ReturnStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_return_statement(shard_SyntaxVisitor_t self, shard_ReturnStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26674,7 +26674,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_statements_block(shard_shard_SyntaxVisitor_t self, shard_shard_StatementsBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_statements_block(shard_SyntaxVisitor_t self, shard_StatementsBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26711,7 +26711,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_struct_declaration(shard_shard_SyntaxVisitor_t self, shard_shard_StructDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_struct_declaration(shard_SyntaxVisitor_t self, shard_StructDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26748,7 +26748,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_syntax_tree(shard_shard_SyntaxVisitor_t self, shard_shard_SyntaxTree_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_syntax_tree(shard_SyntaxVisitor_t self, shard_SyntaxTree_t p0)
 	{
 		if (!self)
 		{
@@ -26785,7 +26785,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_throw_statement(shard_shard_SyntaxVisitor_t self, shard_shard_ThrowStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_throw_statement(shard_SyntaxVisitor_t self, shard_ThrowStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26822,7 +26822,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_translation_unit(shard_shard_SyntaxVisitor_t self, shard_shard_TranslationUnitSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_translation_unit(shard_SyntaxVisitor_t self, shard_TranslationUnitSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26859,7 +26859,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_try_statement(shard_shard_SyntaxVisitor_t self, shard_shard_TryStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_try_statement(shard_SyntaxVisitor_t self, shard_TryStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26896,7 +26896,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_type_arguments_list(shard_shard_SyntaxVisitor_t self, shard_shard_TypeArgumentsListSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_type_arguments_list(shard_SyntaxVisitor_t self, shard_TypeArgumentsListSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26933,7 +26933,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_type_parameter(shard_shard_SyntaxVisitor_t self, shard_shard_TypeParameterSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_type_parameter(shard_SyntaxVisitor_t self, shard_TypeParameterSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -26970,7 +26970,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_type_parameters_list(shard_shard_SyntaxVisitor_t self, shard_shard_TypeParametersListSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_type_parameters_list(shard_SyntaxVisitor_t self, shard_TypeParametersListSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27007,7 +27007,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_unary_expression(shard_shard_SyntaxVisitor_t self, shard_shard_UnaryExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_unary_expression(shard_SyntaxVisitor_t self, shard_UnaryExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27044,7 +27044,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_unless_statement(shard_shard_SyntaxVisitor_t self, shard_shard_UnlessStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_unless_statement(shard_SyntaxVisitor_t self, shard_UnlessStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27081,7 +27081,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_until_statement(shard_shard_SyntaxVisitor_t self, shard_shard_UntilStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_until_statement(shard_SyntaxVisitor_t self, shard_UntilStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27118,7 +27118,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_using_directive(shard_shard_SyntaxVisitor_t self, shard_shard_UsingDirectiveSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_using_directive(shard_SyntaxVisitor_t self, shard_UsingDirectiveSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27155,7 +27155,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_variable_statement(shard_shard_SyntaxVisitor_t self, shard_shard_VariableStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_variable_statement(shard_SyntaxVisitor_t self, shard_VariableStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27192,7 +27192,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_where_clause(shard_shard_SyntaxVisitor_t self, shard_shard_WhereClauseSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_where_clause(shard_SyntaxVisitor_t self, shard_WhereClauseSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27229,7 +27229,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_where_clauses_list(shard_shard_SyntaxVisitor_t self, shard_shard_WhereClausesListSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_where_clauses_list(shard_SyntaxVisitor_t self, shard_WhereClausesListSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27266,7 +27266,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxVisitor_visit_while_statement(shard_shard_SyntaxVisitor_t self, shard_shard_WhileStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_SyntaxVisitor_visit_while_statement(shard_SyntaxVisitor_t self, shard_WhileStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -27303,7 +27303,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TextLocation_TextLocation_create(shard_shard_TextLocation_t* out_handle)
+	SHARD_API shard_status_t shard_TextLocation_TextLocation_create(shard_TextLocation_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -27346,7 +27346,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TextLocation_TextLocation_destroy(shard_shard_TextLocation_t self)
+	SHARD_API void shard_TextLocation_TextLocation_destroy(shard_TextLocation_t self)
 	{
 		if (!self)
 		{
@@ -27361,7 +27361,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TextLocation_get_filename(shard_shard_TextLocation_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_TextLocation_get_filename(shard_TextLocation_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -27409,7 +27409,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int32_t shard_TextLocation_get_length(shard_shard_TextLocation_t self)
+	SHARD_API std::int32_t shard_TextLocation_get_length(shard_TextLocation_t self)
 	{
 		if (!self)
 		{
@@ -27426,7 +27426,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int32_t shard_TextLocation_get_line(shard_shard_TextLocation_t self)
+	SHARD_API std::int32_t shard_TextLocation_get_line(shard_TextLocation_t self)
 	{
 		if (!self)
 		{
@@ -27443,7 +27443,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int32_t shard_TextLocation_get_offset(shard_shard_TextLocation_t self)
+	SHARD_API std::int32_t shard_TextLocation_get_offset(shard_TextLocation_t self)
 	{
 		if (!self)
 		{
@@ -27460,7 +27460,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_ThrowStatementSyntax_create(const void* p0, shard_shard_ThrowStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_ThrowStatementSyntax_create(const void* p0, shard_ThrowStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -27503,7 +27503,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ThrowStatementSyntax_ThrowStatementSyntax_destroy(shard_shard_ThrowStatementSyntax_t self)
+	SHARD_API void shard_ThrowStatementSyntax_ThrowStatementSyntax_destroy(shard_ThrowStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -27518,7 +27518,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_accept(shard_shard_ThrowStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_accept(shard_ThrowStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -27555,7 +27555,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ThrowStatementSyntax_get_expression(shard_shard_ThrowStatementSyntax_t self)
+	SHARD_API void* shard_ThrowStatementSyntax_get_expression(shard_ThrowStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -27572,7 +27572,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_get_location(shard_shard_ThrowStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_get_location(shard_ThrowStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -27620,7 +27620,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_get_semicolon(shard_shard_ThrowStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_get_semicolon(shard_ThrowStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -27668,7 +27668,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_get_throw_keyword(shard_shard_ThrowStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_get_throw_keyword(shard_ThrowStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -27716,7 +27716,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_set_expression(shard_shard_ThrowStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_set_expression(shard_ThrowStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -27753,7 +27753,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_set_semicolon(shard_shard_ThrowStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_set_semicolon(shard_ThrowStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -27790,7 +27790,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ThrowStatementSyntax_set_throw_keyword(shard_shard_ThrowStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_ThrowStatementSyntax_set_throw_keyword(shard_ThrowStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -27832,7 +27832,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_TranslationUnitSyntax_create(shard_shard_TranslationUnitSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_TranslationUnitSyntax_create(shard_TranslationUnitSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -27875,7 +27875,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TranslationUnitSyntax_TranslationUnitSyntax_destroy(shard_shard_TranslationUnitSyntax_t self)
+	SHARD_API void shard_TranslationUnitSyntax_TranslationUnitSyntax_destroy(shard_TranslationUnitSyntax_t self)
 	{
 		if (!self)
 		{
@@ -27890,7 +27890,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_accept(shard_shard_TranslationUnitSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_accept(shard_TranslationUnitSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -27927,7 +27927,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_get_location(shard_shard_TranslationUnitSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_get_location(shard_TranslationUnitSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -27975,7 +27975,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_get_members(shard_shard_TranslationUnitSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_get_members(shard_TranslationUnitSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -28023,7 +28023,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TranslationUnitSyntax_get_namespace(shard_shard_TranslationUnitSyntax_t self)
+	SHARD_API void* shard_TranslationUnitSyntax_get_namespace(shard_TranslationUnitSyntax_t self)
 	{
 		if (!self)
 		{
@@ -28040,7 +28040,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_get_usings(shard_shard_TranslationUnitSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_get_usings(shard_TranslationUnitSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -28088,7 +28088,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_TranslationUnitSyntax_has_namespace(shard_shard_TranslationUnitSyntax_t self)
+	SHARD_API int shard_TranslationUnitSyntax_has_namespace(shard_TranslationUnitSyntax_t self)
 	{
 		if (!self)
 		{
@@ -28105,14 +28105,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_operator_assign(shard_shard_TranslationUnitSyntax_t self, shard_shard_TranslationUnitSyntax_t p0)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_operator_assign(shard_TranslationUnitSyntax_t self, shard_TranslationUnitSyntax_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_set_members(shard_shard_TranslationUnitSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_set_members(shard_TranslationUnitSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -28149,7 +28149,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_set_namespace(shard_shard_TranslationUnitSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_set_namespace(shard_TranslationUnitSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -28186,7 +28186,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TranslationUnitSyntax_set_usings(shard_shard_TranslationUnitSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TranslationUnitSyntax_set_usings(shard_TranslationUnitSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -28223,7 +28223,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_TryStatementSyntax_create(const void* p0, shard_shard_TryStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_TryStatementSyntax_TryStatementSyntax_create(const void* p0, shard_TryStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -28266,7 +28266,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TryStatementSyntax_TryStatementSyntax_destroy(shard_shard_TryStatementSyntax_t self)
+	SHARD_API void shard_TryStatementSyntax_TryStatementSyntax_destroy(shard_TryStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -28281,7 +28281,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_accept(shard_shard_TryStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_TryStatementSyntax_accept(shard_TryStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -28318,7 +28318,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_get_catch_clauses(shard_shard_TryStatementSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_TryStatementSyntax_get_catch_clauses(shard_TryStatementSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -28366,7 +28366,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_get_location(shard_shard_TryStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_TryStatementSyntax_get_location(shard_TryStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -28414,7 +28414,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TryStatementSyntax_get_try_block(shard_shard_TryStatementSyntax_t self)
+	SHARD_API void* shard_TryStatementSyntax_get_try_block(shard_TryStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -28431,7 +28431,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_get_try_keyword(shard_shard_TryStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TryStatementSyntax_get_try_keyword(shard_TryStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -28479,7 +28479,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_set_catch_clauses(shard_shard_TryStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TryStatementSyntax_set_catch_clauses(shard_TryStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -28516,7 +28516,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_set_try_block(shard_shard_TryStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TryStatementSyntax_set_try_block(shard_TryStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -28553,7 +28553,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TryStatementSyntax_set_try_keyword(shard_shard_TryStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TryStatementSyntax_set_try_keyword(shard_TryStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -28590,7 +28590,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_TypeArgumentsListSyntax_create(const void* p0, shard_shard_TypeArgumentsListSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_TypeArgumentsListSyntax_create(const void* p0, shard_TypeArgumentsListSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -28633,7 +28633,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeArgumentsListSyntax_TypeArgumentsListSyntax_destroy(shard_shard_TypeArgumentsListSyntax_t self)
+	SHARD_API void shard_TypeArgumentsListSyntax_TypeArgumentsListSyntax_destroy(shard_TypeArgumentsListSyntax_t self)
 	{
 		if (!self)
 		{
@@ -28648,7 +28648,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_accept(shard_shard_TypeArgumentsListSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_accept(shard_TypeArgumentsListSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -28685,7 +28685,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_close_token(shard_shard_TypeArgumentsListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_close_token(shard_TypeArgumentsListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -28733,7 +28733,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_location(shard_shard_TypeArgumentsListSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_location(shard_TypeArgumentsListSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -28781,7 +28781,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_open_token(shard_shard_TypeArgumentsListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_open_token(shard_TypeArgumentsListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -28829,7 +28829,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_types(shard_shard_TypeArgumentsListSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_get_types(shard_TypeArgumentsListSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -28877,7 +28877,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_set_close_token(shard_shard_TypeArgumentsListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_set_close_token(shard_TypeArgumentsListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -28914,7 +28914,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_set_open_token(shard_shard_TypeArgumentsListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_set_open_token(shard_TypeArgumentsListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -28951,7 +28951,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_set_types(shard_shard_TypeArgumentsListSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TypeArgumentsListSyntax_set_types(shard_TypeArgumentsListSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -28988,7 +28988,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_TypeDeclarationSyntax_create(int p0, const void* p1, shard_shard_TypeDeclarationSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_TypeDeclarationSyntax_create(int p0, const void* p1, shard_TypeDeclarationSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -29031,7 +29031,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeDeclarationSyntax_TypeDeclarationSyntax_destroy(shard_shard_TypeDeclarationSyntax_t self)
+	SHARD_API void shard_TypeDeclarationSyntax_TypeDeclarationSyntax_destroy(shard_TypeDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -29046,7 +29046,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_base_type_colon(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_base_type_colon(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -29094,7 +29094,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TypeDeclarationSyntax_get_base_types(shard_shard_TypeDeclarationSyntax_t self)
+	SHARD_API void* shard_TypeDeclarationSyntax_get_base_types(shard_TypeDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -29111,7 +29111,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_close_bracket(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_close_bracket(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -29159,7 +29159,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_members(shard_shard_TypeDeclarationSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_members(shard_TypeDeclarationSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -29207,7 +29207,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_open_bracket(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_open_bracket(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -29255,7 +29255,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_semicolon(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_get_semicolon(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -29303,7 +29303,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TypeDeclarationSyntax_get_type_parameters(shard_shard_TypeDeclarationSyntax_t self)
+	SHARD_API void* shard_TypeDeclarationSyntax_get_type_parameters(shard_TypeDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -29320,7 +29320,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TypeDeclarationSyntax_get_where_clauses(shard_shard_TypeDeclarationSyntax_t self)
+	SHARD_API void* shard_TypeDeclarationSyntax_get_where_clauses(shard_TypeDeclarationSyntax_t self)
 	{
 		if (!self)
 		{
@@ -29337,7 +29337,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_base_type_colon(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_base_type_colon(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -29374,7 +29374,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_base_types(shard_shard_TypeDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_base_types(shard_TypeDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -29411,7 +29411,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_close_bracket(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_close_bracket(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -29448,7 +29448,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_members(shard_shard_TypeDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_members(shard_TypeDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -29485,7 +29485,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_open_bracket(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_open_bracket(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -29522,7 +29522,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_semicolon(shard_shard_TypeDeclarationSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_semicolon(shard_TypeDeclarationSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -29559,7 +29559,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_type_parameters(shard_shard_TypeDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_type_parameters(shard_TypeDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -29596,7 +29596,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_where_clauses(shard_shard_TypeDeclarationSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TypeDeclarationSyntax_set_where_clauses(shard_TypeDeclarationSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -29633,7 +29633,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSyntax_TypeParameterSyntax_create(const void* p0, shard_shard_TypeParameterSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_TypeParameterSyntax_TypeParameterSyntax_create(const void* p0, shard_TypeParameterSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -29676,7 +29676,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeParameterSyntax_TypeParameterSyntax_destroy(shard_shard_TypeParameterSyntax_t self)
+	SHARD_API void shard_TypeParameterSyntax_TypeParameterSyntax_destroy(shard_TypeParameterSyntax_t self)
 	{
 		if (!self)
 		{
@@ -29691,7 +29691,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSyntax_accept(shard_shard_TypeParameterSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_TypeParameterSyntax_accept(shard_TypeParameterSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -29728,7 +29728,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSyntax_get_identifier(shard_shard_TypeParameterSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeParameterSyntax_get_identifier(shard_TypeParameterSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -29776,7 +29776,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSyntax_get_location(shard_shard_TypeParameterSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_TypeParameterSyntax_get_location(shard_TypeParameterSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -29824,7 +29824,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSyntax_set_identifier(shard_shard_TypeParameterSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeParameterSyntax_set_identifier(shard_TypeParameterSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -29861,7 +29861,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_TypeParametersListSyntax_create(const void* p0, shard_shard_TypeParametersListSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_TypeParametersListSyntax_create(const void* p0, shard_TypeParametersListSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -29904,7 +29904,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeParametersListSyntax_TypeParametersListSyntax_destroy(shard_shard_TypeParametersListSyntax_t self)
+	SHARD_API void shard_TypeParametersListSyntax_TypeParametersListSyntax_destroy(shard_TypeParametersListSyntax_t self)
 	{
 		if (!self)
 		{
@@ -29919,7 +29919,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_accept(shard_shard_TypeParametersListSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_accept(shard_TypeParametersListSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -29956,7 +29956,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_close_token(shard_shard_TypeParametersListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_close_token(shard_TypeParametersListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -30004,7 +30004,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_location(shard_shard_TypeParametersListSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_location(shard_TypeParametersListSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -30052,7 +30052,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_open_token(shard_shard_TypeParametersListSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_open_token(shard_TypeParametersListSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -30100,7 +30100,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_parameters(shard_shard_TypeParametersListSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_get_parameters(shard_TypeParametersListSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -30148,7 +30148,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_set_close_token(shard_shard_TypeParametersListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_set_close_token(shard_TypeParametersListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -30185,7 +30185,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_set_open_token(shard_shard_TypeParametersListSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_set_open_token(shard_TypeParametersListSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -30222,7 +30222,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParametersListSyntax_set_parameters(shard_shard_TypeParametersListSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_TypeParametersListSyntax_set_parameters(shard_TypeParametersListSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -30259,7 +30259,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeSyntax_TypeSyntax_create(int p0, const void* p1, shard_shard_TypeSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_TypeSyntax_TypeSyntax_create(int p0, const void* p1, shard_TypeSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -30302,7 +30302,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeSyntax_TypeSyntax_destroy(shard_shard_TypeSyntax_t self)
+	SHARD_API void shard_TypeSyntax_TypeSyntax_destroy(shard_TypeSyntax_t self)
 	{
 		if (!self)
 		{
@@ -30317,7 +30317,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeSyntax_get_qualifier(shard_shard_TypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_TypeSyntax_get_qualifier(shard_TypeSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -30365,7 +30365,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnaryExpressionSyntax_UnaryExpressionSyntax_create(const void* p0, shard_shard_UnaryExpressionSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_UnaryExpressionSyntax_UnaryExpressionSyntax_create(const void* p0, shard_UnaryExpressionSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -30408,7 +30408,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_UnaryExpressionSyntax_UnaryExpressionSyntax_destroy(shard_shard_UnaryExpressionSyntax_t self)
+	SHARD_API void shard_UnaryExpressionSyntax_UnaryExpressionSyntax_destroy(shard_UnaryExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -30423,7 +30423,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnaryExpressionSyntax_accept(shard_shard_UnaryExpressionSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_UnaryExpressionSyntax_accept(shard_UnaryExpressionSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -30460,7 +30460,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_UnaryExpressionSyntax_get_is_postfix(shard_shard_UnaryExpressionSyntax_t self)
+	SHARD_API int shard_UnaryExpressionSyntax_get_is_postfix(shard_UnaryExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -30477,7 +30477,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnaryExpressionSyntax_get_location(shard_shard_UnaryExpressionSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_UnaryExpressionSyntax_get_location(shard_UnaryExpressionSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -30525,7 +30525,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_UnaryExpressionSyntax_get_operand(shard_shard_UnaryExpressionSyntax_t self)
+	SHARD_API void* shard_UnaryExpressionSyntax_get_operand(shard_UnaryExpressionSyntax_t self)
 	{
 		if (!self)
 		{
@@ -30542,7 +30542,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnaryExpressionSyntax_get_operator_token(shard_shard_UnaryExpressionSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_UnaryExpressionSyntax_get_operator_token(shard_UnaryExpressionSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -30590,7 +30590,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnaryExpressionSyntax_set_is_postfix(shard_shard_UnaryExpressionSyntax_t self, int p0)
+	SHARD_API shard_status_t shard_UnaryExpressionSyntax_set_is_postfix(shard_UnaryExpressionSyntax_t self, int p0)
 	{
 		if (!self)
 		{
@@ -30627,7 +30627,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnaryExpressionSyntax_set_operand(shard_shard_UnaryExpressionSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_UnaryExpressionSyntax_set_operand(shard_UnaryExpressionSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -30664,7 +30664,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnaryExpressionSyntax_set_operator_token(shard_shard_UnaryExpressionSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_UnaryExpressionSyntax_set_operator_token(shard_UnaryExpressionSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -30701,7 +30701,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnlessStatementSyntax_UnlessStatementSyntax_create(const void* p0, shard_shard_UnlessStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_UnlessStatementSyntax_UnlessStatementSyntax_create(const void* p0, shard_UnlessStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -30744,7 +30744,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_UnlessStatementSyntax_UnlessStatementSyntax_destroy(shard_shard_UnlessStatementSyntax_t self)
+	SHARD_API void shard_UnlessStatementSyntax_UnlessStatementSyntax_destroy(shard_UnlessStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -30759,7 +30759,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnlessStatementSyntax_accept(shard_shard_UnlessStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_UnlessStatementSyntax_accept(shard_UnlessStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -30796,7 +30796,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnlessStatementSyntax_get_location(shard_shard_UnlessStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_UnlessStatementSyntax_get_location(shard_UnlessStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -30844,7 +30844,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnlessStatementSyntax_get_unless_keyword(shard_shard_UnlessStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_UnlessStatementSyntax_get_unless_keyword(shard_UnlessStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -30892,7 +30892,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UnlessStatementSyntax_set_unless_keyword(shard_shard_UnlessStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_UnlessStatementSyntax_set_unless_keyword(shard_UnlessStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -30929,7 +30929,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UntilStatementSyntax_UntilStatementSyntax_create(const void* p0, shard_shard_UntilStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_UntilStatementSyntax_UntilStatementSyntax_create(const void* p0, shard_UntilStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -30972,7 +30972,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_UntilStatementSyntax_UntilStatementSyntax_destroy(shard_shard_UntilStatementSyntax_t self)
+	SHARD_API void shard_UntilStatementSyntax_UntilStatementSyntax_destroy(shard_UntilStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -30987,7 +30987,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UntilStatementSyntax_accept(shard_shard_UntilStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_UntilStatementSyntax_accept(shard_UntilStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -31024,7 +31024,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_UntilStatementSyntax_get_block(shard_shard_UntilStatementSyntax_t self)
+	SHARD_API void* shard_UntilStatementSyntax_get_block(shard_UntilStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -31041,7 +31041,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_UntilStatementSyntax_get_condition(shard_shard_UntilStatementSyntax_t self)
+	SHARD_API void* shard_UntilStatementSyntax_get_condition(shard_UntilStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -31058,7 +31058,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UntilStatementSyntax_get_location(shard_shard_UntilStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_UntilStatementSyntax_get_location(shard_UntilStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -31106,7 +31106,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UntilStatementSyntax_get_until_keyword(shard_shard_UntilStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_UntilStatementSyntax_get_until_keyword(shard_UntilStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -31154,7 +31154,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UntilStatementSyntax_set_block(shard_shard_UntilStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_UntilStatementSyntax_set_block(shard_UntilStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -31191,7 +31191,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UntilStatementSyntax_set_condition(shard_shard_UntilStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_UntilStatementSyntax_set_condition(shard_UntilStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -31228,7 +31228,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UntilStatementSyntax_set_until_keyword(shard_shard_UntilStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_UntilStatementSyntax_set_until_keyword(shard_UntilStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -31265,7 +31265,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_UsingDirectiveSyntax_create(const void* p0, shard_shard_UsingDirectiveSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_UsingDirectiveSyntax_create(const void* p0, shard_UsingDirectiveSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -31308,7 +31308,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_UsingDirectiveSyntax_UsingDirectiveSyntax_destroy(shard_shard_UsingDirectiveSyntax_t self)
+	SHARD_API void shard_UsingDirectiveSyntax_UsingDirectiveSyntax_destroy(shard_UsingDirectiveSyntax_t self)
 	{
 		if (!self)
 		{
@@ -31323,7 +31323,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_accept(shard_shard_UsingDirectiveSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_accept(shard_UsingDirectiveSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -31360,7 +31360,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_location(shard_shard_UsingDirectiveSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_location(shard_UsingDirectiveSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -31408,7 +31408,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_qualifier(shard_shard_UsingDirectiveSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_qualifier(shard_UsingDirectiveSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -31456,7 +31456,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_qualifier_string(shard_shard_UsingDirectiveSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_qualifier_string(shard_UsingDirectiveSyntax_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -31504,7 +31504,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_semicolon(shard_shard_UsingDirectiveSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_semicolon(shard_UsingDirectiveSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -31552,7 +31552,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_using_keyword(shard_shard_UsingDirectiveSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_get_using_keyword(shard_UsingDirectiveSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -31600,7 +31600,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_set_qualifier(shard_shard_UsingDirectiveSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_set_qualifier(shard_UsingDirectiveSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -31637,7 +31637,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_set_semicolon(shard_shard_UsingDirectiveSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_set_semicolon(shard_UsingDirectiveSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -31674,7 +31674,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_UsingDirectiveSyntax_set_using_keyword(shard_shard_UsingDirectiveSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_UsingDirectiveSyntax_set_using_keyword(shard_UsingDirectiveSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -31711,7 +31711,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_VariableStatementSyntax_create(const void* p0, shard_shard_VariableStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_VariableStatementSyntax_create(const void* p0, shard_VariableStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -31754,7 +31754,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_VariableStatementSyntax_VariableStatementSyntax_destroy(shard_shard_VariableStatementSyntax_t self)
+	SHARD_API void shard_VariableStatementSyntax_VariableStatementSyntax_destroy(shard_VariableStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -31769,7 +31769,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_accept(shard_shard_VariableStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_accept(shard_VariableStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -31806,7 +31806,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_get_assign_token(shard_shard_VariableStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_get_assign_token(shard_VariableStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -31854,7 +31854,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_VariableStatementSyntax_get_expression(shard_shard_VariableStatementSyntax_t self)
+	SHARD_API void* shard_VariableStatementSyntax_get_expression(shard_VariableStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -31871,7 +31871,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_get_identifier(shard_shard_VariableStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_get_identifier(shard_VariableStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -31919,7 +31919,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_get_location(shard_shard_VariableStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_get_location(shard_VariableStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -31967,7 +31967,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_get_semicolon(shard_shard_VariableStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_get_semicolon(shard_VariableStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -32015,7 +32015,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_VariableStatementSyntax_get_type(shard_shard_VariableStatementSyntax_t self)
+	SHARD_API void* shard_VariableStatementSyntax_get_type(shard_VariableStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -32032,7 +32032,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_set_assign_token(shard_shard_VariableStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_set_assign_token(shard_VariableStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -32069,7 +32069,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_set_expression(shard_shard_VariableStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_set_expression(shard_VariableStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -32106,7 +32106,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_set_identifier(shard_shard_VariableStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_set_identifier(shard_VariableStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -32143,7 +32143,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_set_semicolon(shard_shard_VariableStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_set_semicolon(shard_VariableStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -32180,7 +32180,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableStatementSyntax_set_type(shard_shard_VariableStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_VariableStatementSyntax_set_type(shard_VariableStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -32217,7 +32217,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_WhereClauseSyntax_create(const void* p0, shard_shard_WhereClauseSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_WhereClauseSyntax_create(const void* p0, shard_WhereClauseSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -32260,7 +32260,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_WhereClauseSyntax_WhereClauseSyntax_destroy(shard_shard_WhereClauseSyntax_t self)
+	SHARD_API void shard_WhereClauseSyntax_WhereClauseSyntax_destroy(shard_WhereClauseSyntax_t self)
 	{
 		if (!self)
 		{
@@ -32275,7 +32275,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_accept(shard_shard_WhereClauseSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_accept(shard_WhereClauseSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -32312,7 +32312,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_get_colon(shard_shard_WhereClauseSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_get_colon(shard_WhereClauseSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -32360,7 +32360,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_get_constraint_types(shard_shard_WhereClauseSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_get_constraint_types(shard_WhereClauseSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -32408,7 +32408,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_get_identifier(shard_shard_WhereClauseSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_get_identifier(shard_WhereClauseSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -32456,7 +32456,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_get_location(shard_shard_WhereClauseSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_get_location(shard_WhereClauseSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -32504,7 +32504,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_get_where_keyword(shard_shard_WhereClauseSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_get_where_keyword(shard_WhereClauseSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -32552,7 +32552,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_set_colon(shard_shard_WhereClauseSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_set_colon(shard_WhereClauseSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -32589,7 +32589,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_set_constraint_types(shard_shard_WhereClauseSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_set_constraint_types(shard_WhereClauseSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -32626,7 +32626,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_set_identifier(shard_shard_WhereClauseSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_set_identifier(shard_WhereClauseSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -32663,7 +32663,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClauseSyntax_set_where_keyword(shard_shard_WhereClauseSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_WhereClauseSyntax_set_where_keyword(shard_WhereClauseSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -32700,7 +32700,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClausesListSyntax_WhereClausesListSyntax_create(const void* p0, shard_shard_WhereClausesListSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_WhereClausesListSyntax_WhereClausesListSyntax_create(const void* p0, shard_WhereClausesListSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -32743,7 +32743,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_WhereClausesListSyntax_WhereClausesListSyntax_destroy(shard_shard_WhereClausesListSyntax_t self)
+	SHARD_API void shard_WhereClausesListSyntax_WhereClausesListSyntax_destroy(shard_WhereClausesListSyntax_t self)
 	{
 		if (!self)
 		{
@@ -32758,7 +32758,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClausesListSyntax_accept(shard_shard_WhereClausesListSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_WhereClausesListSyntax_accept(shard_WhereClausesListSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -32795,7 +32795,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClausesListSyntax_get_clauses(shard_shard_WhereClausesListSyntax_t self, void** out_value)
+	SHARD_API shard_status_t shard_WhereClausesListSyntax_get_clauses(shard_WhereClausesListSyntax_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -32843,7 +32843,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClausesListSyntax_get_location(shard_shard_WhereClausesListSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_WhereClausesListSyntax_get_location(shard_WhereClausesListSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -32891,7 +32891,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhereClausesListSyntax_set_clauses(shard_shard_WhereClausesListSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_WhereClausesListSyntax_set_clauses(shard_WhereClausesListSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -32928,7 +32928,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhileStatementSyntax_WhileStatementSyntax_create(const void* p0, shard_shard_WhileStatementSyntax_t* out_handle)
+	SHARD_API shard_status_t shard_WhileStatementSyntax_WhileStatementSyntax_create(const void* p0, shard_WhileStatementSyntax_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -32971,7 +32971,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_WhileStatementSyntax_WhileStatementSyntax_destroy(shard_shard_WhileStatementSyntax_t self)
+	SHARD_API void shard_WhileStatementSyntax_WhileStatementSyntax_destroy(shard_WhileStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -32986,7 +32986,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhileStatementSyntax_accept(shard_shard_WhileStatementSyntax_t self, shard_shard_SyntaxVisitor_t p0)
+	SHARD_API shard_status_t shard_WhileStatementSyntax_accept(shard_WhileStatementSyntax_t self, shard_SyntaxVisitor_t p0)
 	{
 		if (!self)
 		{
@@ -33023,7 +33023,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_WhileStatementSyntax_get_block(shard_shard_WhileStatementSyntax_t self)
+	SHARD_API void* shard_WhileStatementSyntax_get_block(shard_WhileStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -33040,7 +33040,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_WhileStatementSyntax_get_condition(shard_shard_WhileStatementSyntax_t self)
+	SHARD_API void* shard_WhileStatementSyntax_get_condition(shard_WhileStatementSyntax_t self)
 	{
 		if (!self)
 		{
@@ -33057,7 +33057,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhileStatementSyntax_get_location(shard_shard_WhileStatementSyntax_t self, shard_shard_TextLocation_t* out_value)
+	SHARD_API shard_status_t shard_WhileStatementSyntax_get_location(shard_WhileStatementSyntax_t self, shard_TextLocation_t* out_value)
 	{
 		if (!self)
 		{
@@ -33105,7 +33105,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhileStatementSyntax_get_while_keyword(shard_shard_WhileStatementSyntax_t self, shard_shard_SyntaxToken_t* out_value)
+	SHARD_API shard_status_t shard_WhileStatementSyntax_get_while_keyword(shard_WhileStatementSyntax_t self, shard_SyntaxToken_t* out_value)
 	{
 		if (!self)
 		{
@@ -33153,7 +33153,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhileStatementSyntax_set_block(shard_shard_WhileStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_WhileStatementSyntax_set_block(shard_WhileStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -33190,7 +33190,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhileStatementSyntax_set_condition(shard_shard_WhileStatementSyntax_t self, const void* p0)
+	SHARD_API shard_status_t shard_WhileStatementSyntax_set_condition(shard_WhileStatementSyntax_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -33227,7 +33227,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_WhileStatementSyntax_set_while_keyword(shard_shard_WhileStatementSyntax_t self, shard_shard_SyntaxToken_t p0)
+	SHARD_API shard_status_t shard_WhileStatementSyntax_set_while_keyword(shard_WhileStatementSyntax_t self, shard_SyntaxToken_t p0)
 	{
 		if (!self)
 		{
@@ -33264,7 +33264,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_semver_SemanticVersion_SemanticVersion_create(shard_shard_semver_SemanticVersion_t* out_handle)
+	SHARD_API shard_status_t shard_semver_SemanticVersion_SemanticVersion_create(shard_semver_SemanticVersion_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -33307,7 +33307,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_semver_SemanticVersion_SemanticVersion_destroy(shard_shard_semver_SemanticVersion_t self)
+	SHARD_API void shard_semver_SemanticVersion_SemanticVersion_destroy(shard_semver_SemanticVersion_t self)
 	{
 		if (!self)
 		{
@@ -33322,7 +33322,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_semver_SemanticVersion_operator_equal(shard_shard_semver_SemanticVersion_t self, shard_shard_semver_SemanticVersion_t p0)
+	SHARD_API int shard_semver_SemanticVersion_operator_equal(shard_semver_SemanticVersion_t self, shard_semver_SemanticVersion_t p0)
 	{
 		if (!self)
 		{
@@ -33339,7 +33339,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_semver_SemanticVersion_operator_greater(shard_shard_semver_SemanticVersion_t self, shard_shard_semver_SemanticVersion_t p0)
+	SHARD_API int shard_semver_SemanticVersion_operator_greater(shard_semver_SemanticVersion_t self, shard_semver_SemanticVersion_t p0)
 	{
 		if (!self)
 		{
@@ -33356,7 +33356,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_semver_SemanticVersion_operator_greater_equal(shard_shard_semver_SemanticVersion_t self, shard_shard_semver_SemanticVersion_t p0)
+	SHARD_API int shard_semver_SemanticVersion_operator_greater_equal(shard_semver_SemanticVersion_t self, shard_semver_SemanticVersion_t p0)
 	{
 		if (!self)
 		{
@@ -33373,7 +33373,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_semver_SemanticVersion_operator_less(shard_shard_semver_SemanticVersion_t self, shard_shard_semver_SemanticVersion_t p0)
+	SHARD_API int shard_semver_SemanticVersion_operator_less(shard_semver_SemanticVersion_t self, shard_semver_SemanticVersion_t p0)
 	{
 		if (!self)
 		{
@@ -33390,7 +33390,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_semver_SemanticVersion_operator_less_equal(shard_shard_semver_SemanticVersion_t self, shard_shard_semver_SemanticVersion_t p0)
+	SHARD_API int shard_semver_SemanticVersion_operator_less_equal(shard_semver_SemanticVersion_t self, shard_semver_SemanticVersion_t p0)
 	{
 		if (!self)
 		{
@@ -33407,7 +33407,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_semver_SemanticVersion_operator_not_equal(shard_shard_semver_SemanticVersion_t self, shard_shard_semver_SemanticVersion_t p0)
+	SHARD_API int shard_semver_SemanticVersion_operator_not_equal(shard_semver_SemanticVersion_t self, shard_semver_SemanticVersion_t p0)
 	{
 		if (!self)
 		{
@@ -33424,7 +33424,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_semver_VersionExpression_Constraint_Constraint_create(shard_shard_semver_VersionExpression_Constraint_t* out_handle)
+	SHARD_API shard_status_t shard_semver_VersionExpression_Constraint_Constraint_create(shard_semver_VersionExpression_Constraint_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -33467,7 +33467,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_semver_VersionExpression_Constraint_Constraint_destroy(shard_shard_semver_VersionExpression_Constraint_t self)
+	SHARD_API void shard_semver_VersionExpression_Constraint_Constraint_destroy(shard_semver_VersionExpression_Constraint_t self)
 	{
 		if (!self)
 		{
@@ -33487,7 +33487,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_semver_VersionExpression_VersionExpression_create(shard_shard_semver_VersionExpression_t* out_handle)
+	SHARD_API shard_status_t shard_semver_VersionExpression_VersionExpression_create(shard_semver_VersionExpression_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -33530,7 +33530,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_semver_VersionExpression_VersionExpression_destroy(shard_shard_semver_VersionExpression_t self)
+	SHARD_API void shard_semver_VersionExpression_VersionExpression_destroy(shard_semver_VersionExpression_t self)
 	{
 		if (!self)
 		{
@@ -33589,7 +33589,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_semver_VersionExpression_satisfies(shard_shard_semver_VersionExpression_t self, shard_shard_semver_SemanticVersion_t p0)
+	SHARD_API int shard_semver_VersionExpression_satisfies(shard_semver_VersionExpression_t self, shard_semver_SemanticVersion_t p0)
 	{
 		if (!self)
 		{
@@ -33635,7 +33635,7 @@ extern "C"
 	// ----------------------------------------------------------------------
 	// semantic
 	// ----------------------------------------------------------------------
-	SHARD_API shard_status_t shard_AccessorSymbol_AccessorSymbol_create(const wchar_t* p0, const void* p1, shard_shard_AccessorSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_AccessorSymbol_AccessorSymbol_create(const wchar_t* p0, const void* p1, shard_AccessorSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -33678,7 +33678,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_AccessorSymbol_AccessorSymbol_destroy(shard_shard_AccessorSymbol_t self)
+	SHARD_API void shard_AccessorSymbol_AccessorSymbol_destroy(shard_AccessorSymbol_t self)
 	{
 		if (!self)
 		{
@@ -33693,14 +33693,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_AccessorSymbol_operator_assign(shard_shard_AccessorSymbol_t self, shard_shard_AccessorSymbol_t p0)
+	SHARD_API shard_status_t shard_AccessorSymbol_operator_assign(shard_AccessorSymbol_t self, shard_AccessorSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSymbol_ArrayTypeSymbol_create(const void* p0, const void* p1, shard_shard_ArrayTypeSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_ArrayTypeSymbol_ArrayTypeSymbol_create(const void* p0, const void* p1, shard_ArrayTypeSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -33743,7 +33743,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ArrayTypeSymbol_ArrayTypeSymbol_destroy(shard_shard_ArrayTypeSymbol_t self)
+	SHARD_API void shard_ArrayTypeSymbol_ArrayTypeSymbol_destroy(shard_ArrayTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -33758,7 +33758,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_ArrayTypeSymbol_get_length(shard_shard_ArrayTypeSymbol_t self)
+	SHARD_API std::size_t shard_ArrayTypeSymbol_get_length(shard_ArrayTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -33775,7 +33775,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ArrayTypeSymbol_get_underlaying_type(shard_shard_ArrayTypeSymbol_t self)
+	SHARD_API void* shard_ArrayTypeSymbol_get_underlaying_type(shard_ArrayTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -33792,14 +33792,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSymbol_operator_assign(shard_shard_ArrayTypeSymbol_t self, shard_shard_ArrayTypeSymbol_t p0)
+	SHARD_API shard_status_t shard_ArrayTypeSymbol_operator_assign(shard_ArrayTypeSymbol_t self, shard_ArrayTypeSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_ArrayTypeSymbol_set_length(shard_shard_ArrayTypeSymbol_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ArrayTypeSymbol_set_length(shard_ArrayTypeSymbol_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -33841,7 +33841,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_ConstructorSymbol_ConstructorSymbol_create(const void* p0, shard_shard_ConstructorSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_ConstructorSymbol_ConstructorSymbol_create(const void* p0, shard_ConstructorSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -33884,7 +33884,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ConstructorSymbol_ConstructorSymbol_destroy(shard_shard_ConstructorSymbol_t self)
+	SHARD_API void shard_ConstructorSymbol_ConstructorSymbol_destroy(shard_ConstructorSymbol_t self)
 	{
 		if (!self)
 		{
@@ -33899,7 +33899,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ConstructorSymbol_operator_assign(shard_shard_ConstructorSymbol_t self, shard_shard_ConstructorSymbol_t p0)
+	SHARD_API shard_status_t shard_ConstructorSymbol_operator_assign(shard_ConstructorSymbol_t self, shard_ConstructorSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
@@ -33952,7 +33952,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API shard_status_t shard_ControlFlowAnalyzer_ControlFlowAnalyzer_create(shard_shard_SemanticModel_t p0, shard_shard_DiagnosticsContext_t p1, shard_shard_ControlFlowAnalyzer_t* out_handle)
+	SHARD_API shard_status_t shard_ControlFlowAnalyzer_ControlFlowAnalyzer_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_ControlFlowAnalyzer_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -33995,7 +33995,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ControlFlowAnalyzer_ControlFlowAnalyzer_destroy(shard_shard_ControlFlowAnalyzer_t self)
+	SHARD_API void shard_ControlFlowAnalyzer_ControlFlowAnalyzer_destroy(shard_ControlFlowAnalyzer_t self)
 	{
 		if (!self)
 		{
@@ -34061,7 +34061,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API shard_status_t shard_ControlFlowAnalyzer_analyze(shard_shard_ControlFlowAnalyzer_t self, shard_shard_SyntaxTree_t p0)
+	SHARD_API shard_status_t shard_ControlFlowAnalyzer_analyze(shard_ControlFlowAnalyzer_t self, shard_SyntaxTree_t p0)
 	{
 		if (!self)
 		{
@@ -34111,7 +34111,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_DeclarationCollector_create(shard_shard_SemanticModel_t p0, shard_shard_DiagnosticsContext_t p1, shard_shard_DeclarationCollector_t* out_handle)
+	SHARD_API shard_status_t shard_DeclarationCollector_DeclarationCollector_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_DeclarationCollector_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -34154,7 +34154,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DeclarationCollector_DeclarationCollector_destroy(shard_shard_DeclarationCollector_t self)
+	SHARD_API void shard_DeclarationCollector_DeclarationCollector_destroy(shard_DeclarationCollector_t self)
 	{
 		if (!self)
 		{
@@ -34169,7 +34169,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_accessor_declaration(shard_shard_DeclarationCollector_t self, shard_shard_AccessorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_accessor_declaration(shard_DeclarationCollector_t self, shard_AccessorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34206,7 +34206,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_constructor_declaration(shard_shard_DeclarationCollector_t self, shard_shard_ConstructorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_constructor_declaration(shard_DeclarationCollector_t self, shard_ConstructorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34243,7 +34243,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_delegate_declaration(shard_shard_DeclarationCollector_t self, shard_shard_DelegateDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_delegate_declaration(shard_DeclarationCollector_t self, shard_DelegateDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34280,7 +34280,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_enum_declaration(shard_shard_DeclarationCollector_t self, shard_shard_EnumDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_enum_declaration(shard_DeclarationCollector_t self, shard_EnumDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34317,7 +34317,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_field_declaration(shard_shard_DeclarationCollector_t self, shard_shard_FieldDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_field_declaration(shard_DeclarationCollector_t self, shard_FieldDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34354,7 +34354,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_for_in_statement(shard_shard_DeclarationCollector_t self, shard_shard_ForInStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_for_in_statement(shard_DeclarationCollector_t self, shard_ForInStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34391,7 +34391,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_function_declaration(shard_shard_DeclarationCollector_t self, shard_shard_FunctionDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_function_declaration(shard_DeclarationCollector_t self, shard_FunctionDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34428,7 +34428,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_indexator_declaration(shard_shard_DeclarationCollector_t self, shard_shard_IndexatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_indexator_declaration(shard_DeclarationCollector_t self, shard_IndexatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34465,7 +34465,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_interface_declaration(shard_shard_DeclarationCollector_t self, shard_shard_InterfaceDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_interface_declaration(shard_DeclarationCollector_t self, shard_InterfaceDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34502,7 +34502,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_lambda_expression(shard_shard_DeclarationCollector_t self, shard_shard_LambdaExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_lambda_expression(shard_DeclarationCollector_t self, shard_LambdaExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34539,7 +34539,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_operator_declaration(shard_shard_DeclarationCollector_t self, shard_shard_OperatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_operator_declaration(shard_DeclarationCollector_t self, shard_OperatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34576,7 +34576,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_property_declaration(shard_shard_DeclarationCollector_t self, shard_shard_PropertyDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_property_declaration(shard_DeclarationCollector_t self, shard_PropertyDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34613,7 +34613,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_statements_block(shard_shard_DeclarationCollector_t self, shard_shard_StatementsBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_statements_block(shard_DeclarationCollector_t self, shard_StatementsBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34650,7 +34650,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_struct_declaration(shard_shard_DeclarationCollector_t self, shard_shard_StructDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_struct_declaration(shard_DeclarationCollector_t self, shard_StructDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34687,7 +34687,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_translation_unit(shard_shard_DeclarationCollector_t self, shard_shard_TranslationUnitSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_translation_unit(shard_DeclarationCollector_t self, shard_TranslationUnitSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34724,7 +34724,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_try_statement(shard_shard_DeclarationCollector_t self, shard_shard_TryStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_try_statement(shard_DeclarationCollector_t self, shard_TryStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34761,7 +34761,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DeclarationCollector_visit_variable_statement(shard_shard_DeclarationCollector_t self, shard_shard_VariableStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_DeclarationCollector_visit_variable_statement(shard_DeclarationCollector_t self, shard_VariableStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -34798,7 +34798,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateTypeSymbol_DelegateTypeSymbol_create(const wchar_t* p0, const void* p1, shard_shard_DelegateTypeSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_DelegateTypeSymbol_DelegateTypeSymbol_create(const wchar_t* p0, const void* p1, shard_DelegateTypeSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -34841,7 +34841,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DelegateTypeSymbol_DelegateTypeSymbol_destroy(shard_shard_DelegateTypeSymbol_t self)
+	SHARD_API void shard_DelegateTypeSymbol_DelegateTypeSymbol_destroy(shard_DelegateTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -34856,7 +34856,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_DelegateTypeSymbol_get_is_async(shard_shard_DelegateTypeSymbol_t self)
+	SHARD_API int shard_DelegateTypeSymbol_get_is_async(shard_DelegateTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -34873,7 +34873,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DelegateTypeSymbol_get_parameters(shard_shard_DelegateTypeSymbol_t self)
+	SHARD_API void* shard_DelegateTypeSymbol_get_parameters(shard_DelegateTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -34890,7 +34890,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DelegateTypeSymbol_get_return_type(shard_shard_DelegateTypeSymbol_t self)
+	SHARD_API void* shard_DelegateTypeSymbol_get_return_type(shard_DelegateTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -34907,7 +34907,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_DelegateTypeSymbol_get_type_parameters(shard_shard_DelegateTypeSymbol_t self)
+	SHARD_API void* shard_DelegateTypeSymbol_get_type_parameters(shard_DelegateTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -34924,14 +34924,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateTypeSymbol_operator_assign(shard_shard_DelegateTypeSymbol_t self, shard_shard_DelegateTypeSymbol_t p0)
+	SHARD_API shard_status_t shard_DelegateTypeSymbol_operator_assign(shard_DelegateTypeSymbol_t self, shard_DelegateTypeSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_is_async(shard_shard_DelegateTypeSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_is_async(shard_DelegateTypeSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -34968,7 +34968,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_parameters(shard_shard_DelegateTypeSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_parameters(shard_DelegateTypeSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -35005,7 +35005,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_return_type(shard_shard_DelegateTypeSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_return_type(shard_DelegateTypeSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -35042,7 +35042,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_type_parameters(shard_shard_DelegateTypeSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_DelegateTypeSymbol_set_type_parameters(shard_DelegateTypeSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -35079,7 +35079,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumSymbol_EnumSymbol_create(const wchar_t* p0, const void* p1, shard_shard_EnumSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_EnumSymbol_EnumSymbol_create(const wchar_t* p0, const void* p1, shard_EnumSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -35122,7 +35122,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_EnumSymbol_EnumSymbol_destroy(shard_shard_EnumSymbol_t self)
+	SHARD_API void shard_EnumSymbol_EnumSymbol_destroy(shard_EnumSymbol_t self)
 	{
 		if (!self)
 		{
@@ -35137,7 +35137,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_EnumSymbol_get_is_flags(shard_shard_EnumSymbol_t self)
+	SHARD_API int shard_EnumSymbol_get_is_flags(shard_EnumSymbol_t self)
 	{
 		if (!self)
 		{
@@ -35154,14 +35154,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_EnumSymbol_operator_assign(shard_shard_EnumSymbol_t self, shard_shard_EnumSymbol_t p0)
+	SHARD_API shard_status_t shard_EnumSymbol_operator_assign(shard_EnumSymbol_t self, shard_EnumSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_EnumSymbol_set_is_flags(shard_shard_EnumSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_EnumSymbol_set_is_flags(shard_EnumSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -35198,7 +35198,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_ExpressionBinder_create(shard_shard_SemanticModel_t p0, shard_shard_DiagnosticsContext_t p1, shard_shard_ExpressionBinder_t* out_handle)
+	SHARD_API shard_status_t shard_ExpressionBinder_ExpressionBinder_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_ExpressionBinder_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -35241,7 +35241,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ExpressionBinder_ExpressionBinder_destroy(shard_shard_ExpressionBinder_t self)
+	SHARD_API void shard_ExpressionBinder_ExpressionBinder_destroy(shard_ExpressionBinder_t self)
 	{
 		if (!self)
 		{
@@ -35256,7 +35256,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_accessor_declaration(shard_shard_ExpressionBinder_t self, shard_shard_AccessorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_accessor_declaration(shard_ExpressionBinder_t self, shard_AccessorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35293,7 +35293,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_arrow_clause(shard_shard_ExpressionBinder_t self, shard_shard_ArrowClauseSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_arrow_clause(shard_ExpressionBinder_t self, shard_ArrowClauseSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35330,7 +35330,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_await_expression(shard_shard_ExpressionBinder_t self, shard_shard_AwaitExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_await_expression(shard_ExpressionBinder_t self, shard_AwaitExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35367,7 +35367,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_binary_expression(shard_shard_ExpressionBinder_t self, shard_shard_BinaryExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_binary_expression(shard_ExpressionBinder_t self, shard_BinaryExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35404,7 +35404,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_cast_expression(shard_shard_ExpressionBinder_t self, shard_shard_CastExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_cast_expression(shard_ExpressionBinder_t self, shard_CastExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35441,7 +35441,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_catch_clause(shard_shard_ExpressionBinder_t self, shard_shard_CatchClauseSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_catch_clause(shard_ExpressionBinder_t self, shard_CatchClauseSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35478,7 +35478,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_collection_expression(shard_shard_ExpressionBinder_t self, shard_shard_CollectionExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_collection_expression(shard_ExpressionBinder_t self, shard_CollectionExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35515,7 +35515,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_constructor_declaration(shard_shard_ExpressionBinder_t self, shard_shard_ConstructorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_constructor_declaration(shard_ExpressionBinder_t self, shard_ConstructorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35552,7 +35552,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_defer_block(shard_shard_ExpressionBinder_t self, shard_shard_DeferBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_defer_block(shard_ExpressionBinder_t self, shard_DeferBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35589,7 +35589,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_defer_statement(shard_shard_ExpressionBinder_t self, shard_shard_DeferStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_defer_statement(shard_ExpressionBinder_t self, shard_DeferStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35626,7 +35626,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_defer_variable(shard_shard_ExpressionBinder_t self, shard_shard_DeferVariableSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_defer_variable(shard_ExpressionBinder_t self, shard_DeferVariableSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35663,7 +35663,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_else_statement(shard_shard_ExpressionBinder_t self, shard_shard_ElseStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_else_statement(shard_ExpressionBinder_t self, shard_ElseStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35700,7 +35700,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_enum_declaration(shard_shard_ExpressionBinder_t self, shard_shard_EnumDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_enum_declaration(shard_ExpressionBinder_t self, shard_EnumDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35737,7 +35737,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_expression_statement(shard_shard_ExpressionBinder_t self, shard_shard_ExpressionStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_expression_statement(shard_ExpressionBinder_t self, shard_ExpressionStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35774,7 +35774,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_field_declaration(shard_shard_ExpressionBinder_t self, shard_shard_FieldDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_field_declaration(shard_ExpressionBinder_t self, shard_FieldDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35811,7 +35811,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_for_in_statement(shard_shard_ExpressionBinder_t self, shard_shard_ForInStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_for_in_statement(shard_ExpressionBinder_t self, shard_ForInStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35848,7 +35848,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_function_declaration(shard_shard_ExpressionBinder_t self, shard_shard_FunctionDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_function_declaration(shard_ExpressionBinder_t self, shard_FunctionDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35885,7 +35885,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_generic_type(shard_shard_ExpressionBinder_t self, shard_shard_GenericTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_generic_type(shard_ExpressionBinder_t self, shard_GenericTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35922,7 +35922,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_identifier_name_type(shard_shard_ExpressionBinder_t self, shard_shard_IdentifierNameTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_identifier_name_type(shard_ExpressionBinder_t self, shard_IdentifierNameTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35959,7 +35959,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_if_expression(shard_shard_ExpressionBinder_t self, shard_shard_IfExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_if_expression(shard_ExpressionBinder_t self, shard_IfExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -35996,7 +35996,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_if_statement(shard_shard_ExpressionBinder_t self, shard_shard_IfStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_if_statement(shard_ExpressionBinder_t self, shard_IfStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36033,7 +36033,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_indexator_declaration(shard_shard_ExpressionBinder_t self, shard_shard_IndexatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_indexator_declaration(shard_ExpressionBinder_t self, shard_IndexatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36070,7 +36070,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_indexator_expression(shard_shard_ExpressionBinder_t self, shard_shard_IndexatorExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_indexator_expression(shard_ExpressionBinder_t self, shard_IndexatorExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36107,7 +36107,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_interface_declaration(shard_shard_ExpressionBinder_t self, shard_shard_InterfaceDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_interface_declaration(shard_ExpressionBinder_t self, shard_InterfaceDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36144,7 +36144,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_invokation_expression(shard_shard_ExpressionBinder_t self, shard_shard_InvokationExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_invokation_expression(shard_ExpressionBinder_t self, shard_InvokationExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36181,7 +36181,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_is_expression(shard_shard_ExpressionBinder_t self, shard_shard_IsExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_is_expression(shard_ExpressionBinder_t self, shard_IsExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36218,7 +36218,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_lambda_expression(shard_shard_ExpressionBinder_t self, shard_shard_LambdaExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_lambda_expression(shard_ExpressionBinder_t self, shard_LambdaExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36255,7 +36255,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_literal_expression(shard_shard_ExpressionBinder_t self, shard_shard_LiteralExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_literal_expression(shard_ExpressionBinder_t self, shard_LiteralExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36292,7 +36292,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_member_access_expression(shard_shard_ExpressionBinder_t self, shard_shard_MemberAccessExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_member_access_expression(shard_ExpressionBinder_t self, shard_MemberAccessExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36329,7 +36329,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_object_creation_expression(shard_shard_ExpressionBinder_t self, shard_shard_ObjectExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_object_creation_expression(shard_ExpressionBinder_t self, shard_ObjectExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36366,7 +36366,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_operator_declaration(shard_shard_ExpressionBinder_t self, shard_shard_OperatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_operator_declaration(shard_ExpressionBinder_t self, shard_OperatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36403,7 +36403,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_property_declaration(shard_shard_ExpressionBinder_t self, shard_shard_PropertyDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_property_declaration(shard_ExpressionBinder_t self, shard_PropertyDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36440,7 +36440,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_qualified_name_type(shard_shard_ExpressionBinder_t self, shard_shard_QualifiedNameTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_qualified_name_type(shard_ExpressionBinder_t self, shard_QualifiedNameTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36477,7 +36477,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_range_expression(shard_shard_ExpressionBinder_t self, shard_shard_RangeExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_range_expression(shard_ExpressionBinder_t self, shard_RangeExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36514,7 +36514,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_return_statement(shard_shard_ExpressionBinder_t self, shard_shard_ReturnStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_return_statement(shard_ExpressionBinder_t self, shard_ReturnStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36551,7 +36551,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_statements_block(shard_shard_ExpressionBinder_t self, shard_shard_StatementsBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_statements_block(shard_ExpressionBinder_t self, shard_StatementsBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36588,7 +36588,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_struct_declaration(shard_shard_ExpressionBinder_t self, shard_shard_StructDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_struct_declaration(shard_ExpressionBinder_t self, shard_StructDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36625,7 +36625,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_throw_statement(shard_shard_ExpressionBinder_t self, shard_shard_ThrowStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_throw_statement(shard_ExpressionBinder_t self, shard_ThrowStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36662,7 +36662,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_translation_unit(shard_shard_ExpressionBinder_t self, shard_shard_TranslationUnitSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_translation_unit(shard_ExpressionBinder_t self, shard_TranslationUnitSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36699,7 +36699,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_try_statement(shard_shard_ExpressionBinder_t self, shard_shard_TryStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_try_statement(shard_ExpressionBinder_t self, shard_TryStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36736,7 +36736,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_unary_expression(shard_shard_ExpressionBinder_t self, shard_shard_UnaryExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_unary_expression(shard_ExpressionBinder_t self, shard_UnaryExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36773,7 +36773,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_unless_statement(shard_shard_ExpressionBinder_t self, shard_shard_UnlessStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_unless_statement(shard_ExpressionBinder_t self, shard_UnlessStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36810,7 +36810,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_until_statement(shard_shard_ExpressionBinder_t self, shard_shard_UntilStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_until_statement(shard_ExpressionBinder_t self, shard_UntilStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36847,7 +36847,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_using_directive(shard_shard_ExpressionBinder_t self, shard_shard_UsingDirectiveSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_using_directive(shard_ExpressionBinder_t self, shard_UsingDirectiveSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36884,7 +36884,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_variable_statement(shard_shard_ExpressionBinder_t self, shard_shard_VariableStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_variable_statement(shard_ExpressionBinder_t self, shard_VariableStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36921,7 +36921,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExpressionBinder_visit_while_statement(shard_shard_ExpressionBinder_t self, shard_shard_WhileStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ExpressionBinder_visit_while_statement(shard_ExpressionBinder_t self, shard_WhileStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -36958,7 +36958,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldSymbol_FieldSymbol_create(const wchar_t* p0, const void* p1, shard_shard_FieldSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_FieldSymbol_FieldSymbol_create(const wchar_t* p0, const void* p1, shard_FieldSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -37001,7 +37001,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_FieldSymbol_FieldSymbol_destroy(shard_shard_FieldSymbol_t self)
+	SHARD_API void shard_FieldSymbol_FieldSymbol_destroy(shard_FieldSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37016,7 +37016,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int64_t shard_FieldSymbol_get_enum_value(shard_shard_FieldSymbol_t self)
+	SHARD_API std::int64_t shard_FieldSymbol_get_enum_value(shard_FieldSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37033,7 +37033,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_FieldSymbol_get_is_enum_value(shard_shard_FieldSymbol_t self)
+	SHARD_API int shard_FieldSymbol_get_is_enum_value(shard_FieldSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37050,7 +37050,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FieldSymbol_get_return_type(shard_shard_FieldSymbol_t self)
+	SHARD_API void* shard_FieldSymbol_get_return_type(shard_FieldSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37067,14 +37067,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldSymbol_operator_assign(shard_shard_FieldSymbol_t self, shard_shard_FieldSymbol_t p0)
+	SHARD_API shard_status_t shard_FieldSymbol_operator_assign(shard_FieldSymbol_t self, shard_FieldSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_FieldSymbol_set_enum_value(shard_shard_FieldSymbol_t self, std::int64_t p0)
+	SHARD_API shard_status_t shard_FieldSymbol_set_enum_value(shard_FieldSymbol_t self, std::int64_t p0)
 	{
 		if (!self)
 		{
@@ -37111,7 +37111,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldSymbol_set_is_enum_value(shard_shard_FieldSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_FieldSymbol_set_is_enum_value(shard_FieldSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -37148,7 +37148,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FieldSymbol_set_return_type(shard_shard_FieldSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_FieldSymbol_set_return_type(shard_FieldSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -37185,7 +37185,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericMethodSymbol_GenericMethodSymbol_create(const void* p0, const void* p1, shard_shard_GenericMethodSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_GenericMethodSymbol_GenericMethodSymbol_create(const void* p0, const void* p1, shard_GenericMethodSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -37228,7 +37228,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_GenericMethodSymbol_GenericMethodSymbol_destroy(shard_shard_GenericMethodSymbol_t self)
+	SHARD_API void shard_GenericMethodSymbol_GenericMethodSymbol_destroy(shard_GenericMethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37243,7 +37243,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_GenericMethodSymbol_get_is_generic_instantiation(shard_shard_GenericMethodSymbol_t self)
+	SHARD_API int shard_GenericMethodSymbol_get_is_generic_instantiation(shard_GenericMethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37260,7 +37260,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_GenericMethodSymbol_get_type_arguments(shard_shard_GenericMethodSymbol_t self)
+	SHARD_API void* shard_GenericMethodSymbol_get_type_arguments(shard_GenericMethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37277,7 +37277,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_GenericMethodSymbol_get_underlaying_method(shard_shard_GenericMethodSymbol_t self)
+	SHARD_API void* shard_GenericMethodSymbol_get_underlaying_method(shard_GenericMethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37294,14 +37294,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericMethodSymbol_operator_assign(shard_shard_GenericMethodSymbol_t self, shard_shard_GenericMethodSymbol_t p0)
+	SHARD_API shard_status_t shard_GenericMethodSymbol_operator_assign(shard_GenericMethodSymbol_t self, shard_GenericMethodSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_GenericMethodSymbol_set_type_arguments(shard_shard_GenericMethodSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_GenericMethodSymbol_set_type_arguments(shard_GenericMethodSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -37338,7 +37338,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSymbol_GenericTypeSymbol_create(const void* p0, const void* p1, shard_shard_GenericTypeSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_GenericTypeSymbol_GenericTypeSymbol_create(const void* p0, const void* p1, shard_GenericTypeSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -37381,7 +37381,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_GenericTypeSymbol_GenericTypeSymbol_destroy(shard_shard_GenericTypeSymbol_t self)
+	SHARD_API void shard_GenericTypeSymbol_GenericTypeSymbol_destroy(shard_GenericTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37396,7 +37396,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_GenericTypeSymbol_add_type_parameter(shard_shard_GenericTypeSymbol_t self, const void* p0, const void* p1)
+	SHARD_API int shard_GenericTypeSymbol_add_type_parameter(shard_GenericTypeSymbol_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -37413,7 +37413,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_GenericTypeSymbol_get_underlaying_type(shard_shard_GenericTypeSymbol_t self)
+	SHARD_API void* shard_GenericTypeSymbol_get_underlaying_type(shard_GenericTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37430,14 +37430,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GenericTypeSymbol_operator_assign(shard_shard_GenericTypeSymbol_t self, shard_shard_GenericTypeSymbol_t p0)
+	SHARD_API shard_status_t shard_GenericTypeSymbol_operator_assign(shard_GenericTypeSymbol_t self, shard_GenericTypeSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API void* shard_GenericTypeSymbol_substitute_type_parameter(shard_shard_GenericTypeSymbol_t self, const void* p0)
+	SHARD_API void* shard_GenericTypeSymbol_substitute_type_parameter(shard_GenericTypeSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -37454,7 +37454,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorSymbol_IndexatorSymbol_create(const wchar_t* p0, const void* p1, shard_shard_IndexatorSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_IndexatorSymbol_IndexatorSymbol_create(const wchar_t* p0, const void* p1, shard_IndexatorSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -37497,7 +37497,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_IndexatorSymbol_IndexatorSymbol_destroy(shard_shard_IndexatorSymbol_t self)
+	SHARD_API void shard_IndexatorSymbol_IndexatorSymbol_destroy(shard_IndexatorSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37512,7 +37512,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_IndexatorSymbol_get_parameters(shard_shard_IndexatorSymbol_t self)
+	SHARD_API void* shard_IndexatorSymbol_get_parameters(shard_IndexatorSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37529,7 +37529,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorSymbol_on_symbol_declared(shard_shard_IndexatorSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_IndexatorSymbol_on_symbol_declared(shard_IndexatorSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -37566,14 +37566,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_IndexatorSymbol_operator_assign(shard_shard_IndexatorSymbol_t self, shard_shard_IndexatorSymbol_t p0)
+	SHARD_API shard_status_t shard_IndexatorSymbol_operator_assign(shard_IndexatorSymbol_t self, shard_IndexatorSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_InterfaceSymbol_InterfaceSymbol_create(const wchar_t* p0, const void* p1, shard_shard_InterfaceSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_InterfaceSymbol_InterfaceSymbol_create(const wchar_t* p0, const void* p1, shard_InterfaceSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -37616,7 +37616,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_InterfaceSymbol_InterfaceSymbol_destroy(shard_shard_InterfaceSymbol_t self)
+	SHARD_API void shard_InterfaceSymbol_InterfaceSymbol_destroy(shard_InterfaceSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37631,14 +37631,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InterfaceSymbol_operator_assign(shard_shard_InterfaceSymbol_t self, shard_shard_InterfaceSymbol_t p0)
+	SHARD_API shard_status_t shard_InterfaceSymbol_operator_assign(shard_InterfaceSymbol_t self, shard_InterfaceSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_LeftDenotationSymbol_LeftDenotationSymbol_create(const void* p0, const void* p1, shard_shard_LeftDenotationSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_LeftDenotationSymbol_LeftDenotationSymbol_create(const void* p0, const void* p1, shard_LeftDenotationSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -37681,7 +37681,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_LeftDenotationSymbol_LeftDenotationSymbol_destroy(shard_shard_LeftDenotationSymbol_t self)
+	SHARD_API void shard_LeftDenotationSymbol_LeftDenotationSymbol_destroy(shard_LeftDenotationSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37696,7 +37696,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_LeftDenotationSymbol_get_expected_type(shard_shard_LeftDenotationSymbol_t self)
+	SHARD_API void* shard_LeftDenotationSymbol_get_expected_type(shard_LeftDenotationSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37713,14 +37713,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LeftDenotationSymbol_operator_assign(shard_shard_LeftDenotationSymbol_t self, shard_shard_LeftDenotationSymbol_t p0)
+	SHARD_API shard_status_t shard_LeftDenotationSymbol_operator_assign(shard_LeftDenotationSymbol_t self, shard_LeftDenotationSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_LeftDenotationSymbol_set_expected_type(shard_shard_LeftDenotationSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_LeftDenotationSymbol_set_expected_type(shard_LeftDenotationSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -37789,7 +37789,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_LiteralSymbol_create(int p0, const void* p1, shard_shard_LiteralSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_LiteralSymbol_LiteralSymbol_create(int p0, const void* p1, shard_LiteralSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -37832,7 +37832,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_LiteralSymbol_LiteralSymbol_destroy(shard_shard_LiteralSymbol_t self)
+	SHARD_API void shard_LiteralSymbol_LiteralSymbol_destroy(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37861,7 +37861,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API int shard_LiteralSymbol_get_boolean_value(shard_shard_LiteralSymbol_t self)
+	SHARD_API int shard_LiteralSymbol_get_boolean_value(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37878,7 +37878,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_LiteralSymbol_get_bound_type(shard_shard_LiteralSymbol_t self)
+	SHARD_API void* shard_LiteralSymbol_get_bound_type(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37895,7 +37895,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API wchar_t shard_LiteralSymbol_get_char_value(shard_shard_LiteralSymbol_t self)
+	SHARD_API wchar_t shard_LiteralSymbol_get_char_value(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37912,7 +37912,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_LiteralSymbol_get_double_value(shard_shard_LiteralSymbol_t self)
+	SHARD_API double shard_LiteralSymbol_get_double_value(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37929,7 +37929,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int64_t shard_LiteralSymbol_get_integer_value(shard_shard_LiteralSymbol_t self)
+	SHARD_API std::int64_t shard_LiteralSymbol_get_integer_value(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37946,7 +37946,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_LiteralSymbol_get_literal_type(shard_shard_LiteralSymbol_t self)
+	SHARD_API int shard_LiteralSymbol_get_literal_type(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37963,7 +37963,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_get_string_value(shard_shard_LiteralSymbol_t self, void** out_value)
+	SHARD_API shard_status_t shard_LiteralSymbol_get_string_value(shard_LiteralSymbol_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -38011,14 +38011,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_operator_assign(shard_shard_LiteralSymbol_t self, shard_shard_LiteralSymbol_t p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_operator_assign(shard_LiteralSymbol_t self, shard_LiteralSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_set_boolean_value(shard_shard_LiteralSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_set_boolean_value(shard_LiteralSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -38055,7 +38055,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_set_bound_type(shard_shard_LiteralSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_set_bound_type(shard_LiteralSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -38092,7 +38092,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_set_char_value(shard_shard_LiteralSymbol_t self, wchar_t p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_set_char_value(shard_LiteralSymbol_t self, wchar_t p0)
 	{
 		if (!self)
 		{
@@ -38129,7 +38129,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_set_double_value(shard_shard_LiteralSymbol_t self, double p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_set_double_value(shard_LiteralSymbol_t self, double p0)
 	{
 		if (!self)
 		{
@@ -38166,7 +38166,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_set_integer_value(shard_shard_LiteralSymbol_t self, std::int64_t p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_set_integer_value(shard_LiteralSymbol_t self, std::int64_t p0)
 	{
 		if (!self)
 		{
@@ -38203,7 +38203,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_set_string_value(shard_shard_LiteralSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_set_string_value(shard_LiteralSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -38240,7 +38240,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberSymbol_MemberSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_shard_MemberSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_MemberSymbol_MemberSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_MemberSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -38283,7 +38283,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_MemberSymbol_MemberSymbol_destroy(shard_shard_MemberSymbol_t self)
+	SHARD_API void shard_MemberSymbol_MemberSymbol_destroy(shard_MemberSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38298,7 +38298,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MemberSymbol_get_accesibility(shard_shard_MemberSymbol_t self)
+	SHARD_API int shard_MemberSymbol_get_accesibility(shard_MemberSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38315,7 +38315,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MemberSymbol_get_linking(shard_shard_MemberSymbol_t self)
+	SHARD_API int shard_MemberSymbol_get_linking(shard_MemberSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38332,7 +38332,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MemberSymbol_is_member(shard_shard_MemberSymbol_t self)
+	SHARD_API int shard_MemberSymbol_is_member(shard_MemberSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38349,14 +38349,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberSymbol_operator_assign(shard_shard_MemberSymbol_t self, shard_shard_MemberSymbol_t p0)
+	SHARD_API shard_status_t shard_MemberSymbol_operator_assign(shard_MemberSymbol_t self, shard_MemberSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_MemberSymbol_set_accesibility(shard_shard_MemberSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_MemberSymbol_set_accesibility(shard_MemberSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -38393,7 +38393,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MemberSymbol_set_linking(shard_shard_MemberSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_MemberSymbol_set_linking(shard_MemberSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -38430,7 +38430,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodEffectSummary_MethodEffectSummary_create(shard_shard_MethodEffectSummary_t* out_handle)
+	SHARD_API shard_status_t shard_MethodEffectSummary_MethodEffectSummary_create(shard_MethodEffectSummary_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -38473,7 +38473,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_MethodEffectSummary_MethodEffectSummary_destroy(shard_shard_MethodEffectSummary_t self)
+	SHARD_API void shard_MethodEffectSummary_MethodEffectSummary_destroy(shard_MethodEffectSummary_t self)
 	{
 		if (!self)
 		{
@@ -38488,7 +38488,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodEffectSummary_merge(shard_shard_MethodEffectSummary_t self, shard_shard_MethodEffectSummary_t p0)
+	SHARD_API shard_status_t shard_MethodEffectSummary_merge(shard_MethodEffectSummary_t self, shard_MethodEffectSummary_t p0)
 	{
 		if (!self)
 		{
@@ -38525,7 +38525,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodEffectSummary_operator_equal(shard_shard_MethodEffectSummary_t self, shard_shard_MethodEffectSummary_t p0)
+	SHARD_API int shard_MethodEffectSummary_operator_equal(shard_MethodEffectSummary_t self, shard_MethodEffectSummary_t p0)
 	{
 		if (!self)
 		{
@@ -38542,7 +38542,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodEffectSummary_operator_not_equal(shard_shard_MethodEffectSummary_t self, shard_shard_MethodEffectSummary_t p0)
+	SHARD_API int shard_MethodEffectSummary_operator_not_equal(shard_MethodEffectSummary_t self, shard_MethodEffectSummary_t p0)
 	{
 		if (!self)
 		{
@@ -38559,7 +38559,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_MethodSymbol_create(const wchar_t* p0, const void* p1, shard_shard_MethodSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_MethodSymbol_MethodSymbol_create(const wchar_t* p0, const void* p1, shard_MethodSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -38602,7 +38602,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_MethodSymbol_MethodSymbol_destroy(shard_shard_MethodSymbol_t self)
+	SHARD_API void shard_MethodSymbol_MethodSymbol_destroy(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38617,7 +38617,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodSymbol_get_calling_convention(shard_shard_MethodSymbol_t self)
+	SHARD_API int shard_MethodSymbol_get_calling_convention(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38634,7 +38634,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_MethodEffectSummary_t shard_MethodSymbol_get_effect_summary(shard_shard_MethodSymbol_t self)
+	SHARD_API shard_MethodEffectSummary_t shard_MethodSymbol_get_effect_summary(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38651,7 +38651,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodSymbol_get_effects_computed(shard_shard_MethodSymbol_t self)
+	SHARD_API int shard_MethodSymbol_get_effects_computed(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38668,7 +38668,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_MethodSymbol_get_function_pointer(shard_shard_MethodSymbol_t self)
+	SHARD_API void* shard_MethodSymbol_get_function_pointer(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38685,7 +38685,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodSymbol_get_is_async(shard_shard_MethodSymbol_t self)
+	SHARD_API int shard_MethodSymbol_get_is_async(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38702,7 +38702,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodSymbol_get_is_generic_instantiation(shard_shard_MethodSymbol_t self)
+	SHARD_API int shard_MethodSymbol_get_is_generic_instantiation(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38719,7 +38719,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodSymbol_get_is_virtual(shard_shard_MethodSymbol_t self)
+	SHARD_API int shard_MethodSymbol_get_is_virtual(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38736,7 +38736,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_MethodSymbol_get_parameters(shard_shard_MethodSymbol_t self)
+	SHARD_API void* shard_MethodSymbol_get_parameters(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38753,7 +38753,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_MethodSymbol_get_return_type(shard_shard_MethodSymbol_t self)
+	SHARD_API void* shard_MethodSymbol_get_return_type(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38770,7 +38770,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_MethodSymbol_get_type_parameters(shard_shard_MethodSymbol_t self)
+	SHARD_API void* shard_MethodSymbol_get_type_parameters(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38787,7 +38787,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodSymbol_is_method(shard_shard_MethodSymbol_t self)
+	SHARD_API int shard_MethodSymbol_is_method(shard_MethodSymbol_t self)
 	{
 		if (!self)
 		{
@@ -38804,7 +38804,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_on_symbol_declared(shard_shard_MethodSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_MethodSymbol_on_symbol_declared(shard_MethodSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -38841,14 +38841,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_operator_assign(shard_shard_MethodSymbol_t self, shard_shard_MethodSymbol_t p0)
+	SHARD_API shard_status_t shard_MethodSymbol_operator_assign(shard_MethodSymbol_t self, shard_MethodSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_set_calling_convention(shard_shard_MethodSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_MethodSymbol_set_calling_convention(shard_MethodSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -38885,7 +38885,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_set_effects_computed(shard_shard_MethodSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_MethodSymbol_set_effects_computed(shard_MethodSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -38922,7 +38922,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_set_function_pointer(shard_shard_MethodSymbol_t self, void* p0)
+	SHARD_API shard_status_t shard_MethodSymbol_set_function_pointer(shard_MethodSymbol_t self, void* p0)
 	{
 		if (!self)
 		{
@@ -38959,7 +38959,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_set_is_async(shard_shard_MethodSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_MethodSymbol_set_is_async(shard_MethodSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -38996,7 +38996,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_set_is_virtual(shard_shard_MethodSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_MethodSymbol_set_is_virtual(shard_MethodSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -39033,7 +39033,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodSymbol_set_return_type(shard_shard_MethodSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_MethodSymbol_set_return_type(shard_MethodSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -39070,7 +39070,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceSymbol_NamespaceSymbol_create(const wchar_t* p0, const void* p1, shard_shard_NamespaceSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_NamespaceSymbol_NamespaceSymbol_create(const wchar_t* p0, const void* p1, shard_NamespaceSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -39113,7 +39113,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_NamespaceSymbol_NamespaceSymbol_destroy(shard_shard_NamespaceSymbol_t self)
+	SHARD_API void shard_NamespaceSymbol_NamespaceSymbol_destroy(shard_NamespaceSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39128,7 +39128,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_NamespaceSymbol_get_children(shard_shard_NamespaceSymbol_t self)
+	SHARD_API void* shard_NamespaceSymbol_get_children(shard_NamespaceSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39145,7 +39145,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_NamespaceSymbol_lookup(shard_shard_NamespaceSymbol_t self, const wchar_t* p0)
+	SHARD_API void* shard_NamespaceSymbol_lookup(shard_NamespaceSymbol_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -39162,7 +39162,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_NamespaceSymbol_lookup_or_create(shard_shard_NamespaceSymbol_t self, const wchar_t* p0, shard_shard_SymbolTable_t p1)
+	SHARD_API void* shard_NamespaceSymbol_lookup_or_create(shard_NamespaceSymbol_t self, const wchar_t* p0, shard_SymbolTable_t p1)
 	{
 		if (!self)
 		{
@@ -39179,7 +39179,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceSymbol_on_symbol_declared(shard_shard_NamespaceSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_NamespaceSymbol_on_symbol_declared(shard_NamespaceSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -39216,14 +39216,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NamespaceSymbol_operator_assign(shard_shard_NamespaceSymbol_t self, shard_shard_NamespaceSymbol_t p0)
+	SHARD_API shard_status_t shard_NamespaceSymbol_operator_assign(shard_NamespaceSymbol_t self, shard_NamespaceSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSymbol_NullableTypeSymbol_create(const void* p0, const void* p1, shard_shard_NullableTypeSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_NullableTypeSymbol_NullableTypeSymbol_create(const void* p0, const void* p1, shard_NullableTypeSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -39266,7 +39266,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_NullableTypeSymbol_NullableTypeSymbol_destroy(shard_shard_NullableTypeSymbol_t self)
+	SHARD_API void shard_NullableTypeSymbol_NullableTypeSymbol_destroy(shard_NullableTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39281,7 +39281,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_NullableTypeSymbol_get_underlaying_type(shard_shard_NullableTypeSymbol_t self)
+	SHARD_API void* shard_NullableTypeSymbol_get_underlaying_type(shard_NullableTypeSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39298,14 +39298,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_NullableTypeSymbol_operator_assign(shard_shard_NullableTypeSymbol_t self, shard_shard_NullableTypeSymbol_t p0)
+	SHARD_API shard_status_t shard_NullableTypeSymbol_operator_assign(shard_NullableTypeSymbol_t self, shard_NullableTypeSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_OperatorSymbol_OperatorSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_shard_OperatorSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_OperatorSymbol_OperatorSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_OperatorSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -39348,7 +39348,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_OperatorSymbol_OperatorSymbol_destroy(shard_shard_OperatorSymbol_t self)
+	SHARD_API void shard_OperatorSymbol_OperatorSymbol_destroy(shard_OperatorSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39363,7 +39363,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_OperatorSymbol_get_operator_token(shard_shard_OperatorSymbol_t self)
+	SHARD_API int shard_OperatorSymbol_get_operator_token(shard_OperatorSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39380,14 +39380,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_OperatorSymbol_operator_assign(shard_shard_OperatorSymbol_t self, shard_shard_OperatorSymbol_t p0)
+	SHARD_API shard_status_t shard_OperatorSymbol_operator_assign(shard_OperatorSymbol_t self, shard_OperatorSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_OperatorSymbol_set_operator_token(shard_shard_OperatorSymbol_t self, int p0)
+	SHARD_API shard_status_t shard_OperatorSymbol_set_operator_token(shard_OperatorSymbol_t self, int p0)
 	{
 		if (!self)
 		{
@@ -39424,7 +39424,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSymbol_ParameterSymbol_create(const wchar_t* p0, const void* p1, shard_shard_ParameterSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_ParameterSymbol_ParameterSymbol_create(const wchar_t* p0, const void* p1, shard_ParameterSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -39467,7 +39467,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ParameterSymbol_ParameterSymbol_destroy(shard_shard_ParameterSymbol_t self)
+	SHARD_API void shard_ParameterSymbol_ParameterSymbol_destroy(shard_ParameterSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39482,7 +39482,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ParameterSymbol_get_type(shard_shard_ParameterSymbol_t self)
+	SHARD_API void* shard_ParameterSymbol_get_type(shard_ParameterSymbol_t self)
 	{
 		if (!self)
 		{
@@ -39499,14 +39499,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ParameterSymbol_operator_assign(shard_shard_ParameterSymbol_t self, shard_shard_ParameterSymbol_t p0)
+	SHARD_API shard_status_t shard_ParameterSymbol_operator_assign(shard_ParameterSymbol_t self, shard_ParameterSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_ParameterSymbol_set_type(shard_shard_ParameterSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_ParameterSymbol_set_type(shard_ParameterSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -39543,7 +39543,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertySymbol_PropertySymbol_create(const wchar_t* p0, int p1, const void* p2, shard_shard_PropertySymbol_t* out_handle)
+	SHARD_API shard_status_t shard_PropertySymbol_PropertySymbol_create(const wchar_t* p0, int p1, const void* p2, shard_PropertySymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -39586,7 +39586,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_PropertySymbol_PropertySymbol_destroy(shard_shard_PropertySymbol_t self)
+	SHARD_API void shard_PropertySymbol_PropertySymbol_destroy(shard_PropertySymbol_t self)
 	{
 		if (!self)
 		{
@@ -39601,7 +39601,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertySymbol_get_backing_field(shard_shard_PropertySymbol_t self)
+	SHARD_API void* shard_PropertySymbol_get_backing_field(shard_PropertySymbol_t self)
 	{
 		if (!self)
 		{
@@ -39618,7 +39618,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertySymbol_get_getter(shard_shard_PropertySymbol_t self)
+	SHARD_API void* shard_PropertySymbol_get_getter(shard_PropertySymbol_t self)
 	{
 		if (!self)
 		{
@@ -39635,7 +39635,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertySymbol_get_return_type(shard_shard_PropertySymbol_t self)
+	SHARD_API void* shard_PropertySymbol_get_return_type(shard_PropertySymbol_t self)
 	{
 		if (!self)
 		{
@@ -39652,7 +39652,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PropertySymbol_get_setter(shard_shard_PropertySymbol_t self)
+	SHARD_API void* shard_PropertySymbol_get_setter(shard_PropertySymbol_t self)
 	{
 		if (!self)
 		{
@@ -39669,14 +39669,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertySymbol_operator_assign(shard_shard_PropertySymbol_t self, shard_shard_PropertySymbol_t p0)
+	SHARD_API shard_status_t shard_PropertySymbol_operator_assign(shard_PropertySymbol_t self, shard_PropertySymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_PropertySymbol_set_backing_field(shard_shard_PropertySymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertySymbol_set_backing_field(shard_PropertySymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -39713,7 +39713,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertySymbol_set_getter(shard_shard_PropertySymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertySymbol_set_getter(shard_PropertySymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -39750,7 +39750,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertySymbol_set_return_type(shard_shard_PropertySymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertySymbol_set_return_type(shard_PropertySymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -39787,7 +39787,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PropertySymbol_set_setter(shard_shard_PropertySymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_PropertySymbol_set_setter(shard_PropertySymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -39824,7 +39824,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticAnalyzer_SemanticAnalyzer_create(shard_shard_DiagnosticsContext_t p0, shard_shard_SemanticAnalyzer_t* out_handle)
+	SHARD_API shard_status_t shard_SemanticAnalyzer_SemanticAnalyzer_create(shard_DiagnosticsContext_t p0, shard_SemanticAnalyzer_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -39867,7 +39867,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SemanticAnalyzer_SemanticAnalyzer_destroy(shard_shard_SemanticAnalyzer_t self)
+	SHARD_API void shard_SemanticAnalyzer_SemanticAnalyzer_destroy(shard_SemanticAnalyzer_t self)
 	{
 		if (!self)
 		{
@@ -39882,7 +39882,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticAnalyzer_analyze(shard_shard_SemanticAnalyzer_t self, shard_shard_SyntaxTree_t p0, shard_shard_SemanticModel_t p1)
+	SHARD_API shard_status_t shard_SemanticAnalyzer_analyze(shard_SemanticAnalyzer_t self, shard_SyntaxTree_t p0, shard_SemanticModel_t p1)
 	{
 		if (!self)
 		{
@@ -39919,7 +39919,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticModel_SemanticModel_create(shard_shard_SyntaxTree_t p0, shard_shard_SemanticModel_t* out_handle)
+	SHARD_API shard_status_t shard_SemanticModel_SemanticModel_create(shard_SyntaxTree_t p0, shard_SemanticModel_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -39962,7 +39962,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SemanticModel_SemanticModel_destroy(shard_shard_SemanticModel_t self)
+	SHARD_API void shard_SemanticModel_SemanticModel_destroy(shard_SemanticModel_t self)
 	{
 		if (!self)
 		{
@@ -39990,7 +39990,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_find_field_by_name(shard_shard_SemanticModel_t self, const void* p0, const wchar_t* p1)
+	SHARD_API void* shard_SemanticModel_find_field_by_name(shard_SemanticModel_t self, const void* p0, const wchar_t* p1)
 	{
 		if (!self)
 		{
@@ -40007,7 +40007,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_find_type_by_name(shard_shard_SemanticModel_t self, const wchar_t* p0)
+	SHARD_API void* shard_SemanticModel_find_type_by_name(shard_SemanticModel_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -40024,7 +40024,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_get_constructor_return_type(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SemanticModel_get_constructor_return_type(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40041,7 +40041,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_get_expression_type(shard_shard_SemanticModel_t self, const void* p0)
+	SHARD_API void* shard_SemanticModel_get_expression_type(shard_SemanticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40058,7 +40058,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_get_field_type(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SemanticModel_get_field_type(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40075,7 +40075,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_get_method_return_type(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SemanticModel_get_method_return_type(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40092,7 +40092,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_get_property_type(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SemanticModel_get_property_type(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40109,7 +40109,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SymbolTable_t shard_SemanticModel_get_table(shard_shard_SemanticModel_t self)
+	SHARD_API shard_SymbolTable_t shard_SemanticModel_get_table(shard_SemanticModel_t self)
 	{
 		if (!self)
 		{
@@ -40126,7 +40126,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SyntaxTree_t shard_SemanticModel_get_tree(shard_shard_SemanticModel_t self)
+	SHARD_API shard_SyntaxTree_t shard_SemanticModel_get_tree(shard_SemanticModel_t self)
 	{
 		if (!self)
 		{
@@ -40143,7 +40143,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticModel_get_type_display_name(shard_shard_SemanticModel_t self, const void* p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_SemanticModel_get_type_display_name(shard_SemanticModel_t self, const void* p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -40191,7 +40191,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SemanticModel_is_assignable_to(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API int shard_SemanticModel_is_assignable_to(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40208,7 +40208,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SemanticModel_is_primitive_type(shard_shard_SemanticModel_t self, const void* p0)
+	SHARD_API int shard_SemanticModel_is_primitive_type(shard_SemanticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40225,7 +40225,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SemanticModel_is_task_or_task_like(shard_shard_SemanticModel_t self, const void* p0)
+	SHARD_API int shard_SemanticModel_is_task_or_task_like(shard_SemanticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40242,14 +40242,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticModel_operator_assign(shard_shard_SemanticModel_t self, shard_shard_SemanticModel_t p0)
+	SHARD_API shard_status_t shard_SemanticModel_operator_assign(shard_SemanticModel_t self, shard_SemanticModel_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API int shard_SemanticModel_resolve_indexable(shard_shard_SemanticModel_t self, const void* p0, void* p1, void* p2)
+	SHARD_API int shard_SemanticModel_resolve_indexable(shard_SemanticModel_t self, const void* p0, void* p1, void* p2)
 	{
 		if (!self)
 		{
@@ -40266,7 +40266,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_resolve_runtime_type_argument(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SemanticModel_resolve_runtime_type_argument(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40283,7 +40283,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_resolve_virtual_indexator(shard_shard_SemanticModel_t self, const void* p0, const void* p1, const void* p2)
+	SHARD_API void* shard_SemanticModel_resolve_virtual_indexator(shard_SemanticModel_t self, const void* p0, const void* p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -40300,7 +40300,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_resolve_virtual_property(shard_shard_SemanticModel_t self, const void* p0, const void* p1, const void* p2)
+	SHARD_API void* shard_SemanticModel_resolve_virtual_property(shard_SemanticModel_t self, const void* p0, const void* p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -40317,7 +40317,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticModel_set_expression_type(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API shard_status_t shard_SemanticModel_set_expression_type(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40354,7 +40354,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticModel_substitute_type(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SemanticModel_substitute_type(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40371,7 +40371,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SemanticModel_try_resolve_generic_arguments(shard_shard_SemanticModel_t self, const void* p0, const void* p1, void* p2, void* p3)
+	SHARD_API int shard_SemanticModel_try_resolve_generic_arguments(shard_SemanticModel_t self, const void* p0, const void* p1, void* p2, void* p3)
 	{
 		if (!self)
 		{
@@ -40388,7 +40388,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SemanticModel_type_implements_interface(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API int shard_SemanticModel_type_implements_interface(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40405,7 +40405,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SemanticModel_type_satisfies_constraint(shard_shard_SemanticModel_t self, const void* p0, const void* p1)
+	SHARD_API int shard_SemanticModel_type_satisfies_constraint(shard_SemanticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -40422,7 +40422,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticScope_SemanticScope_create(const void* p0, shard_shard_SemanticScope_t p1, shard_shard_SemanticScope_t* out_handle)
+	SHARD_API shard_status_t shard_SemanticScope_SemanticScope_create(const void* p0, shard_SemanticScope_t p1, shard_SemanticScope_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -40465,7 +40465,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SemanticScope_SemanticScope_destroy(shard_shard_SemanticScope_t self)
+	SHARD_API void shard_SemanticScope_SemanticScope_destroy(shard_SemanticScope_t self)
 	{
 		if (!self)
 		{
@@ -40480,7 +40480,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticScope_add_imported_namespace(shard_shard_SemanticScope_t self, const void* p0)
+	SHARD_API shard_status_t shard_SemanticScope_add_imported_namespace(shard_SemanticScope_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40517,7 +40517,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticScope_declare_symbol(shard_shard_SemanticScope_t self, const void* p0)
+	SHARD_API shard_status_t shard_SemanticScope_declare_symbol(shard_SemanticScope_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40554,7 +40554,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticScope_find_local(shard_shard_SemanticScope_t self, const void* p0)
+	SHARD_API void* shard_SemanticScope_find_local(shard_SemanticScope_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40571,7 +40571,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticScope_find_overloads(shard_shard_SemanticScope_t self, const wchar_t* p0, void** out_value)
+	SHARD_API shard_status_t shard_SemanticScope_find_overloads(shard_SemanticScope_t self, const wchar_t* p0, void** out_value)
 	{
 		if (!self)
 		{
@@ -40619,7 +40619,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticScope_get_imported_namespaces(shard_shard_SemanticScope_t self)
+	SHARD_API void* shard_SemanticScope_get_imported_namespaces(shard_SemanticScope_t self)
 	{
 		if (!self)
 		{
@@ -40636,7 +40636,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticScope_get_namespace(shard_shard_SemanticScope_t self)
+	SHARD_API void* shard_SemanticScope_get_namespace(shard_SemanticScope_t self)
 	{
 		if (!self)
 		{
@@ -40653,7 +40653,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticScope_get_owner(shard_shard_SemanticScope_t self)
+	SHARD_API void* shard_SemanticScope_get_owner(shard_SemanticScope_t self)
 	{
 		if (!self)
 		{
@@ -40670,7 +40670,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SemanticScope_t shard_SemanticScope_get_parent(shard_shard_SemanticScope_t self)
+	SHARD_API shard_SemanticScope_t shard_SemanticScope_get_parent(shard_SemanticScope_t self)
 	{
 		if (!self)
 		{
@@ -40687,7 +40687,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SemanticScope_lookup(shard_shard_SemanticScope_t self, const void* p0)
+	SHARD_API void* shard_SemanticScope_lookup(shard_SemanticScope_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40704,14 +40704,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticScope_operator_assign(shard_shard_SemanticScope_t self, shard_shard_SemanticScope_t p0)
+	SHARD_API shard_status_t shard_SemanticScope_operator_assign(shard_SemanticScope_t self, shard_SemanticScope_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_SemanticScope_set_namespace(shard_shard_SemanticScope_t self, const void* p0)
+	SHARD_API shard_status_t shard_SemanticScope_set_namespace(shard_SemanticScope_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40748,7 +40748,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticVisitor_SemanticVisitor_create(shard_shard_SemanticModel_t p0, shard_shard_DiagnosticsContext_t p1, shard_shard_SemanticVisitor_t* out_handle)
+	SHARD_API shard_status_t shard_SemanticVisitor_SemanticVisitor_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_SemanticVisitor_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -40791,7 +40791,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SemanticVisitor_SemanticVisitor_destroy(shard_shard_SemanticVisitor_t self)
+	SHARD_API void shard_SemanticVisitor_SemanticVisitor_destroy(shard_SemanticVisitor_t self)
 	{
 		if (!self)
 		{
@@ -40806,7 +40806,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SemanticScope_t shard_SemanticVisitor_get_current_scope(shard_shard_SemanticVisitor_t self)
+	SHARD_API shard_SemanticScope_t shard_SemanticVisitor_get_current_scope(shard_SemanticVisitor_t self)
 	{
 		if (!self)
 		{
@@ -40823,14 +40823,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticVisitor_operator_assign(shard_shard_SemanticVisitor_t self, shard_shard_SemanticVisitor_t p0)
+	SHARD_API shard_status_t shard_SemanticVisitor_operator_assign(shard_SemanticVisitor_t self, shard_SemanticVisitor_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_SemanticVisitor_pop_scope(shard_shard_SemanticVisitor_t self)
+	SHARD_API shard_status_t shard_SemanticVisitor_pop_scope(shard_SemanticVisitor_t self)
 	{
 		if (!self)
 		{
@@ -40867,7 +40867,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticVisitor_pop_scope_stack(shard_shard_SemanticVisitor_t self)
+	SHARD_API shard_status_t shard_SemanticVisitor_pop_scope_stack(shard_SemanticVisitor_t self)
 	{
 		if (!self)
 		{
@@ -40904,7 +40904,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SemanticVisitor_push_scope(shard_shard_SemanticVisitor_t self, const void* p0)
+	SHARD_API shard_status_t shard_SemanticVisitor_push_scope(shard_SemanticVisitor_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -40946,7 +40946,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_StructSymbol_StructSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_shard_StructSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_StructSymbol_StructSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_StructSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -40989,7 +40989,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_StructSymbol_StructSymbol_destroy(shard_shard_StructSymbol_t self)
+	SHARD_API void shard_StructSymbol_StructSymbol_destroy(shard_StructSymbol_t self)
 	{
 		if (!self)
 		{
@@ -41004,7 +41004,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_StructSymbol_is_type(shard_shard_StructSymbol_t self)
+	SHARD_API int shard_StructSymbol_is_type(shard_StructSymbol_t self)
 	{
 		if (!self)
 		{
@@ -41021,7 +41021,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StructSymbol_on_symbol_declared(shard_shard_StructSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_StructSymbol_on_symbol_declared(shard_StructSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41058,7 +41058,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_StructSymbol_operator_assign(shard_shard_StructSymbol_t self, shard_shard_StructSymbol_t p0)
+	SHARD_API shard_status_t shard_StructSymbol_operator_assign(shard_StructSymbol_t self, shard_StructSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
@@ -41070,7 +41070,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_SymbolFactory_SymbolFactory_create(shard_shard_SymbolTable_t p0, shard_shard_SymbolFactory_t* out_handle)
+	SHARD_API shard_status_t shard_SymbolFactory_SymbolFactory_create(shard_SymbolTable_t p0, shard_SymbolFactory_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -41113,7 +41113,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SymbolFactory_SymbolFactory_destroy(shard_shard_SymbolFactory_t self)
+	SHARD_API void shard_SymbolFactory_SymbolFactory_destroy(shard_SymbolFactory_t self)
 	{
 		if (!self)
 		{
@@ -41128,7 +41128,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_accessor(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_accessor(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41145,7 +41145,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_array_type(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_array_type(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41162,7 +41162,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_backing_field(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_backing_field(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41179,7 +41179,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_constructor(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_constructor(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41196,7 +41196,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_delegate(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_delegate(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41213,7 +41213,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_enum(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_enum(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41230,7 +41230,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_enum_field(shard_shard_SymbolFactory_t self, const wchar_t* p0, const void* p1, const void* p2, std::int64_t p3)
+	SHARD_API void* shard_SymbolFactory_create_enum_field(shard_SymbolFactory_t self, const wchar_t* p0, const void* p1, const void* p2, std::int64_t p3)
 	{
 		if (!self)
 		{
@@ -41247,7 +41247,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_field(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_field(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41264,7 +41264,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_generic_type(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_generic_type(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41281,7 +41281,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_getter(shard_shard_SymbolFactory_t self, const void* p0)
+	SHARD_API void* shard_SymbolFactory_create_getter(shard_SymbolFactory_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41298,7 +41298,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_indexator(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_indexator(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41315,7 +41315,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_interface(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_interface(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41332,7 +41332,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_method(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_method(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41349,7 +41349,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_namespace(shard_shard_SymbolFactory_t self, const void* p0)
+	SHARD_API void* shard_SymbolFactory_create_namespace(shard_SymbolFactory_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41366,7 +41366,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_nullable_type(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_nullable_type(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41383,7 +41383,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_operator(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_operator(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41400,7 +41400,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_parameter(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_parameter(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41417,7 +41417,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_property(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_property(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41434,7 +41434,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_setter(shard_shard_SymbolFactory_t self, const void* p0)
+	SHARD_API void* shard_SymbolFactory_create_setter(shard_SymbolFactory_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41451,7 +41451,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_struct(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_struct(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41468,7 +41468,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_type_parameter(shard_shard_SymbolFactory_t self, const wchar_t* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_type_parameter(shard_SymbolFactory_t self, const wchar_t* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41485,7 +41485,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolFactory_create_variable(shard_shard_SymbolFactory_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolFactory_create_variable(shard_SymbolFactory_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41502,7 +41502,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SymbolInterner_Entry_Entry_create(shard_shard_SymbolInterner_Entry_t* out_handle)
+	SHARD_API shard_status_t shard_SymbolInterner_Entry_Entry_create(shard_SymbolInterner_Entry_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -41545,7 +41545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SymbolInterner_Entry_Entry_destroy(shard_shard_SymbolInterner_Entry_t self)
+	SHARD_API void shard_SymbolInterner_Entry_Entry_destroy(shard_SymbolInterner_Entry_t self)
 	{
 		if (!self)
 		{
@@ -41560,7 +41560,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SymbolInterner_SymbolInterner_create(shard_shard_SymbolInterner_t* out_handle)
+	SHARD_API shard_status_t shard_SymbolInterner_SymbolInterner_create(shard_SymbolInterner_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -41603,7 +41603,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SymbolInterner_SymbolInterner_destroy(shard_shard_SymbolInterner_t self)
+	SHARD_API void shard_SymbolInterner_SymbolInterner_destroy(shard_SymbolInterner_t self)
 	{
 		if (!self)
 		{
@@ -41618,7 +41618,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolInterner_find(shard_shard_SymbolInterner_t self, std::uint64_t* p0, std::uint16_t p1)
+	SHARD_API void* shard_SymbolInterner_find(shard_SymbolInterner_t self, std::uint64_t* p0, std::uint16_t p1)
 	{
 		if (!self)
 		{
@@ -41635,7 +41635,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SymbolInterner_insert(shard_shard_SymbolInterner_t self, std::uint64_t* p0, std::uint16_t p1, const void* p2)
+	SHARD_API shard_status_t shard_SymbolInterner_insert(shard_SymbolInterner_t self, std::uint64_t* p0, std::uint16_t p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -41672,7 +41672,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SymbolInterner_operator_assign(shard_shard_SymbolInterner_t self, shard_shard_SymbolInterner_t p0)
+	SHARD_API shard_status_t shard_SymbolInterner_operator_assign(shard_SymbolInterner_t self, shard_SymbolInterner_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
@@ -41684,7 +41684,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_SymbolTable_SymbolTable_create(shard_shard_SymbolTable_t* out_handle)
+	SHARD_API shard_status_t shard_SymbolTable_SymbolTable_create(shard_SymbolTable_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -41727,7 +41727,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SymbolTable_SymbolTable_destroy(shard_shard_SymbolTable_t self)
+	SHARD_API void shard_SymbolTable_SymbolTable_destroy(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -41742,7 +41742,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SymbolTable_bind_type_arguments(shard_shard_SymbolTable_t self, const void* p0, const void* p1)
+	SHARD_API shard_status_t shard_SymbolTable_bind_type_arguments(shard_SymbolTable_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41779,7 +41779,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_array_type(shard_shard_SymbolTable_t self, const void* p0)
+	SHARD_API void* shard_SymbolTable_find_array_type(shard_SymbolTable_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41796,7 +41796,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_generic_method(shard_shard_SymbolTable_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolTable_find_generic_method(shard_SymbolTable_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41813,7 +41813,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_generic_type(shard_shard_SymbolTable_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolTable_find_generic_type(shard_SymbolTable_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41830,7 +41830,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_nullable_type(shard_shard_SymbolTable_t self, const void* p0)
+	SHARD_API void* shard_SymbolTable_find_nullable_type(shard_SymbolTable_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41847,7 +41847,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_or_create_array_type(shard_shard_SymbolTable_t self, const void* p0)
+	SHARD_API void* shard_SymbolTable_find_or_create_array_type(shard_SymbolTable_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41864,7 +41864,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_or_create_generic_method(shard_shard_SymbolTable_t self, const void* p0, const void* p1, const void* p2)
+	SHARD_API void* shard_SymbolTable_find_or_create_generic_method(shard_SymbolTable_t self, const void* p0, const void* p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -41881,7 +41881,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_or_create_generic_type(shard_shard_SymbolTable_t self, const void* p0, const void* p1)
+	SHARD_API void* shard_SymbolTable_find_or_create_generic_type(shard_SymbolTable_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -41898,7 +41898,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_find_or_create_nullable_type(shard_shard_SymbolTable_t self, const void* p0)
+	SHARD_API void* shard_SymbolTable_find_or_create_nullable_type(shard_SymbolTable_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -41915,7 +41915,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_gmt_Arena_t shard_SymbolTable_get_arena(shard_shard_SymbolTable_t self)
+	SHARD_API shard_gmt_Arena_t shard_SymbolTable_get_arena(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -41932,7 +41932,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_array_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_array_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -41949,7 +41949,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_boolean_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_boolean_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -41966,7 +41966,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_byte_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_byte_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -41983,7 +41983,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_char_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_char_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42000,7 +42000,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_double_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_double_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42017,7 +42017,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_integer_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_integer_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42034,7 +42034,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_nint_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_nint_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42051,7 +42051,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_root_namespace(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_root_namespace(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42068,7 +42068,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_standard_type(shard_shard_SymbolTable_t self, int p0)
+	SHARD_API void* shard_SymbolTable_get_standard_type(shard_SymbolTable_t self, int p0)
 	{
 		if (!self)
 		{
@@ -42085,7 +42085,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_string_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_string_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42102,7 +42102,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_void_primitive(shard_shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_void_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42119,7 +42119,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_lookup_node(shard_shard_SymbolTable_t self, const void* p0)
+	SHARD_API void* shard_SymbolTable_lookup_node(shard_SymbolTable_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -42136,7 +42136,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_lookup_symbol(shard_shard_SymbolTable_t self, const void* p0)
+	SHARD_API void* shard_SymbolTable_lookup_symbol(shard_SymbolTable_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -42153,7 +42153,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SymbolTable_lookup_type_arguments(shard_shard_SymbolTable_t self, const void* p0, void** out_value)
+	SHARD_API shard_status_t shard_SymbolTable_lookup_type_arguments(shard_SymbolTable_t self, const void* p0, void** out_value)
 	{
 		if (!self)
 		{
@@ -42201,14 +42201,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SymbolTable_operator_assign(shard_shard_SymbolTable_t self, shard_shard_SymbolTable_t p0)
+	SHARD_API shard_status_t shard_SymbolTable_operator_assign(shard_SymbolTable_t self, shard_SymbolTable_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_SymbolTable_set_standard_type(shard_shard_SymbolTable_t self, int p0, const void* p1)
+	SHARD_API shard_status_t shard_SymbolTable_set_standard_type(shard_SymbolTable_t self, int p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -42245,7 +42245,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxSymbol_SyntaxSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_shard_SyntaxSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_SyntaxSymbol_SyntaxSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_SyntaxSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -42288,7 +42288,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_SyntaxSymbol_SyntaxSymbol_destroy(shard_shard_SyntaxSymbol_t self)
+	SHARD_API void shard_SyntaxSymbol_SyntaxSymbol_destroy(shard_SyntaxSymbol_t self)
 	{
 		if (!self)
 		{
@@ -42303,7 +42303,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxSymbol_get_full_name(shard_shard_SyntaxSymbol_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_SyntaxSymbol_get_full_name(shard_SyntaxSymbol_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -42351,7 +42351,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SyntaxSymbol_get_kind(shard_shard_SyntaxSymbol_t self)
+	SHARD_API int shard_SyntaxSymbol_get_kind(shard_SyntaxSymbol_t self)
 	{
 		if (!self)
 		{
@@ -42368,7 +42368,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxSymbol_get_name(shard_shard_SyntaxSymbol_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_SyntaxSymbol_get_name(shard_SyntaxSymbol_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -42416,7 +42416,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxSymbol_get_name_reference(shard_shard_SyntaxSymbol_t self, void** out_value)
+	SHARD_API shard_status_t shard_SyntaxSymbol_get_name_reference(shard_SyntaxSymbol_t self, void** out_value)
 	{
 		if (!self)
 		{
@@ -42464,7 +42464,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SyntaxSymbol_get_parent(shard_shard_SyntaxSymbol_t self)
+	SHARD_API void* shard_SyntaxSymbol_get_parent(shard_SyntaxSymbol_t self)
 	{
 		if (!self)
 		{
@@ -42481,7 +42481,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SyntaxSymbol_is_member(shard_shard_SyntaxSymbol_t self)
+	SHARD_API int shard_SyntaxSymbol_is_member(shard_SyntaxSymbol_t self)
 	{
 		if (!self)
 		{
@@ -42498,7 +42498,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SyntaxSymbol_is_method(shard_shard_SyntaxSymbol_t self)
+	SHARD_API int shard_SyntaxSymbol_is_method(shard_SyntaxSymbol_t self)
 	{
 		if (!self)
 		{
@@ -42515,7 +42515,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SyntaxSymbol_is_type(shard_shard_SyntaxSymbol_t self)
+	SHARD_API int shard_SyntaxSymbol_is_type(shard_SyntaxSymbol_t self)
 	{
 		if (!self)
 		{
@@ -42532,7 +42532,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxSymbol_on_symbol_declared(shard_shard_SyntaxSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_SyntaxSymbol_on_symbol_declared(shard_SyntaxSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -42569,14 +42569,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_SyntaxSymbol_operator_assign(shard_shard_SyntaxSymbol_t self, shard_shard_SyntaxSymbol_t p0)
+	SHARD_API shard_status_t shard_SyntaxSymbol_operator_assign(shard_SyntaxSymbol_t self, shard_SyntaxSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_SyntaxSymbol_set_name(shard_shard_SyntaxSymbol_t self, const wchar_t* p0)
+	SHARD_API shard_status_t shard_SyntaxSymbol_set_name(shard_SyntaxSymbol_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -42613,7 +42613,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_TypeBinder_create(shard_shard_SemanticModel_t p0, shard_shard_DiagnosticsContext_t p1, shard_shard_TypeBinder_t* out_handle)
+	SHARD_API shard_status_t shard_TypeBinder_TypeBinder_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_TypeBinder_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -42656,7 +42656,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeBinder_TypeBinder_destroy(shard_shard_TypeBinder_t self)
+	SHARD_API void shard_TypeBinder_TypeBinder_destroy(shard_TypeBinder_t self)
 	{
 		if (!self)
 		{
@@ -42671,7 +42671,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_accessor_declaration(shard_shard_TypeBinder_t self, shard_shard_AccessorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_accessor_declaration(shard_TypeBinder_t self, shard_AccessorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42708,7 +42708,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_array_type(shard_shard_TypeBinder_t self, shard_shard_ArrayTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_array_type(shard_TypeBinder_t self, shard_ArrayTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42745,7 +42745,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_arrow_clause(shard_shard_TypeBinder_t self, shard_shard_ArrowClauseSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_arrow_clause(shard_TypeBinder_t self, shard_ArrowClauseSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42782,7 +42782,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_constructor_declaration(shard_shard_TypeBinder_t self, shard_shard_ConstructorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_constructor_declaration(shard_TypeBinder_t self, shard_ConstructorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42819,7 +42819,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_defer_statement(shard_shard_TypeBinder_t self, shard_shard_DeferStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_defer_statement(shard_TypeBinder_t self, shard_DeferStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42856,7 +42856,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_delegate_declaration(shard_shard_TypeBinder_t self, shard_shard_DelegateDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_delegate_declaration(shard_TypeBinder_t self, shard_DelegateDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42893,7 +42893,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_else_statement(shard_shard_TypeBinder_t self, shard_shard_ElseStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_else_statement(shard_TypeBinder_t self, shard_ElseStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42930,7 +42930,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_enum_declaration(shard_shard_TypeBinder_t self, shard_shard_EnumDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_enum_declaration(shard_TypeBinder_t self, shard_EnumDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -42967,7 +42967,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_expression_statement(shard_shard_TypeBinder_t self, shard_shard_ExpressionStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_expression_statement(shard_TypeBinder_t self, shard_ExpressionStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43004,7 +43004,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_field_declaration(shard_shard_TypeBinder_t self, shard_shard_FieldDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_field_declaration(shard_TypeBinder_t self, shard_FieldDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43041,7 +43041,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_for_in_statement(shard_shard_TypeBinder_t self, shard_shard_ForInStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_for_in_statement(shard_TypeBinder_t self, shard_ForInStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43078,7 +43078,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_function_declaration(shard_shard_TypeBinder_t self, shard_shard_FunctionDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_function_declaration(shard_TypeBinder_t self, shard_FunctionDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43115,7 +43115,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_generic_type(shard_shard_TypeBinder_t self, shard_shard_GenericTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_generic_type(shard_TypeBinder_t self, shard_GenericTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43152,7 +43152,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_identifier_name_type(shard_shard_TypeBinder_t self, shard_shard_IdentifierNameTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_identifier_name_type(shard_TypeBinder_t self, shard_IdentifierNameTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43189,7 +43189,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_if_statement(shard_shard_TypeBinder_t self, shard_shard_IfStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_if_statement(shard_TypeBinder_t self, shard_IfStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43226,7 +43226,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_indexator_declaration(shard_shard_TypeBinder_t self, shard_shard_IndexatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_indexator_declaration(shard_TypeBinder_t self, shard_IndexatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43263,7 +43263,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_interface_declaration(shard_shard_TypeBinder_t self, shard_shard_InterfaceDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_interface_declaration(shard_TypeBinder_t self, shard_InterfaceDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43300,7 +43300,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_lambda_expression(shard_shard_TypeBinder_t self, shard_shard_LambdaExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_lambda_expression(shard_TypeBinder_t self, shard_LambdaExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43337,7 +43337,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_nullable_type(shard_shard_TypeBinder_t self, shard_shard_NullableTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_nullable_type(shard_TypeBinder_t self, shard_NullableTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43374,7 +43374,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_object_creation_expression(shard_shard_TypeBinder_t self, shard_shard_ObjectExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_object_creation_expression(shard_TypeBinder_t self, shard_ObjectExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43411,7 +43411,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_operator_declaration(shard_shard_TypeBinder_t self, shard_shard_OperatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_operator_declaration(shard_TypeBinder_t self, shard_OperatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43448,7 +43448,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_parameter(shard_shard_TypeBinder_t self, shard_shard_ParameterSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_parameter(shard_TypeBinder_t self, shard_ParameterSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43485,7 +43485,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_predefined_type(shard_shard_TypeBinder_t self, shard_shard_PredefinedTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_predefined_type(shard_TypeBinder_t self, shard_PredefinedTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43522,7 +43522,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_property_declaration(shard_shard_TypeBinder_t self, shard_shard_PropertyDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_property_declaration(shard_TypeBinder_t self, shard_PropertyDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43559,7 +43559,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_qualified_name_type(shard_shard_TypeBinder_t self, shard_shard_QualifiedNameTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_qualified_name_type(shard_TypeBinder_t self, shard_QualifiedNameTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43596,7 +43596,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_return_statement(shard_shard_TypeBinder_t self, shard_shard_ReturnStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_return_statement(shard_TypeBinder_t self, shard_ReturnStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43633,7 +43633,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_statements_block(shard_shard_TypeBinder_t self, shard_shard_StatementsBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_statements_block(shard_TypeBinder_t self, shard_StatementsBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43670,7 +43670,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_struct_declaration(shard_shard_TypeBinder_t self, shard_shard_StructDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_struct_declaration(shard_TypeBinder_t self, shard_StructDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43707,7 +43707,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_throw_statement(shard_shard_TypeBinder_t self, shard_shard_ThrowStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_throw_statement(shard_TypeBinder_t self, shard_ThrowStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43744,7 +43744,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_translation_unit(shard_shard_TypeBinder_t self, shard_shard_TranslationUnitSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_translation_unit(shard_TypeBinder_t self, shard_TranslationUnitSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43781,7 +43781,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_try_statement(shard_shard_TypeBinder_t self, shard_shard_TryStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_try_statement(shard_TypeBinder_t self, shard_TryStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43818,7 +43818,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_unless_statement(shard_shard_TypeBinder_t self, shard_shard_UnlessStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_unless_statement(shard_TypeBinder_t self, shard_UnlessStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43855,7 +43855,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_until_statement(shard_shard_TypeBinder_t self, shard_shard_UntilStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_until_statement(shard_TypeBinder_t self, shard_UntilStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43892,7 +43892,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_using_directive(shard_shard_TypeBinder_t self, shard_shard_UsingDirectiveSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_using_directive(shard_TypeBinder_t self, shard_UsingDirectiveSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43929,7 +43929,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_variable_statement(shard_shard_TypeBinder_t self, shard_shard_VariableStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_variable_statement(shard_TypeBinder_t self, shard_VariableStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -43966,7 +43966,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeBinder_visit_while_statement(shard_shard_TypeBinder_t self, shard_shard_WhileStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_TypeBinder_visit_while_statement(shard_TypeBinder_t self, shard_WhileStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -44003,7 +44003,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSymbol_TypeParameterSymbol_create(const wchar_t* p0, const void* p1, shard_shard_TypeParameterSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_TypeParameterSymbol_TypeParameterSymbol_create(const wchar_t* p0, const void* p1, shard_TypeParameterSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -44046,7 +44046,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeParameterSymbol_TypeParameterSymbol_destroy(shard_shard_TypeParameterSymbol_t self)
+	SHARD_API void shard_TypeParameterSymbol_TypeParameterSymbol_destroy(shard_TypeParameterSymbol_t self)
 	{
 		if (!self)
 		{
@@ -44061,7 +44061,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSymbol_add_constraint(shard_shard_TypeParameterSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_TypeParameterSymbol_add_constraint(shard_TypeParameterSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -44098,7 +44098,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TypeParameterSymbol_get_constraints(shard_shard_TypeParameterSymbol_t self)
+	SHARD_API void* shard_TypeParameterSymbol_get_constraints(shard_TypeParameterSymbol_t self)
 	{
 		if (!self)
 		{
@@ -44115,7 +44115,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_TypeParameterSymbol_get_type_argument_index(shard_shard_TypeParameterSymbol_t self)
+	SHARD_API std::uint16_t shard_TypeParameterSymbol_get_type_argument_index(shard_TypeParameterSymbol_t self)
 	{
 		if (!self)
 		{
@@ -44132,14 +44132,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSymbol_operator_assign(shard_shard_TypeParameterSymbol_t self, shard_shard_TypeParameterSymbol_t p0)
+	SHARD_API shard_status_t shard_TypeParameterSymbol_operator_assign(shard_TypeParameterSymbol_t self, shard_TypeParameterSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_TypeParameterSymbol_set_type_argument_index(shard_shard_TypeParameterSymbol_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_TypeParameterSymbol_set_type_argument_index(shard_TypeParameterSymbol_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -44176,7 +44176,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableSymbol_VariableSymbol_create(const wchar_t* p0, const void* p1, shard_shard_VariableSymbol_t* out_handle)
+	SHARD_API shard_status_t shard_VariableSymbol_VariableSymbol_create(const wchar_t* p0, const void* p1, shard_VariableSymbol_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -44219,7 +44219,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_VariableSymbol_VariableSymbol_destroy(shard_shard_VariableSymbol_t self)
+	SHARD_API void shard_VariableSymbol_VariableSymbol_destroy(shard_VariableSymbol_t self)
 	{
 		if (!self)
 		{
@@ -44234,7 +44234,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_VariableSymbol_get_type(shard_shard_VariableSymbol_t self)
+	SHARD_API void* shard_VariableSymbol_get_type(shard_VariableSymbol_t self)
 	{
 		if (!self)
 		{
@@ -44251,14 +44251,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VariableSymbol_operator_assign(shard_shard_VariableSymbol_t self, shard_shard_VariableSymbol_t p0)
+	SHARD_API shard_status_t shard_VariableSymbol_operator_assign(shard_VariableSymbol_t self, shard_VariableSymbol_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_VariableSymbol_set_type(shard_shard_VariableSymbol_t self, const void* p0)
+	SHARD_API shard_status_t shard_VariableSymbol_set_type(shard_VariableSymbol_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -44304,7 +44304,7 @@ extern "C"
 	// ----------------------------------------------------------------------
 	// pragmatic
 	// ----------------------------------------------------------------------
-	SHARD_API shard_status_t shard_AllocationSiteVerdict_AllocationSiteVerdict_create(shard_shard_AllocationSiteVerdict_t* out_handle)
+	SHARD_API shard_status_t shard_AllocationSiteVerdict_AllocationSiteVerdict_create(shard_AllocationSiteVerdict_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -44347,7 +44347,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_AllocationSiteVerdict_AllocationSiteVerdict_destroy(shard_shard_AllocationSiteVerdict_t self)
+	SHARD_API void shard_AllocationSiteVerdict_AllocationSiteVerdict_destroy(shard_AllocationSiteVerdict_t self)
 	{
 		if (!self)
 		{
@@ -44408,7 +44408,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API shard_status_t shard_EscapeAnalyzer_EscapeAnalyzer_create(shard_shard_SemanticModel_t p0, shard_shard_PragmaticModel_t p1, shard_shard_DiagnosticsContext_t p2, shard_shard_EscapeAnalyzer_t* out_handle)
+	SHARD_API shard_status_t shard_EscapeAnalyzer_EscapeAnalyzer_create(shard_SemanticModel_t p0, shard_PragmaticModel_t p1, shard_DiagnosticsContext_t p2, shard_EscapeAnalyzer_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -44451,7 +44451,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_EscapeAnalyzer_EscapeAnalyzer_destroy(shard_shard_EscapeAnalyzer_t self)
+	SHARD_API void shard_EscapeAnalyzer_EscapeAnalyzer_destroy(shard_EscapeAnalyzer_t self)
 	{
 		if (!self)
 		{
@@ -44742,7 +44742,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API shard_status_t shard_EscapeAnalyzer_analyze(shard_shard_EscapeAnalyzer_t self, shard_shard_SyntaxTree_t p0)
+	SHARD_API shard_status_t shard_EscapeAnalyzer_analyze(shard_EscapeAnalyzer_t self, shard_SyntaxTree_t p0)
 	{
 		if (!self)
 		{
@@ -44789,7 +44789,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_EscapeSummary_EscapeSummary_create(shard_shard_EscapeSummary_t* out_handle)
+	SHARD_API shard_status_t shard_EscapeSummary_EscapeSummary_create(shard_EscapeSummary_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -44832,7 +44832,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_EscapeSummary_EscapeSummary_destroy(shard_shard_EscapeSummary_t self)
+	SHARD_API void shard_EscapeSummary_EscapeSummary_destroy(shard_EscapeSummary_t self)
 	{
 		if (!self)
 		{
@@ -44847,7 +44847,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FrameLayout_FrameLayout_create(shard_shard_FrameLayout_t* out_handle)
+	SHARD_API shard_status_t shard_FrameLayout_FrameLayout_create(shard_FrameLayout_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -44890,7 +44890,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_FrameLayout_FrameLayout_destroy(shard_shard_FrameLayout_t self)
+	SHARD_API void shard_FrameLayout_FrameLayout_destroy(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -44905,7 +44905,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FrameLayout_add_argument(shard_shard_FrameLayout_t self, const void* p0)
+	SHARD_API shard_status_t shard_FrameLayout_add_argument(shard_FrameLayout_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -44942,7 +44942,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_FrameLayout_add_temporary(shard_shard_FrameLayout_t self, const void* p0, shard_shard_TypeShape_t p1, int p2)
+	SHARD_API std::uint16_t shard_FrameLayout_add_temporary(shard_FrameLayout_t self, const void* p0, shard_TypeShape_t p1, int p2)
 	{
 		if (!self)
 		{
@@ -44959,7 +44959,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_FrameLayout_add_variable(shard_shard_FrameLayout_t self, const void* p0, int p1)
+	SHARD_API std::uint16_t shard_FrameLayout_add_variable(shard_FrameLayout_t self, const void* p0, int p1)
 	{
 		if (!self)
 		{
@@ -44976,7 +44976,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_FrameLayout_compute_locals_bytes(shard_shard_FrameLayout_t self, const void* p0, const void* p1)
+	SHARD_API std::size_t shard_FrameLayout_compute_locals_bytes(shard_FrameLayout_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -45006,7 +45006,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_FrameLayout_get_argument_count(shard_shard_FrameLayout_t self)
+	SHARD_API std::uint16_t shard_FrameLayout_get_argument_count(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45023,7 +45023,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FrameLayout_get_argument_types(shard_shard_FrameLayout_t self)
+	SHARD_API void* shard_FrameLayout_get_argument_types(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45040,7 +45040,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_FrameLayout_get_eval_slot_payload(shard_shard_FrameLayout_t self)
+	SHARD_API std::size_t shard_FrameLayout_get_eval_slot_payload(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45057,7 +45057,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_FrameLayout_get_local_count(shard_shard_FrameLayout_t self)
+	SHARD_API std::uint16_t shard_FrameLayout_get_local_count(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45074,7 +45074,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_FrameLayout_get_locals_bytes(shard_shard_FrameLayout_t self)
+	SHARD_API std::size_t shard_FrameLayout_get_locals_bytes(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45091,7 +45091,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint32_t shard_FrameLayout_get_max_eval_depth(shard_shard_FrameLayout_t self)
+	SHARD_API std::uint32_t shard_FrameLayout_get_max_eval_depth(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45108,7 +45108,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_FrameLayout_get_variable_count(shard_shard_FrameLayout_t self)
+	SHARD_API std::uint16_t shard_FrameLayout_get_variable_count(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45125,7 +45125,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_FrameLayout_get_variable_slots(shard_shard_FrameLayout_t self)
+	SHARD_API void* shard_FrameLayout_get_variable_slots(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45142,7 +45142,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_FrameLayout_is_complete(shard_shard_FrameLayout_t self)
+	SHARD_API int shard_FrameLayout_is_complete(shard_FrameLayout_t self)
 	{
 		if (!self)
 		{
@@ -45159,14 +45159,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FrameLayout_operator_assign(shard_shard_FrameLayout_t self, shard_shard_FrameLayout_t p0)
+	SHARD_API shard_status_t shard_FrameLayout_operator_assign(shard_FrameLayout_t self, shard_FrameLayout_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_FrameLayout_publish_eval_layout(shard_shard_FrameLayout_t self, std::uint32_t p0, std::size_t p1, int p2)
+	SHARD_API shard_status_t shard_FrameLayout_publish_eval_layout(shard_FrameLayout_t self, std::uint32_t p0, std::size_t p1, int p2)
 	{
 		if (!self)
 		{
@@ -45203,7 +45203,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_FrameLayout_resolve_payload(shard_shard_TypeShape_t p0, int p1)
+	SHARD_API std::size_t shard_FrameLayout_resolve_payload(shard_TypeShape_t p0, int p1)
 	{
 		try
 		{
@@ -45216,7 +45216,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_FrameLayout_seal_variable(shard_shard_FrameLayout_t self, std::uint16_t p0, const void* p1, int p2)
+	SHARD_API int shard_FrameLayout_seal_variable(shard_FrameLayout_t self, std::uint16_t p0, const void* p1, int p2)
 	{
 		if (!self)
 		{
@@ -45233,7 +45233,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FrameLayout_set_argument_count(shard_shard_FrameLayout_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_FrameLayout_set_argument_count(shard_FrameLayout_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -45270,7 +45270,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FrameLayout_set_locals_bytes(shard_shard_FrameLayout_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_FrameLayout_set_locals_bytes(shard_FrameLayout_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -45307,7 +45307,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_FrameLayout_set_variable_verdict(shard_shard_FrameLayout_t self, std::uint16_t p0, int p1)
+	SHARD_API int shard_FrameLayout_set_variable_verdict(shard_FrameLayout_t self, std::uint16_t p0, int p1)
 	{
 		if (!self)
 		{
@@ -45324,7 +45324,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FrameSlotRecipe_FrameSlotRecipe_create(shard_shard_FrameSlotRecipe_t* out_handle)
+	SHARD_API shard_status_t shard_FrameSlotRecipe_FrameSlotRecipe_create(shard_FrameSlotRecipe_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -45367,7 +45367,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_FrameSlotRecipe_FrameSlotRecipe_destroy(shard_shard_FrameSlotRecipe_t self)
+	SHARD_API void shard_FrameSlotRecipe_FrameSlotRecipe_destroy(shard_FrameSlotRecipe_t self)
 	{
 		if (!self)
 		{
@@ -45382,7 +45382,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LayoutGenerator_LayoutGenerator_create(shard_shard_SemanticModel_t p0, shard_shard_PragmaticModel_t p1, shard_shard_DiagnosticsContext_t p2, shard_shard_LayoutGenerator_t* out_handle)
+	SHARD_API shard_status_t shard_LayoutGenerator_LayoutGenerator_create(shard_SemanticModel_t p0, shard_PragmaticModel_t p1, shard_DiagnosticsContext_t p2, shard_LayoutGenerator_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -45425,7 +45425,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_LayoutGenerator_LayoutGenerator_destroy(shard_shard_LayoutGenerator_t self)
+	SHARD_API void shard_LayoutGenerator_LayoutGenerator_destroy(shard_LayoutGenerator_t self)
 	{
 		if (!self)
 		{
@@ -45440,7 +45440,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LayoutGenerator_analyze(shard_shard_LayoutGenerator_t self, shard_shard_SyntaxTree_t p0)
+	SHARD_API shard_status_t shard_LayoutGenerator_analyze(shard_LayoutGenerator_t self, shard_SyntaxTree_t p0)
 	{
 		if (!self)
 		{
@@ -45477,14 +45477,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LayoutGenerator_operator_assign(shard_shard_LayoutGenerator_t self, shard_shard_LayoutGenerator_t p0)
+	SHARD_API shard_status_t shard_LayoutGenerator_operator_assign(shard_LayoutGenerator_t self, shard_LayoutGenerator_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_ParameterEscapeSummary_ParameterEscapeSummary_create(shard_shard_ParameterEscapeSummary_t* out_handle)
+	SHARD_API shard_status_t shard_ParameterEscapeSummary_ParameterEscapeSummary_create(shard_ParameterEscapeSummary_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -45527,7 +45527,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ParameterEscapeSummary_ParameterEscapeSummary_destroy(shard_shard_ParameterEscapeSummary_t self)
+	SHARD_API void shard_ParameterEscapeSummary_ParameterEscapeSummary_destroy(shard_ParameterEscapeSummary_t self)
 	{
 		if (!self)
 		{
@@ -45547,7 +45547,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_PragmaticAnalyzer_PragmaticAnalyzer_create(shard_shard_DiagnosticsContext_t p0, shard_shard_PragmaticAnalyzer_t* out_handle)
+	SHARD_API shard_status_t shard_PragmaticAnalyzer_PragmaticAnalyzer_create(shard_DiagnosticsContext_t p0, shard_PragmaticAnalyzer_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -45590,7 +45590,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_PragmaticAnalyzer_PragmaticAnalyzer_destroy(shard_shard_PragmaticAnalyzer_t self)
+	SHARD_API void shard_PragmaticAnalyzer_PragmaticAnalyzer_destroy(shard_PragmaticAnalyzer_t self)
 	{
 		if (!self)
 		{
@@ -45605,7 +45605,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticAnalyzer_analyze(shard_shard_PragmaticAnalyzer_t self, shard_shard_SyntaxTree_t p0, shard_shard_SemanticModel_t p1, shard_shard_PragmaticModel_t p2)
+	SHARD_API shard_status_t shard_PragmaticAnalyzer_analyze(shard_PragmaticAnalyzer_t self, shard_SyntaxTree_t p0, shard_SemanticModel_t p1, shard_PragmaticModel_t p2)
 	{
 		if (!self)
 		{
@@ -45642,7 +45642,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_PragmaticModel_create(shard_shard_PragmaticModel_t* out_handle)
+	SHARD_API shard_status_t shard_PragmaticModel_PragmaticModel_create(shard_PragmaticModel_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -45685,7 +45685,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_PragmaticModel_PragmaticModel_destroy(shard_shard_PragmaticModel_t self)
+	SHARD_API void shard_PragmaticModel_PragmaticModel_destroy(shard_PragmaticModel_t self)
 	{
 		if (!self)
 		{
@@ -45700,7 +45700,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_FrameLayout_t shard_PragmaticModel_find_frame_layout(shard_shard_PragmaticModel_t self, const void* p0)
+	SHARD_API shard_FrameLayout_t shard_PragmaticModel_find_frame_layout(shard_PragmaticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -45717,7 +45717,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TypeShape_t shard_PragmaticModel_find_or_create_type_shape(shard_shard_PragmaticModel_t self, shard_shard_SemanticModel_t p0, const void* p1, const void* p2)
+	SHARD_API shard_TypeShape_t shard_PragmaticModel_find_or_create_type_shape(shard_PragmaticModel_t self, shard_SemanticModel_t p0, const void* p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -45734,7 +45734,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TypeShape_t shard_PragmaticModel_find_type_shape(shard_shard_PragmaticModel_t self, shard_shard_SemanticModel_t p0, const void* p1, const void* p2)
+	SHARD_API shard_TypeShape_t shard_PragmaticModel_find_type_shape(shard_PragmaticModel_t self, shard_SemanticModel_t p0, const void* p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -45751,7 +45751,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_get_allocation_site_verdict(shard_shard_PragmaticModel_t self, const void* p0, void** out_value)
+	SHARD_API shard_status_t shard_PragmaticModel_get_allocation_site_verdict(shard_PragmaticModel_t self, const void* p0, void** out_value)
 	{
 		if (!self)
 		{
@@ -45799,7 +45799,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PragmaticModel_get_allocation_sites(shard_shard_PragmaticModel_t self)
+	SHARD_API void* shard_PragmaticModel_get_allocation_sites(shard_PragmaticModel_t self)
 	{
 		if (!self)
 		{
@@ -45816,7 +45816,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PragmaticModel_get_lambda_captures(shard_shard_PragmaticModel_t self, const void* p0)
+	SHARD_API void* shard_PragmaticModel_get_lambda_captures(shard_PragmaticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -45833,7 +45833,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PragmaticModel_get_local_order(shard_shard_PragmaticModel_t self, const void* p0)
+	SHARD_API void* shard_PragmaticModel_get_local_order(shard_PragmaticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -45850,7 +45850,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_get_local_slot(shard_shard_PragmaticModel_t self, const void* p0, const void* p1, void** out_value)
+	SHARD_API shard_status_t shard_PragmaticModel_get_local_slot(shard_PragmaticModel_t self, const void* p0, const void* p1, void** out_value)
 	{
 		if (!self)
 		{
@@ -45898,7 +45898,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_get_local_verdict(shard_shard_PragmaticModel_t self, const void* p0, const void* p1, shard_shard_AllocationSiteVerdict_t* out_value)
+	SHARD_API shard_status_t shard_PragmaticModel_get_local_verdict(shard_PragmaticModel_t self, const void* p0, const void* p1, shard_AllocationSiteVerdict_t* out_value)
 	{
 		if (!self)
 		{
@@ -45946,7 +45946,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_FrameLayout_t shard_PragmaticModel_get_or_create_frame_layout(shard_shard_PragmaticModel_t self, const void* p0)
+	SHARD_API shard_FrameLayout_t shard_PragmaticModel_get_or_create_frame_layout(shard_PragmaticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -45963,7 +45963,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PragmaticModel_get_promotion_points(shard_shard_PragmaticModel_t self, const void* p0)
+	SHARD_API void* shard_PragmaticModel_get_promotion_points(shard_PragmaticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -45980,7 +45980,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PragmaticModel_get_summaries(shard_shard_PragmaticModel_t self)
+	SHARD_API void* shard_PragmaticModel_get_summaries(shard_PragmaticModel_t self)
 	{
 		if (!self)
 		{
@@ -45997,7 +45997,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_get_summary(shard_shard_PragmaticModel_t self, const void* p0, shard_shard_EscapeSummary_t* out_value)
+	SHARD_API shard_status_t shard_PragmaticModel_get_summary(shard_PragmaticModel_t self, const void* p0, shard_EscapeSummary_t* out_value)
 	{
 		if (!self)
 		{
@@ -46045,7 +46045,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TypeShapeCache_t shard_PragmaticModel_get_type_shape_cache(shard_shard_PragmaticModel_t self)
+	SHARD_API shard_TypeShapeCache_t shard_PragmaticModel_get_type_shape_cache(shard_PragmaticModel_t self)
 	{
 		if (!self)
 		{
@@ -46062,7 +46062,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PragmaticModel_lambda_captures_for(shard_shard_PragmaticModel_t self, const void* p0)
+	SHARD_API void* shard_PragmaticModel_lambda_captures_for(shard_PragmaticModel_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -46079,14 +46079,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_operator_assign(shard_shard_PragmaticModel_t self, shard_shard_PragmaticModel_t p0)
+	SHARD_API shard_status_t shard_PragmaticModel_operator_assign(shard_PragmaticModel_t self, shard_PragmaticModel_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_set_allocation_site_verdict(shard_shard_PragmaticModel_t self, const void* p0, shard_shard_AllocationSiteVerdict_t p1)
+	SHARD_API shard_status_t shard_PragmaticModel_set_allocation_site_verdict(shard_PragmaticModel_t self, const void* p0, shard_AllocationSiteVerdict_t p1)
 	{
 		if (!self)
 		{
@@ -46123,7 +46123,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_set_local_order(shard_shard_PragmaticModel_t self, const void* p0, const void* p1)
+	SHARD_API shard_status_t shard_PragmaticModel_set_local_order(shard_PragmaticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -46160,7 +46160,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_set_local_slot(shard_shard_PragmaticModel_t self, const void* p0, const void* p1, std::uint16_t p2)
+	SHARD_API shard_status_t shard_PragmaticModel_set_local_slot(shard_PragmaticModel_t self, const void* p0, const void* p1, std::uint16_t p2)
 	{
 		if (!self)
 		{
@@ -46197,7 +46197,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_set_local_verdict(shard_shard_PragmaticModel_t self, const void* p0, const void* p1, shard_shard_AllocationSiteVerdict_t p2)
+	SHARD_API shard_status_t shard_PragmaticModel_set_local_verdict(shard_PragmaticModel_t self, const void* p0, const void* p1, shard_AllocationSiteVerdict_t p2)
 	{
 		if (!self)
 		{
@@ -46234,7 +46234,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_set_promotion_points(shard_shard_PragmaticModel_t self, const void* p0, const void* p1)
+	SHARD_API shard_status_t shard_PragmaticModel_set_promotion_points(shard_PragmaticModel_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -46271,7 +46271,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PragmaticModel_set_summary(shard_shard_PragmaticModel_t self, const void* p0, shard_shard_EscapeSummary_t p1)
+	SHARD_API shard_status_t shard_PragmaticModel_set_summary(shard_PragmaticModel_t self, const void* p0, shard_EscapeSummary_t p1)
 	{
 		if (!self)
 		{
@@ -46313,7 +46313,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_TypeShapeCache_TypeShapeCache_create(shard_shard_TypeShapeCache_t* out_handle)
+	SHARD_API shard_status_t shard_TypeShapeCache_TypeShapeCache_create(shard_TypeShapeCache_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -46356,7 +46356,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeShapeCache_TypeShapeCache_destroy(shard_shard_TypeShapeCache_t self)
+	SHARD_API void shard_TypeShapeCache_TypeShapeCache_destroy(shard_TypeShapeCache_t self)
 	{
 		if (!self)
 		{
@@ -46371,7 +46371,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TypeShape_t shard_TypeShapeCache_find_or_create_type_shape(shard_shard_TypeShapeCache_t self, shard_shard_SemanticModel_t p0, const void* p1, const void* p2)
+	SHARD_API shard_TypeShape_t shard_TypeShapeCache_find_or_create_type_shape(shard_TypeShapeCache_t self, shard_SemanticModel_t p0, const void* p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -46388,7 +46388,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TypeShape_t shard_TypeShapeCache_find_type_shape(shard_shard_TypeShapeCache_t self, shard_shard_SemanticModel_t p0, const void* p1, const void* p2)
+	SHARD_API shard_TypeShape_t shard_TypeShapeCache_find_type_shape(shard_TypeShapeCache_t self, shard_SemanticModel_t p0, const void* p1, const void* p2)
 	{
 		if (!self)
 		{
@@ -46405,14 +46405,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeShapeCache_operator_assign(shard_shard_TypeShapeCache_t self, shard_shard_TypeShapeCache_t p0)
+	SHARD_API shard_status_t shard_TypeShapeCache_operator_assign(shard_TypeShapeCache_t self, shard_TypeShapeCache_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_TypeShape_SlotInfo_SlotInfo_create(shard_shard_TypeShape_SlotInfo_t* out_handle)
+	SHARD_API shard_status_t shard_TypeShape_SlotInfo_SlotInfo_create(shard_TypeShape_SlotInfo_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -46455,7 +46455,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeShape_SlotInfo_SlotInfo_destroy(shard_shard_TypeShape_SlotInfo_t self)
+	SHARD_API void shard_TypeShape_SlotInfo_SlotInfo_destroy(shard_TypeShape_SlotInfo_t self)
 	{
 		if (!self)
 		{
@@ -46470,7 +46470,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeShape_TypeShape_create(const void* p0, const void* p1, shard_shard_TypeShape_t* out_handle)
+	SHARD_API shard_status_t shard_TypeShape_TypeShape_create(const void* p0, const void* p1, shard_TypeShape_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -46513,7 +46513,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_TypeShape_TypeShape_destroy(shard_shard_TypeShape_t self)
+	SHARD_API void shard_TypeShape_TypeShape_destroy(shard_TypeShape_t self)
 	{
 		if (!self)
 		{
@@ -46528,7 +46528,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TypeShape_get_base_type(shard_shard_TypeShape_t self)
+	SHARD_API void* shard_TypeShape_get_base_type(shard_TypeShape_t self)
 	{
 		if (!self)
 		{
@@ -46545,7 +46545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_TypeShape_get_generic_arguments(shard_shard_TypeShape_t self)
+	SHARD_API void* shard_TypeShape_get_generic_arguments(shard_TypeShape_t self)
 	{
 		if (!self)
 		{
@@ -46562,7 +46562,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_TypeShape_get_size(shard_shard_TypeShape_t self)
+	SHARD_API std::size_t shard_TypeShape_get_size(shard_TypeShape_t self)
 	{
 		if (!self)
 		{
@@ -46579,7 +46579,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TypeShape_SlotInfo_t shard_TypeShape_get_slot(shard_shard_TypeShape_t self, std::uint32_t p0)
+	SHARD_API shard_TypeShape_SlotInfo_t shard_TypeShape_get_slot(shard_TypeShape_t self, std::uint32_t p0)
 	{
 		if (!self)
 		{
@@ -46596,7 +46596,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_TypeShape_get_slot_count(shard_shard_TypeShape_t self)
+	SHARD_API std::size_t shard_TypeShape_get_slot_count(shard_TypeShape_t self)
 	{
 		if (!self)
 		{
@@ -46613,7 +46613,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_TypeShape_is_reference(shard_shard_TypeShape_t self)
+	SHARD_API int shard_TypeShape_is_reference(shard_TypeShape_t self)
 	{
 		if (!self)
 		{
@@ -46630,7 +46630,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_TypeShape_operator_assign(shard_shard_TypeShape_t self, shard_shard_TypeShape_t p0)
+	SHARD_API shard_status_t shard_TypeShape_operator_assign(shard_TypeShape_t self, shard_TypeShape_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
@@ -46679,7 +46679,7 @@ extern "C"
 	// ----------------------------------------------------------------------
 	// compilation
 	// ----------------------------------------------------------------------
-	SHARD_API shard_status_t shard_ByteCodeDecoder_ByteCodeDecoder_create(const void* p0, shard_gmt_Arena_t p1, shard_shard_ByteCodeDecoder_t* out_handle)
+	SHARD_API shard_status_t shard_ByteCodeDecoder_ByteCodeDecoder_create(const void* p0, shard_gmt_Arena_t p1, shard_ByteCodeDecoder_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -46722,7 +46722,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ByteCodeDecoder_ByteCodeDecoder_destroy(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void shard_ByteCodeDecoder_ByteCodeDecoder_destroy(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46737,7 +46737,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ByteCodeDecoder_absorb_array_symbol(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void* shard_ByteCodeDecoder_absorb_array_symbol(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46754,7 +46754,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_ByteCodeDecoder_absorb_boolean(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API int shard_ByteCodeDecoder_absorb_boolean(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46771,7 +46771,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API wchar_t shard_ByteCodeDecoder_absorb_char16(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API wchar_t shard_ByteCodeDecoder_absorb_char16(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46788,7 +46788,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ByteCodeDecoder_absorb_constructor_symbol(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void* shard_ByteCodeDecoder_absorb_constructor_symbol(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46805,7 +46805,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ByteCodeDecoder_absorb_delegate_type_symbol(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void* shard_ByteCodeDecoder_absorb_delegate_type_symbol(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46822,7 +46822,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_ByteCodeDecoder_absorb_double64(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API double shard_ByteCodeDecoder_absorb_double64(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46839,7 +46839,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint32_t shard_ByteCodeDecoder_absorb_field_slot(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::uint32_t shard_ByteCodeDecoder_absorb_field_slot(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46856,7 +46856,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ByteCodeDecoder_absorb_field_symbol(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void* shard_ByteCodeDecoder_absorb_field_symbol(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46873,7 +46873,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int64_t shard_ByteCodeDecoder_absorb_int64(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::int64_t shard_ByteCodeDecoder_absorb_int64(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46890,7 +46890,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::intptr_t shard_ByteCodeDecoder_absorb_int_ptr(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::intptr_t shard_ByteCodeDecoder_absorb_int_ptr(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46907,7 +46907,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_ByteCodeDecoder_absorb_jump(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::size_t shard_ByteCodeDecoder_absorb_jump(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46924,7 +46924,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ByteCodeDecoder_absorb_method_symbol(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void* shard_ByteCodeDecoder_absorb_method_symbol(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46941,7 +46941,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_ByteCodeDecoder_absorb_opcode(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API int shard_ByteCodeDecoder_absorb_opcode(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46958,7 +46958,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_ByteCodeDecoder_absorb_string(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::size_t shard_ByteCodeDecoder_absorb_string(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46975,7 +46975,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ByteCodeDecoder_absorb_symbol(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void* shard_ByteCodeDecoder_absorb_symbol(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46992,7 +46992,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_ByteCodeDecoder_absorb_type_symbol(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API void* shard_ByteCodeDecoder_absorb_type_symbol(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47009,7 +47009,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_ByteCodeDecoder_absorb_uint16(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::uint16_t shard_ByteCodeDecoder_absorb_uint16(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47026,7 +47026,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint32_t shard_ByteCodeDecoder_absorb_uint32(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::uint32_t shard_ByteCodeDecoder_absorb_uint32(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47043,7 +47043,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint8_t shard_ByteCodeDecoder_absorb_uint8(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::uint8_t shard_ByteCodeDecoder_absorb_uint8(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47060,7 +47060,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_ByteCodeDecoder_absorb_variable_slot(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::uint16_t shard_ByteCodeDecoder_absorb_variable_slot(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47077,7 +47077,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_ByteCodeDecoder_get_cursor(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::size_t shard_ByteCodeDecoder_get_cursor(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47094,7 +47094,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_ByteCodeDecoder_index(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API std::size_t shard_ByteCodeDecoder_index(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47111,7 +47111,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_ByteCodeDecoder_is_eof(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API int shard_ByteCodeDecoder_is_eof(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47128,7 +47128,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_ByteCodeDecoder_peek_jump_at(shard_shard_ByteCodeDecoder_t self, std::size_t p0)
+	SHARD_API std::size_t shard_ByteCodeDecoder_peek_jump_at(shard_ByteCodeDecoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -47145,7 +47145,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeDecoder_set_cursor(shard_shard_ByteCodeDecoder_t self, std::int64_t p0)
+	SHARD_API shard_status_t shard_ByteCodeDecoder_set_cursor(shard_ByteCodeDecoder_t self, std::int64_t p0)
 	{
 		if (!self)
 		{
@@ -47182,7 +47182,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeDecoder_skip_to_end(shard_shard_ByteCodeDecoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeDecoder_skip_to_end(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -47219,7 +47219,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_ByteCodeEmitter_create(shard_shard_VirtualProgramImage_t p0, shard_shard_SemanticModel_t p1, shard_shard_PragmaticModel_t p2, shard_shard_DiagnosticsContext_t p3, shard_shard_ByteCodeEmitter_t* out_handle)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_ByteCodeEmitter_create(shard_VirtualProgramImage_t p0, shard_SemanticModel_t p1, shard_PragmaticModel_t p2, shard_DiagnosticsContext_t p3, shard_ByteCodeEmitter_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -47262,7 +47262,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ByteCodeEmitter_ByteCodeEmitter_destroy(shard_shard_ByteCodeEmitter_t self)
+	SHARD_API void shard_ByteCodeEmitter_ByteCodeEmitter_destroy(shard_ByteCodeEmitter_t self)
 	{
 		if (!self)
 		{
@@ -47277,7 +47277,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_emit(shard_shard_ByteCodeEmitter_t self, shard_shard_SyntaxTree_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_emit(shard_ByteCodeEmitter_t self, shard_SyntaxTree_t p0)
 	{
 		if (!self)
 		{
@@ -47314,7 +47314,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_emit_conditional_chain(shard_shard_ByteCodeEmitter_t self, shard_shard_ConditionalClauseBaseSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_emit_conditional_chain(shard_ByteCodeEmitter_t self, shard_ConditionalClauseBaseSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47397,7 +47397,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_accessor_declaration(shard_shard_ByteCodeEmitter_t self, shard_shard_AccessorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_accessor_declaration(shard_ByteCodeEmitter_t self, shard_AccessorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47434,7 +47434,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_await_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_AwaitExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_await_expression(shard_ByteCodeEmitter_t self, shard_AwaitExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47471,7 +47471,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_binary_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_BinaryExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_binary_expression(shard_ByteCodeEmitter_t self, shard_BinaryExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47508,7 +47508,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_break_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_BreakStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_break_statement(shard_ByteCodeEmitter_t self, shard_BreakStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47545,7 +47545,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_cast_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_CastExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_cast_expression(shard_ByteCodeEmitter_t self, shard_CastExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47582,7 +47582,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_collection_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_CollectionExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_collection_expression(shard_ByteCodeEmitter_t self, shard_CollectionExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47619,7 +47619,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_constructor_declaration(shard_shard_ByteCodeEmitter_t self, shard_shard_ConstructorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_constructor_declaration(shard_ByteCodeEmitter_t self, shard_ConstructorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47656,7 +47656,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_continue_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_ContinueStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_continue_statement(shard_ByteCodeEmitter_t self, shard_ContinueStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47693,7 +47693,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_defer_block(shard_shard_ByteCodeEmitter_t self, shard_shard_DeferBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_defer_block(shard_ByteCodeEmitter_t self, shard_DeferBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47730,7 +47730,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_defer_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_DeferStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_defer_statement(shard_ByteCodeEmitter_t self, shard_DeferStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47767,7 +47767,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_defer_variable(shard_shard_ByteCodeEmitter_t self, shard_shard_DeferVariableSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_defer_variable(shard_ByteCodeEmitter_t self, shard_DeferVariableSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47804,7 +47804,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_expression_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_ExpressionStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_expression_statement(shard_ByteCodeEmitter_t self, shard_ExpressionStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47841,7 +47841,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_for_in_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_ForInStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_for_in_statement(shard_ByteCodeEmitter_t self, shard_ForInStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47878,7 +47878,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_function_declaration(shard_shard_ByteCodeEmitter_t self, shard_shard_FunctionDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_function_declaration(shard_ByteCodeEmitter_t self, shard_FunctionDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47915,7 +47915,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_identifier_name_type(shard_shard_ByteCodeEmitter_t self, shard_shard_IdentifierNameTypeSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_identifier_name_type(shard_ByteCodeEmitter_t self, shard_IdentifierNameTypeSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47952,7 +47952,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_if_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_IfExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_if_expression(shard_ByteCodeEmitter_t self, shard_IfExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -47989,7 +47989,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_if_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_IfStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_if_statement(shard_ByteCodeEmitter_t self, shard_IfStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48026,7 +48026,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_indexator_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_IndexatorExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_indexator_expression(shard_ByteCodeEmitter_t self, shard_IndexatorExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48063,7 +48063,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_invokation_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_InvokationExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_invokation_expression(shard_ByteCodeEmitter_t self, shard_InvokationExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48100,7 +48100,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_is_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_IsExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_is_expression(shard_ByteCodeEmitter_t self, shard_IsExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48137,7 +48137,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_lambda_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_LambdaExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_lambda_expression(shard_ByteCodeEmitter_t self, shard_LambdaExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48174,7 +48174,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_literal_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_LiteralExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_literal_expression(shard_ByteCodeEmitter_t self, shard_LiteralExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48211,7 +48211,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_member_access_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_MemberAccessExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_member_access_expression(shard_ByteCodeEmitter_t self, shard_MemberAccessExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48248,7 +48248,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_object_creation_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_ObjectExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_object_creation_expression(shard_ByteCodeEmitter_t self, shard_ObjectExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48285,7 +48285,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_operator_declaration(shard_shard_ByteCodeEmitter_t self, shard_shard_OperatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_operator_declaration(shard_ByteCodeEmitter_t self, shard_OperatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48322,7 +48322,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_range_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_RangeExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_range_expression(shard_ByteCodeEmitter_t self, shard_RangeExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48359,7 +48359,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_return_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_ReturnStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_return_statement(shard_ByteCodeEmitter_t self, shard_ReturnStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48396,7 +48396,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_statements_block(shard_shard_ByteCodeEmitter_t self, shard_shard_StatementsBlockSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_statements_block(shard_ByteCodeEmitter_t self, shard_StatementsBlockSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48433,7 +48433,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_struct_declaration(shard_shard_ByteCodeEmitter_t self, shard_shard_StructDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_struct_declaration(shard_ByteCodeEmitter_t self, shard_StructDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48470,7 +48470,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_throw_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_ThrowStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_throw_statement(shard_ByteCodeEmitter_t self, shard_ThrowStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48507,7 +48507,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_try_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_TryStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_try_statement(shard_ByteCodeEmitter_t self, shard_TryStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48544,7 +48544,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_unary_expression(shard_shard_ByteCodeEmitter_t self, shard_shard_UnaryExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_unary_expression(shard_ByteCodeEmitter_t self, shard_UnaryExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48581,7 +48581,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_unless_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_UnlessStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_unless_statement(shard_ByteCodeEmitter_t self, shard_UnlessStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48618,7 +48618,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_until_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_UntilStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_until_statement(shard_ByteCodeEmitter_t self, shard_UntilStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48655,7 +48655,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_variable_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_VariableStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_variable_statement(shard_ByteCodeEmitter_t self, shard_VariableStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48692,7 +48692,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_while_statement(shard_shard_ByteCodeEmitter_t self, shard_shard_WhileStatementSyntax_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_while_statement(shard_ByteCodeEmitter_t self, shard_WhileStatementSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -48729,7 +48729,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_ByteCodeEncoder_create(shard_shard_VirtualProgramImage_t p0, shard_shard_ByteCodeEncoder_t* out_handle)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_ByteCodeEncoder_create(shard_VirtualProgramImage_t p0, shard_ByteCodeEncoder_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -48772,7 +48772,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ByteCodeEncoder_ByteCodeEncoder_destroy(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API void shard_ByteCodeEncoder_ByteCodeEncoder_destroy(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -48820,7 +48820,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_alloc_heap(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_alloc_heap(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -48857,7 +48857,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_array_length(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_array_length(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -48894,7 +48894,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_branch_null(shard_shard_ByteCodeEncoder_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_branch_null(shard_ByteCodeEncoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -48931,7 +48931,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_delegate(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_delegate(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -48968,7 +48968,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_into(shard_shard_ByteCodeEncoder_t self, const void* p0, std::uint16_t p1)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_into(shard_ByteCodeEncoder_t self, const void* p0, std::uint16_t p1)
 	{
 		if (!self)
 		{
@@ -49005,7 +49005,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_symbol(shard_shard_ByteCodeEncoder_t self, const void* p0, std::uint32_t p1)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_call_method_symbol(shard_ByteCodeEncoder_t self, const void* p0, std::uint32_t p1)
 	{
 		if (!self)
 		{
@@ -49042,7 +49042,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -49079,7 +49079,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast_as(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast_as(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -49116,7 +49116,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast_primitive(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_cast_primitive(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -49153,7 +49153,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_equal(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_equal(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49190,7 +49190,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_greater(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_greater(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49227,7 +49227,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_greater_or_equal(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_greater_or_equal(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49264,7 +49264,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_less(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_less(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49301,7 +49301,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_less_or_equal(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_less_or_equal(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49338,7 +49338,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_not_equal(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_compare_not_equal(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49375,7 +49375,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_create_range(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_create_range(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -49412,7 +49412,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_default_value(shard_shard_ByteCodeEncoder_t self, const void* p0, shard_shard_SymbolTable_t p1)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_default_value(shard_ByteCodeEncoder_t self, const void* p0, shard_SymbolTable_t p1)
 	{
 		if (!self)
 		{
@@ -49449,7 +49449,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_defer(shard_shard_ByteCodeEncoder_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_defer(shard_ByteCodeEncoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -49486,7 +49486,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_defer_break(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_defer_break(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49523,7 +49523,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_defer_drain(shard_shard_ByteCodeEncoder_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_defer_drain(shard_ByteCodeEncoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -49560,7 +49560,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_duplicate(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_duplicate(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49597,7 +49597,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_end_catch(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_end_catch(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49634,7 +49634,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_enter_try(shard_shard_ByteCodeEncoder_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_enter_try(shard_ByteCodeEncoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -49671,7 +49671,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_halt(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_halt(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49708,7 +49708,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_is_instance(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_is_instance(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -49745,7 +49745,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump(shard_shard_ByteCodeEncoder_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump(shard_ByteCodeEncoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -49782,7 +49782,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump_false(shard_shard_ByteCodeEncoder_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump_false(shard_ByteCodeEncoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -49819,7 +49819,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump_table(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump_table(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -49856,7 +49856,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump_true(shard_shard_ByteCodeEncoder_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_jump_true(shard_ByteCodeEncoder_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -49893,7 +49893,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_leave_try(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_leave_try(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -49930,7 +49930,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_arg(shard_shard_ByteCodeEncoder_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_arg(shard_ByteCodeEncoder_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -49967,7 +49967,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_array_element(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_array_element(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50004,7 +50004,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_bool(shard_shard_ByteCodeEncoder_t self, int p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_bool(shard_ByteCodeEncoder_t self, int p0)
 	{
 		if (!self)
 		{
@@ -50041,7 +50041,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_char16(shard_shard_ByteCodeEncoder_t self, wchar_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_char16(shard_ByteCodeEncoder_t self, wchar_t p0)
 	{
 		if (!self)
 		{
@@ -50078,7 +50078,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_double64(shard_shard_ByteCodeEncoder_t self, double p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_double64(shard_ByteCodeEncoder_t self, double p0)
 	{
 		if (!self)
 		{
@@ -50115,7 +50115,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_int64(shard_shard_ByteCodeEncoder_t self, std::int64_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_int64(shard_ByteCodeEncoder_t self, std::int64_t p0)
 	{
 		if (!self)
 		{
@@ -50152,7 +50152,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_int8(shard_shard_ByteCodeEncoder_t self, std::int8_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_int8(shard_ByteCodeEncoder_t self, std::int8_t p0)
 	{
 		if (!self)
 		{
@@ -50189,7 +50189,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_native_int(shard_shard_ByteCodeEncoder_t self, std::intptr_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_native_int(shard_ByteCodeEncoder_t self, std::intptr_t p0)
 	{
 		if (!self)
 		{
@@ -50226,7 +50226,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_null(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_null(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50263,7 +50263,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_string(shard_shard_ByteCodeEncoder_t self, const wchar_t* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_string(shard_ByteCodeEncoder_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -50300,7 +50300,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_current_exception(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_current_exception(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50337,7 +50337,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_enum_field(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_enum_field(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -50374,7 +50374,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_field(shard_shard_ByteCodeEncoder_t self, std::uint32_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_field(shard_ByteCodeEncoder_t self, std::uint32_t p0)
 	{
 		if (!self)
 		{
@@ -50411,7 +50411,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_local(shard_shard_ByteCodeEncoder_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_local(shard_ByteCodeEncoder_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -50448,7 +50448,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_slot_addr(shard_shard_ByteCodeEncoder_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_slot_addr(shard_ByteCodeEncoder_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -50485,7 +50485,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_static_field(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_static_field(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -50522,7 +50522,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_type_argument(shard_shard_ByteCodeEncoder_t self, std::uint16_t p0, const void* p1)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_type_argument(shard_ByteCodeEncoder_t self, std::uint16_t p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -50559,7 +50559,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_logical_and(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_logical_and(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50596,7 +50596,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_logical_not(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_logical_not(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50633,7 +50633,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_logical_or(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_logical_or(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50670,7 +50670,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_add(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_add(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50707,7 +50707,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_div(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_div(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50744,7 +50744,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_mod(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_mod(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50781,7 +50781,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_mult(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_mult(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50818,7 +50818,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_negative(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_negative(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50855,7 +50855,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_pow(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_pow(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50892,7 +50892,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_shl(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_shl(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50929,7 +50929,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_shr(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_shr(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -50966,7 +50966,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_sub(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_math_sub(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51003,7 +51003,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_new_array(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_new_array(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -51040,7 +51040,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_new_array_dynamic(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_new_array_dynamic(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -51077,7 +51077,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_new_delegate(shard_shard_ByteCodeEncoder_t self, const void* p0, const void* p1)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_new_delegate(shard_ByteCodeEncoder_t self, const void* p0, const void* p1)
 	{
 		if (!self)
 		{
@@ -51114,7 +51114,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_nop(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_nop(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51151,7 +51151,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_pop(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_pop(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51188,7 +51188,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_rethrow(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_rethrow(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51225,7 +51225,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_return(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_return(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51262,7 +51262,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_return_placed(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_return_placed(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51299,7 +51299,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_arg(shard_shard_ByteCodeEncoder_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_arg(shard_ByteCodeEncoder_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -51336,7 +51336,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_array_element(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_array_element(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51373,7 +51373,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_current_exception(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_current_exception(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51410,7 +51410,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_field(shard_shard_ByteCodeEncoder_t self, std::uint32_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_field(shard_ByteCodeEncoder_t self, std::uint32_t p0)
 	{
 		if (!self)
 		{
@@ -51447,7 +51447,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_local(shard_shard_ByteCodeEncoder_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_local(shard_ByteCodeEncoder_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -51484,7 +51484,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_static_field(shard_shard_ByteCodeEncoder_t self, const void* p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_store_static_field(shard_ByteCodeEncoder_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -51521,7 +51521,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_throw(shard_shard_ByteCodeEncoder_t self)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_throw(shard_ByteCodeEncoder_t self)
 	{
 		if (!self)
 		{
@@ -51596,7 +51596,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_ProgramDisassembler_ProgramDisassembler_create(shard_shard_ApplicationDomain_t p0, shard_shard_ProgramDisassembler_t* out_handle)
+	SHARD_API shard_status_t shard_ProgramDisassembler_ProgramDisassembler_create(shard_ApplicationDomain_t p0, shard_ProgramDisassembler_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -51639,7 +51639,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ProgramDisassembler_ProgramDisassembler_destroy(shard_shard_ProgramDisassembler_t self)
+	SHARD_API void shard_ProgramDisassembler_ProgramDisassembler_destroy(shard_ProgramDisassembler_t self)
 	{
 		if (!self)
 		{
@@ -51654,7 +51654,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ProgramDisassembler_disassemble(shard_shard_ProgramDisassembler_t self, void* p0)
+	SHARD_API shard_status_t shard_ProgramDisassembler_disassemble(shard_ProgramDisassembler_t self, void* p0)
 	{
 		if (!self)
 		{
@@ -51691,7 +51691,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ProgramDisassembler_visit_accessor_declaration(shard_shard_ProgramDisassembler_t self, shard_shard_AccessorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ProgramDisassembler_visit_accessor_declaration(shard_ProgramDisassembler_t self, shard_AccessorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -51728,7 +51728,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ProgramDisassembler_visit_constructor_declaration(shard_shard_ProgramDisassembler_t self, shard_shard_ConstructorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ProgramDisassembler_visit_constructor_declaration(shard_ProgramDisassembler_t self, shard_ConstructorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -51765,7 +51765,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ProgramDisassembler_visit_function_declaration(shard_shard_ProgramDisassembler_t self, shard_shard_FunctionDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ProgramDisassembler_visit_function_declaration(shard_ProgramDisassembler_t self, shard_FunctionDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -51802,7 +51802,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ProgramDisassembler_visit_lambda_expression(shard_shard_ProgramDisassembler_t self, shard_shard_LambdaExpressionSyntax_t p0)
+	SHARD_API shard_status_t shard_ProgramDisassembler_visit_lambda_expression(shard_ProgramDisassembler_t self, shard_LambdaExpressionSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -51839,7 +51839,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ProgramDisassembler_visit_operator_declaration(shard_shard_ProgramDisassembler_t self, shard_shard_OperatorDeclarationSyntax_t p0)
+	SHARD_API shard_status_t shard_ProgramDisassembler_visit_operator_declaration(shard_ProgramDisassembler_t self, shard_OperatorDeclarationSyntax_t p0)
 	{
 		if (!self)
 		{
@@ -51876,7 +51876,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualProgramImage_VirtualProgramImage_create(shard_shard_VirtualProgramImage_t* out_handle)
+	SHARD_API shard_status_t shard_VirtualProgramImage_VirtualProgramImage_create(shard_VirtualProgramImage_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -51919,7 +51919,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_VirtualProgramImage_VirtualProgramImage_destroy(shard_shard_VirtualProgramImage_t self)
+	SHARD_API void shard_VirtualProgramImage_VirtualProgramImage_destroy(shard_VirtualProgramImage_t self)
 	{
 		if (!self)
 		{
@@ -51934,7 +51934,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_VirtualProgramImage_get_data_section(shard_shard_VirtualProgramImage_t self)
+	SHARD_API void* shard_VirtualProgramImage_get_data_section(shard_VirtualProgramImage_t self)
 	{
 		if (!self)
 		{
@@ -51951,7 +51951,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_VirtualProgramImage_get_entry_point(shard_shard_VirtualProgramImage_t self)
+	SHARD_API void* shard_VirtualProgramImage_get_entry_point(shard_VirtualProgramImage_t self)
 	{
 		if (!self)
 		{
@@ -51968,7 +51968,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_VirtualProgramImage_get_text_section(shard_shard_VirtualProgramImage_t self)
+	SHARD_API void* shard_VirtualProgramImage_get_text_section(shard_VirtualProgramImage_t self)
 	{
 		if (!self)
 		{
@@ -51985,14 +51985,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualProgramImage_operator_assign(shard_shard_VirtualProgramImage_t self, shard_shard_VirtualProgramImage_t p0)
+	SHARD_API shard_status_t shard_VirtualProgramImage_operator_assign(shard_VirtualProgramImage_t self, shard_VirtualProgramImage_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_VirtualProgramImage_set_entry_point(shard_shard_VirtualProgramImage_t self, const void* p0)
+	SHARD_API shard_status_t shard_VirtualProgramImage_set_entry_point(shard_VirtualProgramImage_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -52032,7 +52032,7 @@ extern "C"
 	// ----------------------------------------------------------------------
 	// runtime
 	// ----------------------------------------------------------------------
-	SHARD_API shard_status_t shard_CallStackFrame_CallStackFrame_create(shard_shard_CallStackFrame_t* out_handle)
+	SHARD_API shard_status_t shard_CallStackFrame_CallStackFrame_create(shard_CallStackFrame_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -52075,7 +52075,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_CallStackFrame_CallStackFrame_destroy(shard_shard_CallStackFrame_t self)
+	SHARD_API void shard_CallStackFrame_CallStackFrame_destroy(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52090,7 +52090,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_CallStackFrame_t shard_CallStackFrame_create(const void* p0, shard_shard_FrameLayout_t p1, shard_shard_SemanticModel_t p2, shard_shard_PragmaticModel_t p3, shard_shard_CallStackFrame_t p4, unsigned char* p5, std::size_t p6)
+	SHARD_API shard_CallStackFrame_t shard_CallStackFrame_create(const void* p0, shard_FrameLayout_t p1, shard_SemanticModel_t p2, shard_PragmaticModel_t p3, shard_CallStackFrame_t p4, unsigned char* p5, std::size_t p6)
 	{
 		try
 		{
@@ -52103,7 +52103,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_destroy(shard_shard_CallStackFrame_t p0)
+	SHARD_API shard_status_t shard_CallStackFrame_destroy(shard_CallStackFrame_t p0)
 	{
 		try
 		{
@@ -52136,7 +52136,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_for_each_live_entry(shard_shard_CallStackFrame_t self, const void* p0)
+	SHARD_API shard_status_t shard_CallStackFrame_for_each_live_entry(shard_CallStackFrame_t self, const void* p0)
 	{
 		if (!self)
 		{
@@ -52173,7 +52173,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_CallStackFrame_get_argument_count(shard_shard_CallStackFrame_t self)
+	SHARD_API std::uint16_t shard_CallStackFrame_get_argument_count(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52190,7 +52190,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_get_current_exception(shard_shard_CallStackFrame_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_get_current_exception(shard_CallStackFrame_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -52238,7 +52238,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_CallStackFrame_get_defer_stack(shard_shard_CallStackFrame_t self)
+	SHARD_API void* shard_CallStackFrame_get_defer_stack(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52255,7 +52255,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_CallStackFrame_get_eval_depth(shard_shard_CallStackFrame_t self)
+	SHARD_API std::size_t shard_CallStackFrame_get_eval_depth(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52272,7 +52272,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_CallStackFrame_get_exception_handlers(shard_shard_CallStackFrame_t self)
+	SHARD_API void* shard_CallStackFrame_get_exception_handlers(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52289,7 +52289,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_CallStackFrame_get_instruction_pointer(shard_shard_CallStackFrame_t self)
+	SHARD_API std::size_t shard_CallStackFrame_get_instruction_pointer(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52306,7 +52306,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_CallStackFrame_get_interruption(shard_shard_CallStackFrame_t self)
+	SHARD_API int shard_CallStackFrame_get_interruption(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52323,7 +52323,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_get_local(shard_shard_CallStackFrame_t self, std::uint16_t p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_get_local(shard_CallStackFrame_t self, std::uint16_t p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -52371,7 +52371,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_get_local_address(shard_shard_CallStackFrame_t self, std::uint16_t p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_get_local_address(shard_CallStackFrame_t self, std::uint16_t p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -52419,7 +52419,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API unsigned char* shard_CallStackFrame_get_local_entry(shard_shard_CallStackFrame_t self, std::uint16_t p0)
+	SHARD_API unsigned char* shard_CallStackFrame_get_local_entry(shard_CallStackFrame_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -52436,7 +52436,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_get_local_view(shard_shard_CallStackFrame_t self, std::uint16_t p0, shard_shard_FrameEntryView_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_get_local_view(shard_CallStackFrame_t self, std::uint16_t p0, shard_FrameEntryView_t* out_value)
 	{
 		if (!self)
 		{
@@ -52484,7 +52484,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_CallStackFrame_get_method(shard_shard_CallStackFrame_t self)
+	SHARD_API void* shard_CallStackFrame_get_method(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52501,7 +52501,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_CallStackFrame_t shard_CallStackFrame_get_previous(shard_shard_CallStackFrame_t self)
+	SHARD_API shard_CallStackFrame_t shard_CallStackFrame_get_previous(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52518,7 +52518,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API unsigned char* shard_CallStackFrame_get_return_entry(shard_shard_CallStackFrame_t self)
+	SHARD_API unsigned char* shard_CallStackFrame_get_return_entry(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52535,7 +52535,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_CallStackFrame_get_return_payload_bytes(shard_shard_CallStackFrame_t self)
+	SHARD_API std::size_t shard_CallStackFrame_get_return_payload_bytes(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52552,7 +52552,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_get_return_slot(shard_shard_CallStackFrame_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_get_return_slot(shard_CallStackFrame_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -52600,7 +52600,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_get_return_view(shard_shard_CallStackFrame_t self, shard_shard_FrameEntryView_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_get_return_view(shard_CallStackFrame_t self, shard_FrameEntryView_t* out_value)
 	{
 		if (!self)
 		{
@@ -52648,7 +52648,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::uint16_t shard_CallStackFrame_get_variable_count(shard_shard_CallStackFrame_t self)
+	SHARD_API std::uint16_t shard_CallStackFrame_get_variable_count(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52665,7 +52665,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_CallStackFrame_has_external_return_slot(shard_shard_CallStackFrame_t self)
+	SHARD_API int shard_CallStackFrame_has_external_return_slot(shard_CallStackFrame_t self)
 	{
 		if (!self)
 		{
@@ -52682,14 +52682,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_operator_assign(shard_shard_CallStackFrame_t self, shard_shard_CallStackFrame_t p0)
+	SHARD_API shard_status_t shard_CallStackFrame_operator_assign(shard_CallStackFrame_t self, shard_CallStackFrame_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_peek_entry(unsigned char* p0, shard_shard_FrameEntryView_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_peek_entry(unsigned char* p0, shard_FrameEntryView_t* out_value)
 	{
 		if (!out_value)
 		{
@@ -52733,7 +52733,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_peek_entry_at(shard_shard_CallStackFrame_t self, std::size_t p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_peek_entry_at(shard_CallStackFrame_t self, std::size_t p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -52781,14 +52781,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_place_returned(shard_shard_CallStackFrame_t self, shard_shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_CallStackFrame_place_returned(shard_CallStackFrame_t self, shard_ObjectInstance_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_UNSUPPORTED;
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_pop_entry(shard_shard_CallStackFrame_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_CallStackFrame_pop_entry(shard_CallStackFrame_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -52836,7 +52836,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_push_entry(shard_shard_CallStackFrame_t self, shard_shard_TypeShape_t p0, int p1, const void* p2, std::size_t p3)
+	SHARD_API shard_status_t shard_CallStackFrame_push_entry(shard_CallStackFrame_t self, shard_TypeShape_t p0, int p1, const void* p2, std::size_t p3)
 	{
 		if (!self)
 		{
@@ -52873,7 +52873,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_push_local(shard_shard_CallStackFrame_t self, std::uint16_t p0)
+	SHARD_API shard_status_t shard_CallStackFrame_push_local(shard_CallStackFrame_t self, std::uint16_t p0)
 	{
 		if (!self)
 		{
@@ -52910,7 +52910,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_reset_eval_depth(shard_shard_CallStackFrame_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_CallStackFrame_reset_eval_depth(shard_CallStackFrame_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -52947,7 +52947,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_set_current_exception(shard_shard_CallStackFrame_t self, shard_shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_CallStackFrame_set_current_exception(shard_CallStackFrame_t self, shard_ObjectInstance_t p0)
 	{
 		if (!self)
 		{
@@ -52984,7 +52984,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_set_instruction_pointer(shard_shard_CallStackFrame_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_CallStackFrame_set_instruction_pointer(shard_CallStackFrame_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -53021,7 +53021,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_set_interruption(shard_shard_CallStackFrame_t self, int p0)
+	SHARD_API shard_status_t shard_CallStackFrame_set_interruption(shard_CallStackFrame_t self, int p0)
 	{
 		if (!self)
 		{
@@ -53058,7 +53058,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_set_local(shard_shard_CallStackFrame_t self, std::uint16_t p0, shard_shard_ObjectInstance_t p1)
+	SHARD_API shard_status_t shard_CallStackFrame_set_local(shard_CallStackFrame_t self, std::uint16_t p0, shard_ObjectInstance_t p1)
 	{
 		if (!self)
 		{
@@ -53095,7 +53095,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateRef_DelegateRef_create(shard_shard_DelegateRef_t* out_handle)
+	SHARD_API shard_status_t shard_DelegateRef_DelegateRef_create(shard_DelegateRef_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -53138,7 +53138,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_DelegateRef_DelegateRef_destroy(shard_shard_DelegateRef_t self)
+	SHARD_API void shard_DelegateRef_DelegateRef_destroy(shard_DelegateRef_t self)
 	{
 		if (!self)
 		{
@@ -53153,7 +53153,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateRef_get_instance(shard_shard_DelegateRef_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_DelegateRef_get_instance(shard_DelegateRef_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -53201,7 +53201,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_DelegateRef_is_valid(shard_shard_DelegateRef_t self)
+	SHARD_API int shard_DelegateRef_is_valid(shard_DelegateRef_t self)
 	{
 		if (!self)
 		{
@@ -53218,14 +53218,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_DelegateRef_operator_assign(shard_shard_DelegateRef_t self, shard_shard_DelegateRef_t p0)
+	SHARD_API shard_status_t shard_DelegateRef_operator_assign(shard_DelegateRef_t self, shard_DelegateRef_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_DelegateRef_operator_call(shard_shard_DelegateRef_t self, const void* p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_DelegateRef_operator_call(shard_DelegateRef_t self, const void* p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -53273,7 +53273,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ExceptionHandlerRecord_ExceptionHandlerRecord_create(shard_shard_ExceptionHandlerRecord_t* out_handle)
+	SHARD_API shard_status_t shard_ExceptionHandlerRecord_ExceptionHandlerRecord_create(shard_ExceptionHandlerRecord_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -53316,7 +53316,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ExceptionHandlerRecord_ExceptionHandlerRecord_destroy(shard_shard_ExceptionHandlerRecord_t self)
+	SHARD_API void shard_ExceptionHandlerRecord_ExceptionHandlerRecord_destroy(shard_ExceptionHandlerRecord_t self)
 	{
 		if (!self)
 		{
@@ -53331,7 +53331,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FrameEntryView_FrameEntryView_create(shard_shard_FrameEntryView_t* out_handle)
+	SHARD_API shard_status_t shard_FrameEntryView_FrameEntryView_create(shard_FrameEntryView_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -53374,7 +53374,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_FrameEntryView_FrameEntryView_destroy(shard_shard_FrameEntryView_t self)
+	SHARD_API void shard_FrameEntryView_FrameEntryView_destroy(shard_FrameEntryView_t self)
 	{
 		if (!self)
 		{
@@ -53389,7 +53389,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_GarbageCollector_create(shard_shard_SemanticModel_t p0, shard_shard_PragmaticModel_t p1, shard_shard_GarbageCollector_t* out_handle)
+	SHARD_API shard_status_t shard_GarbageCollector_GarbageCollector_create(shard_SemanticModel_t p0, shard_PragmaticModel_t p1, shard_GarbageCollector_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -53432,7 +53432,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_GarbageCollector_GarbageCollector_destroy(shard_shard_GarbageCollector_t self)
+	SHARD_API void shard_GarbageCollector_GarbageCollector_destroy(shard_GarbageCollector_t self)
 	{
 		if (!self)
 		{
@@ -53447,7 +53447,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_GcHeader_GcHeader_create(shard_shard_GarbageCollector_GcHeader_t* out_handle)
+	SHARD_API shard_status_t shard_GarbageCollector_GcHeader_GcHeader_create(shard_GarbageCollector_GcHeader_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -53490,7 +53490,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_GarbageCollector_GcHeader_GcHeader_destroy(shard_shard_GarbageCollector_GcHeader_t self)
+	SHARD_API void shard_GarbageCollector_GcHeader_GcHeader_destroy(shard_GarbageCollector_GcHeader_t self)
 	{
 		if (!self)
 		{
@@ -53551,7 +53551,7 @@ extern "C"
 		static_cast<void>(self);
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_allocate_array(shard_shard_GarbageCollector_t self, shard_shard_TypeShape_t p0, shard_shard_TypeShape_t p1, std::int64_t p2, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_GarbageCollector_allocate_array(shard_GarbageCollector_t self, shard_TypeShape_t p0, shard_TypeShape_t p1, std::int64_t p2, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -53599,7 +53599,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_allocate_instance(shard_shard_GarbageCollector_t self, shard_shard_TypeShape_t p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_GarbageCollector_allocate_instance(shard_GarbageCollector_t self, shard_TypeShape_t p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -53647,7 +53647,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_allocate_string(shard_shard_GarbageCollector_t self, const wchar_t* p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_GarbageCollector_allocate_string(shard_GarbageCollector_t self, const wchar_t* p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -53695,7 +53695,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_collect(shard_shard_GarbageCollector_t self)
+	SHARD_API shard_status_t shard_GarbageCollector_collect(shard_GarbageCollector_t self)
 	{
 		if (!self)
 		{
@@ -53732,7 +53732,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_GarbageCollector_GcHeader_t shard_GarbageCollector_get_header(unsigned char* p0)
+	SHARD_API shard_GarbageCollector_GcHeader_t shard_GarbageCollector_get_header(unsigned char* p0)
 	{
 		try
 		{
@@ -53745,7 +53745,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_GarbageCollector_get_instance_count(shard_shard_GarbageCollector_t self)
+	SHARD_API std::size_t shard_GarbageCollector_get_instance_count(shard_GarbageCollector_t self)
 	{
 		if (!self)
 		{
@@ -53762,7 +53762,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_get_static_storage(shard_shard_GarbageCollector_t self, const void* p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_GarbageCollector_get_static_storage(shard_GarbageCollector_t self, const void* p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -53810,7 +53810,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_GarbageCollector_get_total_allocated_bytes(shard_shard_GarbageCollector_t self)
+	SHARD_API std::size_t shard_GarbageCollector_get_total_allocated_bytes(shard_GarbageCollector_t self)
 	{
 		if (!self)
 		{
@@ -53827,7 +53827,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_GarbageCollector_get_total_allocations(shard_shard_GarbageCollector_t self)
+	SHARD_API std::size_t shard_GarbageCollector_get_total_allocations(shard_GarbageCollector_t self)
 	{
 		if (!self)
 		{
@@ -53844,7 +53844,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_GarbageCollector_get_total_collections(shard_shard_GarbageCollector_t self)
+	SHARD_API std::size_t shard_GarbageCollector_get_total_collections(shard_GarbageCollector_t self)
 	{
 		if (!self)
 		{
@@ -53861,7 +53861,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_intern_string(shard_shard_GarbageCollector_t self, const wchar_t* p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_GarbageCollector_intern_string(shard_GarbageCollector_t self, const wchar_t* p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -53909,7 +53909,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_GarbageCollector_is_heap_backed(shard_shard_GarbageCollector_t self, unsigned char* p0)
+	SHARD_API int shard_GarbageCollector_is_heap_backed(shard_GarbageCollector_t self, unsigned char* p0)
 	{
 		if (!self)
 		{
@@ -53939,14 +53939,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_operator_assign(shard_shard_GarbageCollector_t self, shard_shard_GarbageCollector_t p0)
+	SHARD_API shard_status_t shard_GarbageCollector_operator_assign(shard_GarbageCollector_t self, shard_GarbageCollector_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_pin(shard_shard_GarbageCollector_t self, shard_shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_GarbageCollector_pin(shard_GarbageCollector_t self, shard_ObjectInstance_t p0)
 	{
 		if (!self)
 		{
@@ -53983,7 +53983,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_register_frame(shard_shard_GarbageCollector_t self, shard_shard_CallStackFrame_t p0)
+	SHARD_API shard_status_t shard_GarbageCollector_register_frame(shard_GarbageCollector_t self, shard_CallStackFrame_t p0)
 	{
 		if (!self)
 		{
@@ -54020,7 +54020,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_terminate(shard_shard_GarbageCollector_t self)
+	SHARD_API shard_status_t shard_GarbageCollector_terminate(shard_GarbageCollector_t self)
 	{
 		if (!self)
 		{
@@ -54057,7 +54057,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_unpin(shard_shard_GarbageCollector_t self, std::size_t p0)
+	SHARD_API shard_status_t shard_GarbageCollector_unpin(shard_GarbageCollector_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54094,7 +54094,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_unregister_frame(shard_shard_GarbageCollector_t self, shard_shard_CallStackFrame_t p0)
+	SHARD_API shard_status_t shard_GarbageCollector_unregister_frame(shard_GarbageCollector_t self, shard_CallStackFrame_t p0)
 	{
 		if (!self)
 		{
@@ -54136,7 +54136,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_InvokeResult_InvokeResult_create(shard_shard_ObjectInstance_t p0, shard_shard_ObjectInstance_t p1, shard_shard_InvokeResult_t* out_handle)
+	SHARD_API shard_status_t shard_InvokeResult_InvokeResult_create(shard_ObjectInstance_t p0, shard_ObjectInstance_t p1, shard_InvokeResult_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -54179,7 +54179,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_InvokeResult_InvokeResult_destroy(shard_shard_InvokeResult_t self)
+	SHARD_API void shard_InvokeResult_InvokeResult_destroy(shard_InvokeResult_t self)
 	{
 		if (!self)
 		{
@@ -54194,7 +54194,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokeResult_get_exception(shard_shard_InvokeResult_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_InvokeResult_get_exception(shard_InvokeResult_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -54242,7 +54242,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_InvokeResult_get_value(shard_shard_InvokeResult_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_InvokeResult_get_value(shard_InvokeResult_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -54290,7 +54290,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_InvokeResult_is_ok(shard_shard_InvokeResult_t self)
+	SHARD_API int shard_InvokeResult_is_ok(shard_InvokeResult_t self)
 	{
 		if (!self)
 		{
@@ -54307,7 +54307,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_InvokeResult_operator_to_bool(shard_shard_InvokeResult_t self)
+	SHARD_API int shard_InvokeResult_operator_to_bool(shard_InvokeResult_t self)
 	{
 		if (!self)
 		{
@@ -54324,7 +54324,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_MethodCallState_create(shard_shard_VirtualMachine_t p0, shard_shard_CallStackFrame_t p1, const void* p2, shard_shard_MethodCallState_t* out_handle)
+	SHARD_API shard_status_t shard_MethodCallState_MethodCallState_create(shard_VirtualMachine_t p0, shard_CallStackFrame_t p1, const void* p2, shard_MethodCallState_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -54367,7 +54367,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_MethodCallState_MethodCallState_destroy(shard_shard_MethodCallState_t self)
+	SHARD_API void shard_MethodCallState_MethodCallState_destroy(shard_MethodCallState_t self)
 	{
 		if (!self)
 		{
@@ -54382,7 +54382,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_argument(shard_shard_MethodCallState_t self, std::size_t p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_MethodCallState_get_argument(shard_MethodCallState_t self, std::size_t p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -54430,7 +54430,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_MethodCallState_get_argument_count(shard_shard_MethodCallState_t self)
+	SHARD_API std::size_t shard_MethodCallState_get_argument_count(shard_MethodCallState_t self)
 	{
 		if (!self)
 		{
@@ -54447,7 +54447,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodCallState_get_boolean_argument(shard_shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API int shard_MethodCallState_get_boolean_argument(shard_MethodCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54464,7 +54464,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API wchar_t shard_MethodCallState_get_char_argument(shard_shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API wchar_t shard_MethodCallState_get_char_argument(shard_MethodCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54481,7 +54481,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_MethodCallState_get_double_argument(shard_shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API double shard_MethodCallState_get_double_argument(shard_MethodCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54498,7 +54498,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_CallStackFrame_t shard_MethodCallState_get_frame(shard_shard_MethodCallState_t self)
+	SHARD_API shard_CallStackFrame_t shard_MethodCallState_get_frame(shard_MethodCallState_t self)
 	{
 		if (!self)
 		{
@@ -54515,7 +54515,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int64_t shard_MethodCallState_get_integer_argument(shard_shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API std::int64_t shard_MethodCallState_get_integer_argument(shard_MethodCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54532,7 +54532,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_property(shard_shard_MethodCallState_t self, shard_shard_ObjectInstance_t p0, const void* p1, shard_shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_MethodCallState_get_property(shard_MethodCallState_t self, shard_ObjectInstance_t p0, const void* p1, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -54580,7 +54580,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_return_value(shard_shard_MethodCallState_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_MethodCallState_get_return_value(shard_MethodCallState_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -54628,7 +54628,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_string_argument(shard_shard_MethodCallState_t self, std::size_t p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_MethodCallState_get_string_argument(shard_MethodCallState_t self, std::size_t p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -54676,7 +54676,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_VirtualMachine_t shard_MethodCallState_get_vm(shard_shard_MethodCallState_t self)
+	SHARD_API shard_VirtualMachine_t shard_MethodCallState_get_vm(shard_MethodCallState_t self)
 	{
 		if (!self)
 		{
@@ -54693,7 +54693,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_new_object(shard_shard_MethodCallState_t self, const void* p0, shard_shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_MethodCallState_new_object(shard_MethodCallState_t self, const void* p0, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -54741,7 +54741,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_propagate(shard_shard_MethodCallState_t self, shard_shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_MethodCallState_propagate(shard_MethodCallState_t self, shard_ObjectInstance_t p0)
 	{
 		if (!self)
 		{
@@ -54778,7 +54778,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_property(shard_shard_MethodCallState_t self, shard_shard_ObjectInstance_t p0, const void* p1, shard_shard_ObjectInstance_t p2, shard_shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_MethodCallState_set_property(shard_MethodCallState_t self, shard_ObjectInstance_t p0, const void* p1, shard_ObjectInstance_t p2, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -54826,7 +54826,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return(shard_shard_MethodCallState_t self, shard_shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_MethodCallState_set_return(shard_MethodCallState_t self, shard_ObjectInstance_t p0)
 	{
 		if (!self)
 		{
@@ -54863,7 +54863,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_boolean(shard_shard_MethodCallState_t self, int p0)
+	SHARD_API shard_status_t shard_MethodCallState_set_return_boolean(shard_MethodCallState_t self, int p0)
 	{
 		if (!self)
 		{
@@ -54900,7 +54900,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_byte(shard_shard_MethodCallState_t self, std::uint8_t p0)
+	SHARD_API shard_status_t shard_MethodCallState_set_return_byte(shard_MethodCallState_t self, std::uint8_t p0)
 	{
 		if (!self)
 		{
@@ -54937,7 +54937,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_char(shard_shard_MethodCallState_t self, wchar_t p0)
+	SHARD_API shard_status_t shard_MethodCallState_set_return_char(shard_MethodCallState_t self, wchar_t p0)
 	{
 		if (!self)
 		{
@@ -54974,7 +54974,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_double(shard_shard_MethodCallState_t self, double p0)
+	SHARD_API shard_status_t shard_MethodCallState_set_return_double(shard_MethodCallState_t self, double p0)
 	{
 		if (!self)
 		{
@@ -55011,7 +55011,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_integer(shard_shard_MethodCallState_t self, std::int64_t p0)
+	SHARD_API shard_status_t shard_MethodCallState_set_return_integer(shard_MethodCallState_t self, std::int64_t p0)
 	{
 		if (!self)
 		{
@@ -55048,7 +55048,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_string(shard_shard_MethodCallState_t self, const wchar_t* p0)
+	SHARD_API shard_status_t shard_MethodCallState_set_return_string(shard_MethodCallState_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -55085,7 +55085,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_try_invoke_method(shard_shard_MethodCallState_t self, const void* p0, const void* p1, shard_shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_MethodCallState_try_invoke_method(shard_MethodCallState_t self, const void* p0, const void* p1, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -55133,7 +55133,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_wrap_delegate(shard_shard_MethodCallState_t self, shard_shard_ObjectInstance_t p0, shard_shard_DelegateRef_t* out_value)
+	SHARD_API shard_status_t shard_MethodCallState_wrap_delegate(shard_MethodCallState_t self, shard_ObjectInstance_t p0, shard_DelegateRef_t* out_value)
 	{
 		if (!self)
 		{
@@ -55181,7 +55181,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_ObjectInstance_create(shard_shard_ObjectInstance_t* out_handle)
+	SHARD_API shard_status_t shard_ObjectInstance_ObjectInstance_create(shard_ObjectInstance_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -55224,7 +55224,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ObjectInstance_ObjectInstance_destroy(shard_shard_ObjectInstance_t self)
+	SHARD_API void shard_ObjectInstance_ObjectInstance_destroy(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55239,7 +55239,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_ObjectInstance_as_boolean(shard_shard_ObjectInstance_t self)
+	SHARD_API int shard_ObjectInstance_as_boolean(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55256,7 +55256,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API wchar_t shard_ObjectInstance_as_char(shard_shard_ObjectInstance_t self)
+	SHARD_API wchar_t shard_ObjectInstance_as_char(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55273,7 +55273,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_ObjectInstance_as_double(shard_shard_ObjectInstance_t self)
+	SHARD_API double shard_ObjectInstance_as_double(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55290,7 +55290,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int64_t shard_ObjectInstance_as_integer(shard_shard_ObjectInstance_t self)
+	SHARD_API std::int64_t shard_ObjectInstance_as_integer(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55307,7 +55307,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API unsigned char* shard_ObjectInstance_as_pointer(shard_shard_ObjectInstance_t self)
+	SHARD_API unsigned char* shard_ObjectInstance_as_pointer(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55324,7 +55324,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_get_field(shard_shard_ObjectInstance_t self, std::uint32_t p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_ObjectInstance_get_field(shard_ObjectInstance_t self, std::uint32_t p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -55372,7 +55372,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API unsigned char* shard_ObjectInstance_get_memory(shard_shard_ObjectInstance_t self)
+	SHARD_API unsigned char* shard_ObjectInstance_get_memory(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55389,7 +55389,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_TypeShape_t shard_ObjectInstance_get_shape(shard_shard_ObjectInstance_t self)
+	SHARD_API shard_TypeShape_t shard_ObjectInstance_get_shape(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55406,7 +55406,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_ObjectInstance_is_null(shard_shard_ObjectInstance_t self)
+	SHARD_API int shard_ObjectInstance_is_null(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55423,7 +55423,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_null(shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_ObjectInstance_null(shard_ObjectInstance_t* out_value)
 	{
 		if (!out_value)
 		{
@@ -55467,7 +55467,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_set_field(shard_shard_ObjectInstance_t self, std::uint32_t p0, shard_shard_ObjectInstance_t p1)
+	SHARD_API shard_status_t shard_ObjectInstance_set_field(shard_ObjectInstance_t self, std::uint32_t p0, shard_ObjectInstance_t p1)
 	{
 		if (!self)
 		{
@@ -55504,7 +55504,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_write_boolean(shard_shard_ObjectInstance_t self, int p0)
+	SHARD_API shard_status_t shard_ObjectInstance_write_boolean(shard_ObjectInstance_t self, int p0)
 	{
 		if (!self)
 		{
@@ -55541,7 +55541,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_write_char(shard_shard_ObjectInstance_t self, wchar_t p0)
+	SHARD_API shard_status_t shard_ObjectInstance_write_char(shard_ObjectInstance_t self, wchar_t p0)
 	{
 		if (!self)
 		{
@@ -55578,7 +55578,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_write_double(shard_shard_ObjectInstance_t self, double p0)
+	SHARD_API shard_status_t shard_ObjectInstance_write_double(shard_ObjectInstance_t self, double p0)
 	{
 		if (!self)
 		{
@@ -55615,7 +55615,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_write_integer(shard_shard_ObjectInstance_t self, std::int64_t p0)
+	SHARD_API shard_status_t shard_ObjectInstance_write_integer(shard_ObjectInstance_t self, std::int64_t p0)
 	{
 		if (!self)
 		{
@@ -55652,7 +55652,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_write_pointer(shard_shard_ObjectInstance_t self, unsigned char* p0)
+	SHARD_API shard_status_t shard_ObjectInstance_write_pointer(shard_ObjectInstance_t self, unsigned char* p0)
 	{
 		if (!self)
 		{
@@ -55689,7 +55689,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PrimitiveMath_PrimitiveMath_create(shard_shard_PrimitiveMath_t* out_handle)
+	SHARD_API shard_status_t shard_PrimitiveMath_PrimitiveMath_create(shard_PrimitiveMath_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -55732,7 +55732,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_PrimitiveMath_PrimitiveMath_destroy(shard_shard_PrimitiveMath_t self)
+	SHARD_API void shard_PrimitiveMath_PrimitiveMath_destroy(shard_PrimitiveMath_t self)
 	{
 		if (!self)
 		{
@@ -55747,7 +55747,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_PrimitiveMath_binary_math(int p0, shard_shard_PrimitiveShapes_t p1, shard_shard_ObjectInstance_t p2, shard_shard_ObjectInstance_t p3, shard_shard_ScalarResult_t p4)
+	SHARD_API int shard_PrimitiveMath_binary_math(int p0, shard_PrimitiveShapes_t p1, shard_ObjectInstance_t p2, shard_ObjectInstance_t p3, shard_ScalarResult_t p4)
 	{
 		try
 		{
@@ -55760,7 +55760,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_PrimitiveMath_compare(int p0, shard_shard_PrimitiveShapes_t p1, shard_shard_ObjectInstance_t p2, shard_shard_ObjectInstance_t p3, shard_shard_ScalarResult_t p4)
+	SHARD_API int shard_PrimitiveMath_compare(int p0, shard_PrimitiveShapes_t p1, shard_ObjectInstance_t p2, shard_ObjectInstance_t p3, shard_ScalarResult_t p4)
 	{
 		try
 		{
@@ -55773,7 +55773,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_PrimitiveMath_convert(shard_shard_PrimitiveShapes_t p0, shard_shard_ObjectInstance_t p1, const void* p2, shard_shard_TypeShape_t p3, shard_shard_ScalarResult_t p4)
+	SHARD_API int shard_PrimitiveMath_convert(shard_PrimitiveShapes_t p0, shard_ObjectInstance_t p1, const void* p2, shard_TypeShape_t p3, shard_ScalarResult_t p4)
 	{
 		try
 		{
@@ -55786,7 +55786,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_PrimitiveMath_negate(shard_shard_PrimitiveShapes_t p0, shard_shard_ObjectInstance_t p1, shard_shard_ScalarResult_t p2)
+	SHARD_API int shard_PrimitiveMath_negate(shard_PrimitiveShapes_t p0, shard_ObjectInstance_t p1, shard_ScalarResult_t p2)
 	{
 		try
 		{
@@ -55799,7 +55799,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PrimitiveMath_to_display_string(shard_shard_ObjectInstance_t p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_PrimitiveMath_to_display_string(shard_ObjectInstance_t p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		try
 		{
@@ -55843,7 +55843,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_PrimitiveShapes_PrimitiveShapes_create(shard_shard_PrimitiveShapes_t* out_handle)
+	SHARD_API shard_status_t shard_PrimitiveShapes_PrimitiveShapes_create(shard_PrimitiveShapes_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -55886,7 +55886,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_PrimitiveShapes_PrimitiveShapes_destroy(shard_shard_PrimitiveShapes_t self)
+	SHARD_API void shard_PrimitiveShapes_PrimitiveShapes_destroy(shard_PrimitiveShapes_t self)
 	{
 		if (!self)
 		{
@@ -55906,7 +55906,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API shard_status_t shard_ScalarResult_ScalarResult_create(shard_shard_ScalarResult_t* out_handle)
+	SHARD_API shard_status_t shard_ScalarResult_ScalarResult_create(shard_ScalarResult_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -55949,7 +55949,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_ScalarResult_ScalarResult_destroy(shard_shard_ScalarResult_t self)
+	SHARD_API void shard_ScalarResult_ScalarResult_destroy(shard_ScalarResult_t self)
 	{
 		if (!self)
 		{
@@ -55964,7 +55964,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_VirtualMachine_create(shard_shard_VirtualProgramImage_t p0, shard_shard_SemanticModel_t p1, shard_shard_PragmaticModel_t p2, shard_shard_VirtualMachine_t* out_handle)
+	SHARD_API shard_status_t shard_VirtualMachine_VirtualMachine_create(shard_VirtualProgramImage_t p0, shard_SemanticModel_t p1, shard_PragmaticModel_t p2, shard_VirtualMachine_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -56007,7 +56007,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_VirtualMachine_VirtualMachine_destroy(shard_shard_VirtualMachine_t self)
+	SHARD_API void shard_VirtualMachine_VirtualMachine_destroy(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56022,7 +56022,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_create_string(shard_shard_VirtualMachine_t self, const wchar_t* p0, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_VirtualMachine_create_string(shard_VirtualMachine_t self, const wchar_t* p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -56070,7 +56070,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_GarbageCollector_t shard_VirtualMachine_get_collector(shard_shard_VirtualMachine_t self)
+	SHARD_API shard_GarbageCollector_t shard_VirtualMachine_get_collector(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56087,7 +56087,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_CallStackFrame_t shard_VirtualMachine_get_current_frame(shard_shard_VirtualMachine_t self)
+	SHARD_API shard_CallStackFrame_t shard_VirtualMachine_get_current_frame(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56104,7 +56104,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_VirtualMachine_get_has_unhandled_exception(shard_shard_VirtualMachine_t self)
+	SHARD_API int shard_VirtualMachine_get_has_unhandled_exception(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56121,7 +56121,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_SemanticModel_t shard_VirtualMachine_get_model(shard_shard_VirtualMachine_t self)
+	SHARD_API shard_SemanticModel_t shard_VirtualMachine_get_model(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56138,7 +56138,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_PragmaticModel_t shard_VirtualMachine_get_pragmatic(shard_shard_VirtualMachine_t self)
+	SHARD_API shard_PragmaticModel_t shard_VirtualMachine_get_pragmatic(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56155,7 +56155,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_PrimitiveShapes_t shard_VirtualMachine_get_primitive_shapes(shard_shard_VirtualMachine_t self)
+	SHARD_API shard_PrimitiveShapes_t shard_VirtualMachine_get_primitive_shapes(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56172,7 +56172,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_shard_VirtualProgramImage_t shard_VirtualMachine_get_program(shard_shard_VirtualMachine_t self)
+	SHARD_API shard_VirtualProgramImage_t shard_VirtualMachine_get_program(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56189,7 +56189,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_get_unhandled_exception(shard_shard_VirtualMachine_t self, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_VirtualMachine_get_unhandled_exception(shard_VirtualMachine_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -56237,7 +56237,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_get_unhandled_message(shard_shard_VirtualMachine_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_VirtualMachine_get_unhandled_message(shard_VirtualMachine_t self, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -56285,7 +56285,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_invoke_method(shard_shard_VirtualMachine_t self, const void* p0, const void* p1, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_VirtualMachine_invoke_method(shard_VirtualMachine_t self, const void* p0, const void* p1, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -56333,14 +56333,14 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_operator_assign(shard_shard_VirtualMachine_t self, shard_shard_VirtualMachine_t p0)
+	SHARD_API shard_status_t shard_VirtualMachine_operator_assign(shard_VirtualMachine_t self, shard_VirtualMachine_t p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_raise_exception(shard_shard_VirtualMachine_t self, shard_shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_VirtualMachine_raise_exception(shard_VirtualMachine_t self, shard_ObjectInstance_t p0)
 	{
 		if (!self)
 		{
@@ -56377,7 +56377,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_raise_runtime_exception(shard_shard_VirtualMachine_t self, const wchar_t* p0)
+	SHARD_API shard_status_t shard_VirtualMachine_raise_runtime_exception(shard_VirtualMachine_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -56414,7 +56414,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_run(shard_shard_VirtualMachine_t self)
+	SHARD_API shard_status_t shard_VirtualMachine_run(shard_VirtualMachine_t self)
 	{
 		if (!self)
 		{
@@ -56451,7 +56451,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_VirtualMachine_try_invoke_method(shard_shard_VirtualMachine_t self, const void* p0, const void* p1, shard_shard_ObjectInstance_t p2, shard_shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_VirtualMachine_try_invoke_method(shard_VirtualMachine_t self, const void* p0, const void* p1, shard_ObjectInstance_t p2, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -56499,7 +56499,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_detail_unwrap_arg(shard_shard_ObjectInstance_t p0, bool* p1)
+	SHARD_API int shard_detail_unwrap_arg(shard_ObjectInstance_t p0, bool* p1)
 	{
 		try
 		{
@@ -56512,7 +56512,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API wchar_t* shard_detail_unwrap_string(shard_shard_ObjectInstance_t p0)
+	SHARD_API wchar_t* shard_detail_unwrap_string(shard_ObjectInstance_t p0)
 	{
 		try
 		{
