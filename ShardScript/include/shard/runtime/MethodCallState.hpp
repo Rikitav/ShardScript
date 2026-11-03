@@ -65,12 +65,16 @@ namespace shard
 	{
 		VirtualMachine& m_vm;
 		CallStackFrame* m_frame;
+		MethodSymbol* m_method;
 		std::span<const ObjectInstance> m_arguments;
 		ObjectInstance m_returnValue;
-		alignas(8) std::byte m_returnBuffer[8] = {};
+		alignas(8) std::byte m_returnBuffer[16] = {};
+
+		const TypeShape* nullable_return_shape() const;
+		void write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes);
 
 	public:
-		MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments);
+		MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments, MethodSymbol* method = nullptr);
 
 		VirtualMachine& get_vm() const;
 		CallStackFrame* get_frame() const;
@@ -85,6 +89,13 @@ namespace shard
 		wchar_t get_char_argument(std::size_t index) const;
 		std::wstring_view get_string_argument(std::size_t index) const;
 
+		// nullable arguments: read the wrapper's flag, then the value it holds
+		bool is_nullable_argument(std::size_t index) const;
+		bool get_nullable_has_value(std::size_t index) const;
+
+		// the underlying value; the null instance when the wrapper is empty
+		ObjectInstance get_nullable_argument(std::size_t index) const;
+
 		template<typename... TArgs>
 		std::tuple<TArgs...> get_arguments() const;
 
@@ -96,6 +107,17 @@ namespace shard
 		void set_return_char(wchar_t value);
 		void set_return_byte(std::uint8_t value);
 		void set_return_string(std::wstring_view value);
+
+		// nullable returns: the wrapper type comes from the method's return type
+		void set_return_empty_nullable();
+		void set_return_nullable_boolean(bool hasValue, bool value);
+		void set_return_nullable_integer(bool hasValue, std::int64_t value);
+		void set_return_nullable_nint(bool hasValue, std::uintptr_t value);
+		void set_return_nullable_double(bool hasValue, double value);
+		void set_return_nullable_char(bool hasValue, wchar_t value);
+		void set_return_nullable_byte(bool hasValue, std::uint8_t value);
+		void set_return_nullable_string(bool hasValue, std::wstring_view value);
+		void set_return_nullable_reference(bool hasValue, ObjectInstance value);
 
 		ObjectInstance get_return_value() const;
 

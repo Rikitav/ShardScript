@@ -651,7 +651,7 @@ ObjectInstance VirtualMachine::invoke_native(MethodSymbol* method, std::span<con
 		m_collector.pin(argument);
 
 	MethodSymbolDelegate callback = reinterpret_cast<MethodSymbolDelegate>(method->get_function_pointer());
-	MethodCallState state(*this, m_currentFrame, arguments);
+	MethodCallState state(*this, m_currentFrame, arguments, method);
 
 	try
 	{
