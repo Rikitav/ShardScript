@@ -9,8 +9,31 @@
 
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
 using namespace shard;
+
+namespace
+{
+	bool try_multiply(std::int64_t left, std::int64_t right, std::int64_t& result)
+	{
+		if (left > 0)
+		{
+			if ((right > 0 && left > (std::numeric_limits<std::int64_t>::max)() / right)
+				|| (right < 0 && right < (std::numeric_limits<std::int64_t>::min)() / left))
+				return false;
+		}
+		else if (left < 0)
+		{
+			if ((right > 0 && left < (std::numeric_limits<std::int64_t>::min)() / right)
+				|| (right < 0 && left < (std::numeric_limits<std::int64_t>::max)() / right))
+				return false;
+		}
+
+		result = left * right;
+		return true;
+	}
+}
 
 bool PrimitiveMath::is_double(const PrimitiveShapes& shapes, const TypeShape* shape)
 {
@@ -84,13 +107,51 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 	std::int64_t computed;
 	switch (op)
 	{
-		case OpCode::MATH_ADDITION: computed = leftValue + rightValue; break;
-		case OpCode::MATH_SUBTRACT: computed = leftValue - rightValue; break;
-		case OpCode::MATH_MULTIPLY: computed = leftValue * rightValue; break;
+		case OpCode::MATH_ADDITION:
+		{
+			if ((rightValue > 0 && leftValue > (std::numeric_limits<std::int64_t>::max)() - rightValue)
+				|| (rightValue < 0 && leftValue < (std::numeric_limits<std::int64_t>::min)() - rightValue))
+				return PrimitiveStatus::Overflow;
+
+			computed = leftValue + rightValue;
+			break;
+		}
+
+		case OpCode::MATH_SUBTRACT:
+		{
+			if ((rightValue < 0 && leftValue > (std::numeric_limits<std::int64_t>::max)() + rightValue)
+				|| (rightValue > 0 && leftValue < (std::numeric_limits<std::int64_t>::min)() + rightValue))
+				return PrimitiveStatus::Overflow;
+
+			computed = leftValue - rightValue;
+			break;
+		}
+
+		case OpCode::MATH_MULTIPLY:
+		{
+			if (leftValue > 0)
+			{
+				if ((rightValue > 0 && leftValue > (std::numeric_limits<std::int64_t>::max)() / rightValue)
+					|| (rightValue < 0 && rightValue < (std::numeric_limits<std::int64_t>::min)() / leftValue))
+					return PrimitiveStatus::Overflow;
+			}
+			else if (leftValue < 0)
+			{
+				if ((rightValue > 0 && leftValue < (std::numeric_limits<std::int64_t>::min)() / rightValue)
+					|| (rightValue < 0 && leftValue < (std::numeric_limits<std::int64_t>::max)() / rightValue))
+					return PrimitiveStatus::Overflow;
+			}
+
+			computed = leftValue * rightValue;
+			break;
+		}
 		case OpCode::MATH_DIVISION:
 		{
 			if (rightValue == 0)
 				return PrimitiveStatus::DivideByZero;
+
+			if (leftValue == (std::numeric_limits<std::int64_t>::min)() && rightValue == -1)
+				return PrimitiveStatus::Overflow;
 
 			computed = leftValue / rightValue;
 			break;
@@ -99,6 +160,9 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 		{
 			if (rightValue == 0)
 				return PrimitiveStatus::DivideByZero;
+
+			if (leftValue == (std::numeric_limits<std::int64_t>::min)() && rightValue == -1)
+				return PrimitiveStatus::Overflow;
 
 			computed = leftValue % rightValue;
 			break;
@@ -110,16 +174,35 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 			std::int64_t exponent = rightValue;
 			while (exponent > 0)
 			{
-				if ((exponent & 1) != 0)
-					computed *= base;
+				if ((exponent & 1) != 0 && !try_multiply(computed, base, computed))
+					return PrimitiveStatus::Overflow;
 
-				base *= base;
 				exponent >>= 1;
+				if (exponent > 0 && !try_multiply(base, base, base))
+					return PrimitiveStatus::Overflow;
 			}
 			break;
 		}
-		case OpCode::MATH_SHL: computed = leftValue << rightValue; break;
-		case OpCode::MATH_SHR: computed = leftValue >> rightValue; break;
+		case OpCode::MATH_SHL:
+		{
+			if (rightValue < 0 || rightValue >= 64)
+				return PrimitiveStatus::Overflow;
+
+			if (leftValue < 0 || leftValue > (std::numeric_limits<std::int64_t>::max)() >> rightValue)
+				return PrimitiveStatus::Overflow;
+
+			computed = leftValue << rightValue;
+			break;
+		}
+
+		case OpCode::MATH_SHR:
+		{
+			if (rightValue < 0 || rightValue >= 64)
+				return PrimitiveStatus::Overflow;
+
+			computed = leftValue >> rightValue;
+			break;
+		}
 		default:
 			return PrimitiveStatus::NotPrimitive;
 	}
@@ -201,6 +284,9 @@ PrimitiveStatus PrimitiveMath::negate(const PrimitiveShapes& shapes, ObjectInsta
 
 	if (is_integer(shapes, value.get_shape()))
 	{
+		if (value.as_integer() == (std::numeric_limits<std::int64_t>::min)())
+			return PrimitiveStatus::Overflow;
+
 		std::int64_t computed = -value.as_integer();
 		result.shape = shapes.integer;
 		std::memcpy(&result.payload, &computed, sizeof(std::int64_t));

@@ -1,0 +1,6 @@
+using stdio;
+
+func Main() -> void
+{
+    println(9223372036854775807 + 1);
+}
