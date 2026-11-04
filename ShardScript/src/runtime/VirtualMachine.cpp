@@ -1240,6 +1240,12 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
+			if (status == PrimitiveStatus::Overflow)
+			{
+				raise_runtime_exception(L"OverflowException");
+				break;
+			}
+
 			if (status == PrimitiveStatus::NotPrimitive)
 			{
 				bool leftString = left.get_shape() == m_primitiveShapes.string;
@@ -1267,6 +1273,12 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 			ScalarResult result;
 			PrimitiveStatus status = PrimitiveMath::negate(m_primitiveShapes, value, result);
+			if (status == PrimitiveStatus::Overflow)
+			{
+				raise_runtime_exception(L"OverflowException");
+				break;
+			}
+
 			if (status != PrimitiveStatus::Success)
 			{
 				raise_runtime_exception(L"unsupported operand for negation");

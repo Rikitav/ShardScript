@@ -20,7 +20,8 @@ namespace shard
 	{
 		Success,
 		NotPrimitive,
-		DivideByZero
+		DivideByZero,
+		Overflow
 	};
 
 	struct PrimitiveShapes
