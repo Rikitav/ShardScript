@@ -783,15 +783,11 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 	};
 
 	gmt::inline_vector<candidate, 8> candidates;
-	auto addCandidate = [&candidates](MethodSymbol* method, bool asExtension)
+	gmt::unordered_set<MethodSymbol*> seenCandidates;
+	auto addCandidate = [&](MethodSymbol* method, bool asExtension)
 	{
-		for (const candidate& existing : candidates.get_vector())
-		{
-			if (existing.method == method)
-				return;
-		}
-
-		candidates.push_back({ method, asExtension });
+		if (seenCandidates.insert(method).second)
+			candidates.push_back({ method, asExtension });
 	};
 
 	// instance and static methods declared on the receiver type
@@ -841,20 +837,8 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 	// the root namespace cannot be imported, so its functions double as
 	// globally visible extension candidates: their first parameter may bind
 	// the receiver exactly like a scope-level extension
-	for (SyntaxSymbol* const& member : get_symbol_table().get_root_namespace()->members)
-	{
-		if ((member == nullptr) || member->get_kind() != SyntaxKind::FunctionDeclaration)
-			continue;
-
-		if (member->get_name() != methodName)
-			continue;
-
-		MethodSymbol* method = static_cast<MethodSymbol*>(member);
-		if (method->get_linking() != LINK_STATIC)
-			continue;
-
+	for (MethodSymbol* method : get_symbol_table().find_root_functions(methodName))
 		addCandidate(method, asExtension);
-	}
 
 	if (hasExplicitTypeArgs)
 	{
