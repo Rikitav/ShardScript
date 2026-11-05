@@ -164,6 +164,5 @@ namespace shard
 		bool is_heap_backed(std::byte* payload) const;
 
 		static GcHeader* get_header(std::byte* payload);
-		static bool is_heap_pointer(std::byte* pointer);
 	};
 }

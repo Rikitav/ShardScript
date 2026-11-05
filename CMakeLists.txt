@@ -74,5 +74,5 @@ endif()
 set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 
 add_subdirectory(ShardScript)
-#add_subdirectory(ShardScript.Framework)
+add_subdirectory(ShardScript.Framework)
 add_subdirectory(ShardScript.Interpreter)
