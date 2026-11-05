@@ -29,6 +29,8 @@ namespace shard
 	{
 		gmt::Arena m_arena;
 		NamespaceSymbol* m_rootNamespace = nullptr;
+		std::size_t m_indexedRootMembers = 0;
+		gmt::unordered_map<gmt::StringReference, gmt::vector<MethodSymbol*>> m_rootFunctions;
 
 		StructSymbol* m_void = nullptr;
 		StructSymbol* m_boolean = nullptr;
@@ -71,6 +73,7 @@ namespace shard
 
 		gmt::Arena& get_arena();
 		NamespaceSymbol* get_root_namespace() const;
+		std::span<MethodSymbol* const> find_root_functions(std::wstring_view name);
 
 		template<typename T, typename... Args>
 		T* emplace(Args&&... args);

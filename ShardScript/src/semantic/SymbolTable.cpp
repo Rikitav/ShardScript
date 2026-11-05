@@ -66,6 +66,27 @@ NamespaceSymbol* SymbolTable::get_root_namespace() const
 	return m_rootNamespace;
 }
 
+std::span<MethodSymbol* const> SymbolTable::find_root_functions(std::wstring_view name)
+{
+	const auto& members = m_rootNamespace->members;
+	while (m_indexedRootMembers < members.size())
+	{
+		SyntaxSymbol* member = members[m_indexedRootMembers++];
+		if (member == nullptr || member->get_kind() != SyntaxKind::FunctionDeclaration)
+			continue;
+
+		MethodSymbol* method = static_cast<MethodSymbol*>(member);
+		if (method->get_linking() == LINK_STATIC)
+			m_rootFunctions[gmt::intern(method->get_name())].push_back(method);
+	}
+
+	auto found = m_rootFunctions.find(gmt::intern(name));
+	if (found == m_rootFunctions.end())
+		return {};
+
+	return found->second;
+}
+
 SyntaxSymbol* SymbolTable::lookup_symbol(const SyntaxNode* node)
 {
 	auto choice = m_nodeToSymbolMap.find(node);

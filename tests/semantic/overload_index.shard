@@ -1,0 +1,23 @@
+using stdio;
+
+func Select(value: int) -> int
+{
+	return 10;
+}
+
+func Select(value: double) -> int
+{
+	return 20;
+}
+
+func Twice(value: int) -> int
+{
+	return value * 2;
+}
+
+func Main() -> void
+{
+	println(Select(1));
+	println(Select(1.0));
+	println(3.Twice());
+}
