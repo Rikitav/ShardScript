@@ -1,0 +1,7 @@
+using stdio;
+
+func Main() -> void
+{
+    values: int[] = new int[2305843009213693952];
+    println(values.Length);
+}

@@ -18,9 +18,30 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <limits>
 #include <stdexcept>
+#include <string>
 
 using namespace shard;
+
+namespace
+{
+	std::size_t checked_add(std::size_t left, std::size_t right)
+	{
+		if (left > (std::numeric_limits<std::size_t>::max)() - right)
+			throw std::length_error("allocation size overflow");
+
+		return left + right;
+	}
+
+	std::size_t checked_multiply(std::size_t left, std::size_t right)
+	{
+		if (right != 0 && left > (std::numeric_limits<std::size_t>::max)() / right)
+			throw std::length_error("allocation size overflow");
+
+		return left * right;
+	}
+}
 
 std::byte* const GarbageCollector::HeapTable::Tombstone = reinterpret_cast<std::byte*>(static_cast<std::uintptr_t>(1));
 
@@ -178,7 +199,8 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 	if (m_allocatedSinceCollection >= m_collectionThreshold)
 		collect();
 
-	GcHeader* header = static_cast<GcHeader*>(gmt::mem_alloc(sizeof(GcHeader) + payloadBytes));
+	const std::size_t allocationBytes = checked_add(sizeof(GcHeader), payloadBytes);
+	GcHeader* header = static_cast<GcHeader*>(gmt::mem_alloc(allocationBytes));
 	header->magic = Magic;
 	header->shape = shape;
 	header->marked = 0;
@@ -214,8 +236,9 @@ ObjectInstance GarbageCollector::allocate_array(const TypeShape* arrayShape, con
 	if (length < 0)
 		throw std::runtime_error("negative array length");
 
-	std::size_t elementStride = elementShape->is_reference() ? sizeof(void*) : elementShape->get_size();
-	std::size_t payloadBytes = sizeof(std::int64_t) + elementStride * static_cast<std::size_t>(length);
+	const std::size_t elementStride = elementShape->is_reference() ? sizeof(void*) : elementShape->get_size();
+	const std::size_t elementsBytes = checked_multiply(elementStride, static_cast<std::size_t>(length));
+	const std::size_t payloadBytes = checked_add(sizeof(std::int64_t), elementsBytes);
 
 	ObjectInstance instance = allocate_block(arrayShape, payloadBytes);
 	instance.write_integer(length);
@@ -224,9 +247,14 @@ ObjectInstance GarbageCollector::allocate_array(const TypeShape* arrayShape, con
 
 ObjectInstance GarbageCollector::allocate_string(std::wstring_view value)
 {
+	if (value.size() > static_cast<std::size_t>((std::numeric_limits<std::int64_t>::max)()))
+		throw std::length_error("string is too long");
+
 	const TypeShape* stringShape = m_pragmatic.find_or_create_type_shape(m_model, m_model.get_table().get_string_primitive());
 
-	std::size_t payloadBytes = sizeof(std::int64_t) + (value.size() + 1) * sizeof(wchar_t);
+	const std::size_t characterCount = checked_add(value.size(), 1);
+	const std::size_t characterBytes = checked_multiply(characterCount, sizeof(wchar_t));
+	const std::size_t payloadBytes = checked_add(sizeof(std::int64_t), characterBytes);
 	ObjectInstance instance = allocate_block(stringShape, payloadBytes);
 
 	instance.write_integer(static_cast<std::int64_t>(value.size()));
