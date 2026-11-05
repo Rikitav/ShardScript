@@ -1,5 +1,7 @@
 project(ShardScript.Interpreter)
 
+include("cmake/cppdap.cmake")
+
 set(INTERPRETER_SOURCES
 	ShardScript.Interpreter.cpp
 	StandardLibrary.cpp
@@ -23,6 +25,7 @@ add_executable(ShardScript.Interpreter
 	${INTERPRETER_SOURCES}
 	${INTERPRETER_HEADERS}
 	${INTERPRETER_RESOURCES}
+	${CPPDAP_SOURCES}
 )
 
 set_target_properties(ShardScript.Interpreter PROPERTIES OUTPUT_NAME "shard")
@@ -38,6 +41,8 @@ if(ENABLE_ASAN)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CPPDAP_INCLUDE_DIRS})
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${CPPDAP_DEFINES})
 
 set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(ShardScript.Interpreter PROPERTIES
@@ -57,6 +62,7 @@ set_target_properties(ShardScript.Interpreter PROPERTIES
 
 target_link_libraries(ShardScript.Interpreter PRIVATE
 	ShardScript
+	${CPPDAP_LIBRARIES}
 )
 
 if(WIN32)
