@@ -136,6 +136,17 @@ namespace shard
 			gmt::vector<ParseFrame> parseStack;
 		};
 
+		class DepthGuard final
+		{
+			int& m_depth;
+
+		public:
+			explicit DepthGuard(int& depth);
+			~DepthGuard();
+			DepthGuard(const DepthGuard&) = delete;
+			DepthGuard& operator=(const DepthGuard&) = delete;
+		};
+
 		static constexpr int max_loop_iterations = 10000;
 		static constexpr int max_block_depth = 256;
 		static constexpr int max_expression_depth = 256;

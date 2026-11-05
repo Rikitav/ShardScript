@@ -99,6 +99,17 @@ void SourceParser::RecoveryContext::Guard::set_state(ParseState state)
 	m_parser.m_recovery.parseStack.back().state = state;
 }
 
+SourceParser::DepthGuard::DepthGuard(int& depth)
+	: m_depth(depth)
+{
+	++m_depth;
+}
+
+SourceParser::DepthGuard::~DepthGuard()
+{
+	--m_depth;
+}
+
 SourceParser::SourceParser(SyntaxTree& syntaxTree, DiagnosticsContext& diagnostics) :
 	m_syntaxTree(syntaxTree),
 	m_diagnostics(diagnostics),
@@ -1344,6 +1355,13 @@ FunctionDeclarationSyntax* SourceParser::read_function_declaration(SourceProvide
 
 TypeSyntax* SourceParser::read_type(SourceProvider& reader, SyntaxNode* parent)
 {
+	DepthGuard depthGuard(m_expressionDepth);
+	if (m_expressionDepth > max_expression_depth)
+	{
+		m_diagnostics.report_error(reader.current(), L"Type is too deeply nested");
+		return nullptr;
+	}
+
 	if (!reader.can_consume())
 		return nullptr;
 
@@ -2415,11 +2433,10 @@ ExpressionSyntax* SourceParser::read_expression(SourceProvider& reader, SyntaxNo
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 
-	++m_expressionDepth;
+	DepthGuard depthGuard(m_expressionDepth);
 	if (m_expressionDepth > max_expression_depth)
 	{
 		m_diagnostics.report_error(reader.current(), L"Expression is too deeply nested");
-		--m_expressionDepth;
 		return nullptr;
 	}
 
@@ -2510,12 +2527,18 @@ ExpressionSyntax* SourceParser::read_expression(SourceProvider& reader, SyntaxNo
 		left = binary;
 	}
 
-	--m_expressionDepth;
 	return left;
 }
 
 ExpressionSyntax* SourceParser::read_operand(SourceProvider& reader, SyntaxNode* parent)
 {
+	DepthGuard depthGuard(m_expressionDepth);
+	if (m_expressionDepth > max_expression_depth)
+	{
+		m_diagnostics.report_error(reader.current(), L"Expression is too deeply nested");
+		return nullptr;
+	}
+
 	if (!reader.can_consume())
 	{
 		SyntaxToken eofToken(TokenType::EndOfFile, L"", TextLocation());
