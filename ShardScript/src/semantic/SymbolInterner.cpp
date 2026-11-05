@@ -113,27 +113,29 @@ const std::uint64_t* SymbolInterner::store_key(const std::uint64_t* words, std::
 
 void SymbolInterner::insert(const std::uint64_t* words, std::uint16_t count, SyntaxSymbol* symbol)
 {
-	const std::uint64_t* storedWords = store_key(words, count);
-
-	if ((m_count + 1) * LoadDenominator > m_slots.size() * LoadNumerator)
-		grow();
-
-	const std::size_t mask = m_slots.size() - 1;
-	std::size_t slot = hash_words(storedWords, count) & mask;
-
-	while (!(m_slots[slot].symbol == nullptr))
+	std::size_t mask = m_slots.size() - 1;
+	std::size_t slot = hash_words(words, count) & mask;
+	while (m_slots[slot].symbol != nullptr)
 	{
-		if (same_words(m_slots[slot], storedWords, count))
+		if (same_words(m_slots[slot], words, count))
 		{
-			m_slots[slot].symbol = symbol; // re-interning the same key: keep the fresh symbol
+			m_slots[slot].symbol = symbol;
 			return;
 		}
-
 		slot = (slot + 1) & mask;
 	}
 
+	if ((m_count + 1) * LoadDenominator > m_slots.size() * LoadNumerator)
+	{
+		grow();
+		mask = m_slots.size() - 1;
+		slot = hash_words(words, count) & mask;
+		while (m_slots[slot].symbol != nullptr)
+			slot = (slot + 1) & mask;
+	}
+
+	m_slots[slot].words = store_key(words, count);
 	m_slots[slot].symbol = symbol;
-	m_slots[slot].words = storedWords;
 	m_slots[slot].count = count;
 	++m_count;
 }
