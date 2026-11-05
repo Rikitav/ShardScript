@@ -231,6 +231,7 @@
 #include <shard/runtime/VirtualMachine.hpp>
 
 // --- Driving ---
+#include <shard/CompilationState.hpp>
 #include <shard/ApplicationDomain.hpp>
 #include <shard/CompilationContext.hpp>
 

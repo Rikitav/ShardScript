@@ -1,27 +1,20 @@
 #pragma once
 #include <shard/Definitions.hpp>
-
 #include <gmt/Containers.hpp>
-
+#include <shard/CompilationState.hpp>
 #include <shard/compilation/VirtualProgramImage.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 
-#include <memory>
-
 namespace shard
 {
-	class SemanticModel;
-	class PragmaticModel;
-
 	class SHARD_API ApplicationDomain
 	{
+		gmt::shared_ptr<CompilationState> m_state;
 		gmt::unique_ptr<VirtualProgramImage> m_program;
-		SemanticModel& m_model;
-		PragmaticModel& m_pragmatic;
 		VirtualMachine m_machine;
 
 	public:
-		ApplicationDomain(gmt::unique_ptr<VirtualProgramImage> program, SemanticModel& model, PragmaticModel& pragmatic);
+		ApplicationDomain(gmt::unique_ptr<VirtualProgramImage> program, gmt::shared_ptr<CompilationState> state);
 		~ApplicationDomain();
 
 		ApplicationDomain(const ApplicationDomain&) = delete;
