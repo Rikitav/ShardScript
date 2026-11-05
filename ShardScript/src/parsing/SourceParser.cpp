@@ -385,6 +385,15 @@ NamespaceDirectiveSyntax* SourceParser::read_namespace_directive(SourceProvider&
 
 MemberDeclarationSyntax* SourceParser::read_member_declaration(SourceProvider& reader, SyntaxNode* parent)
 {
+	DepthGuard depthGuard(m_expressionDepth);
+	if (m_expressionDepth > max_expression_depth)
+	{
+		m_diagnostics.report_error(reader.current(), L"Declaration is too deeply nested");
+		while (reader.can_consume())
+			reader.consume();
+		return nullptr;
+	}
+
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 
 	AttributesListSyntax* attributes = read_attributes_list(reader, parent);
@@ -2230,6 +2239,15 @@ ContinueStatementSyntax* SourceParser::read_continue_statement(SourceProvider& r
 
 ConditionalClauseBaseSyntax* SourceParser::read_conditional_clause(SourceProvider& reader, SyntaxNode* parent)
 {
+	DepthGuard depthGuard(m_expressionDepth);
+	if (m_expressionDepth > max_expression_depth)
+	{
+		m_diagnostics.report_error(reader.current(), L"Conditional chain is too deeply nested");
+		while (reader.can_consume())
+			reader.consume();
+		return nullptr;
+	}
+
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 
 	if (!reader.can_consume())
@@ -2792,6 +2810,9 @@ LambdaExpressionSyntax* SourceParser::read_lambda_expression(SourceProvider& rea
 
 ExpressionSyntax* SourceParser::read_linked_expression(SourceProvider& reader, SyntaxNode* parent, ExpressionSyntax* previous)
 {
+	if (previous == nullptr)
+		return nullptr;
+
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	ExpressionSyntax* expression = previous;
 
