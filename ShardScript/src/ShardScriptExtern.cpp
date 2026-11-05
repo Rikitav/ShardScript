@@ -53926,19 +53926,6 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_GarbageCollector_is_heap_pointer(unsigned char* p0)
-	{
-		try
-		{
-			auto result = shard::GarbageCollector::is_heap_pointer(reinterpret_cast<std::byte*>(p0));
-			return (result ? 1 : 0);
-		}
-		catch (...)
-		{
-			return 0;
-		}
-	}
-
 	SHARD_API shard_status_t shard_GarbageCollector_operator_assign(shard_GarbageCollector_t self, shard_GarbageCollector_t p0)
 	{
 		static_cast<void>(self);

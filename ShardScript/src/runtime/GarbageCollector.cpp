@@ -26,9 +26,6 @@ using namespace shard;
 
 namespace
 {
-	std::mutex collectorsMutex;
-	gmt::vector<GarbageCollector*> collectors;
-
 	std::size_t checked_add(std::size_t left, std::size_t right)
 	{
 		if (left > (std::numeric_limits<std::size_t>::max)() - right)
@@ -174,38 +171,16 @@ std::size_t GarbageCollector::HeapTable::size() const
 GarbageCollector::GarbageCollector(SemanticModel& model, PragmaticModel& pragmatic)
 	: m_model(model)
 	, m_pragmatic(pragmatic)
-{
-	std::lock_guard lock(collectorsMutex);
-	collectors.push_back(this);
-}
+{ }
 
 GarbageCollector::~GarbageCollector()
 {
-	{
-		std::lock_guard lock(collectorsMutex);
-		std::erase(collectors, this);
-	}
 	terminate();
 }
 
 GarbageCollector::GcHeader* GarbageCollector::get_header(std::byte* payload)
 {
 	return reinterpret_cast<GcHeader*>(payload - sizeof(GcHeader));
-}
-
-bool GarbageCollector::is_heap_pointer(std::byte* pointer)
-{
-	if (pointer == nullptr)
-		return false;
-
-	std::lock_guard lock(collectorsMutex);
-	for (GarbageCollector* collector : collectors)
-	{
-		if (collector->is_heap_backed(pointer))
-			return true;
-	}
-
-	return false;
 }
 
 bool GarbageCollector::is_heap_backed(std::byte* payload) const

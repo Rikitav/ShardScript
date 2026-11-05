@@ -1980,7 +1980,6 @@ extern "C"
 	SHARD_API std::size_t shard_GarbageCollector_get_total_collections(shard_GarbageCollector_t self);
 	SHARD_API shard_status_t shard_GarbageCollector_intern_string(shard_GarbageCollector_t self, const wchar_t* p0, shard_ObjectInstance_t* out_value);
 	SHARD_API int shard_GarbageCollector_is_heap_backed(shard_GarbageCollector_t self, unsigned char* p0);
-	SHARD_API int shard_GarbageCollector_is_heap_pointer(unsigned char* p0);
 	SHARD_API shard_status_t shard_GarbageCollector_operator_assign(shard_GarbageCollector_t self, shard_GarbageCollector_t p0);
 	SHARD_API shard_status_t shard_GarbageCollector_pin(shard_GarbageCollector_t self, shard_ObjectInstance_t p0);
 	SHARD_API shard_status_t shard_GarbageCollector_register_frame(shard_GarbageCollector_t self, shard_CallStackFrame_t p0);
