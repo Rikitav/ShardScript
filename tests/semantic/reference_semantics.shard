@@ -1,0 +1,92 @@
+using stdio;
+
+struct Outer
+{
+    Part: Inner;
+}
+
+struct Inner
+{
+    Value: int;
+}
+
+func Bump(part: Inner) -> void
+{
+    part.Value = part.Value + 1;
+}
+
+func Make() -> Inner
+{
+    return new Inner();
+}
+
+func Pick(a: Inner, b: Inner, chooseB: bool) -> Inner
+{
+    chosen: Inner = a;
+    if (chooseB)
+    {
+        chosen = b;
+    }
+
+    return chosen;
+}
+
+func Main() -> void
+{
+    outer: Outer = new Outer();
+    outer.Part = new Inner();
+    outer.Part.Value = 2;
+
+    // a local initialized from a member access aliases the member
+    quiet: Inner = outer.Part;
+    outer.Part.Value = 55;
+    println(quiet.Value);
+
+    // passing it on keeps the same object, so the callee's write is visible
+    loud: Inner = outer.Part;
+    Bump(loud);
+    println(outer.Part.Value);
+
+    // a write through the local writes through the member
+    fresh: Inner = outer.Part;
+    fresh.Value = 77;
+    println(outer.Part.Value);
+
+    // a local that starts as a fresh object still aliases after reassignment
+    reused: Inner = new Inner();
+    reused.Value = 1;
+    reused = outer.Part;
+    reused.Value = 78;
+    println(outer.Part.Value);
+
+    // aliasing through a chain of locals
+    first: Inner = outer.Part;
+    second: Inner = first;
+    second.Value = 79;
+    println(outer.Part.Value);
+
+    // a fresh construction stays its own object
+    built: Inner = Make();
+    built.Value = 5;
+    println(built.Value);
+    println(outer.Part.Value);
+
+    left: Inner = new Inner();
+    left.Value = 1;
+    right: Inner = new Inner();
+    right.Value = 2;
+    picked: Inner = Pick(left, right, true);
+    picked.Value = 20;
+    println(right.Value);
+    other: Inner = Pick(left, right, false);
+    other.Value = 10;
+    println(left.Value);
+
+    original: Inner = new Inner();
+    original.Value = 30;
+    saved: Inner = original;
+    original = new Inner();
+    original.Value = 40;
+    println(saved.Value);
+    println(original.Value);
+}

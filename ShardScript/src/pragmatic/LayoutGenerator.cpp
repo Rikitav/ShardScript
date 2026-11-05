@@ -1,5 +1,7 @@
 #include <shard/pragmatic/LayoutGenerator.hpp>
 
+#include "LocalType.hpp"
+
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
@@ -9,7 +11,6 @@
 #include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
 
-#include <shard/parsing/nodes/statements/VariableStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LambdaExpressionSyntax.hpp>
 
@@ -19,7 +20,6 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
-#include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
@@ -35,18 +35,6 @@ LayoutGenerator::LayoutGenerator(SemanticModel& model, PragmaticModel& pragmatic
 void LayoutGenerator::analyze(SyntaxTree& tree)
 {
 	visit_syntax_tree(tree);
-}
-
-StructSymbol* LayoutGenerator::local_type(SyntaxSymbol* local) const
-{
-	SyntaxKind kind = local->get_kind();
-	if (kind == SyntaxKind::VariableStatement)
-		return static_cast<VariableSymbol*>(local)->get_type();
-
-	if (kind == SyntaxKind::Parameter)
-		return static_cast<ParameterSymbol*>(local)->get_type();
-
-	return nullptr;
 }
 
 void LayoutGenerator::expand_scalar_local(FrameLayout& layout, StructSymbol* type, std::pmr::vector<const TypeShape*>& variableShapes)
@@ -152,53 +140,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 		AllocationSiteVerdict verdict = m_pragmatic.get_local_verdict(method, local);
 		StructSymbol* localType = local_type(local);
 
-		// array slots cannot carry their elements inline: an unbounded array
-		// type has no fixed payload, so arrays always normalize to heap
-		if (localType != nullptr && localType->get_kind() == SyntaxKind::ArrayType)
-			verdict.verdict = PlacementVerdict::Heap;
-
-		// demote unconstructible scalars: dematerialized locals cannot run
-		// constructors or alias references produced elsewhere. Object-creation,
-		// range-literal and call initializers degrade to plain stack placement
-		// instead; locals assigned a reference keep heap storage like any
-		// other composite
-		if (verdict.verdict == PlacementVerdict::Scalar && localType != nullptr && !model.is_primitive_type(localType))
-		{
-			const SyntaxNode* declaration = get_symbol_table().lookup_node(local);
-			bool keepScalar = false;
-
-			if (declaration != nullptr && declaration->get_kind() == SyntaxKind::VariableStatement)
-			{
-				const VariableStatementSyntax* variableNode = gmt::as<VariableStatementSyntax>(declaration);
-				const ExpressionSyntax* initializer = variableNode->get_expression();
-
-				if (initializer == nullptr)
-					keepScalar = true;
-				else if (initializer->get_kind() == SyntaxKind::ObjectExpression)
-					verdict.verdict = PlacementVerdict::Stack;
-				else if (initializer->get_kind() == SyntaxKind::RangeExpression)
-					verdict.verdict = PlacementVerdict::Stack;
-				else if (initializer->get_kind() == SyntaxKind::InvokationExpression)
-					verdict.verdict = PlacementVerdict::Stack;
-				else
-					verdict.verdict = PlacementVerdict::Heap;
-			}
-
-			if (!keepScalar && verdict.verdict == PlacementVerdict::Scalar)
-				verdict.verdict = PlacementVerdict::Heap;
-		}
-
-		// primitives bypass placement machinery entirely: dematerialization is
-		// composite-only, so a dead primitive local still gets a plain stack slot
-		if (verdict.verdict == PlacementVerdict::Scalar && localType != nullptr && model.is_primitive_type(localType))
-			verdict.verdict = PlacementVerdict::Stack;
-
-		bool scalarLocal = verdict.verdict == PlacementVerdict::Scalar;
-		scalarLocal = scalarLocal && localType != nullptr;
-		scalarLocal = scalarLocal && localType->get_kind() == SyntaxKind::StructDeclaration;
-		// primitives bypass placement machinery entirely: never dematerialized
-		scalarLocal = scalarLocal && !model.is_primitive_type(localType);
-		if (scalarLocal)
+		if (verdict.verdict == PlacementVerdict::Scalar)
 		{
 			m_pragmatic.set_local_slot(method, local, argumentCount + layout.get_variable_count());
 			expand_scalar_local(layout, localType, variableShapes.get_vector());

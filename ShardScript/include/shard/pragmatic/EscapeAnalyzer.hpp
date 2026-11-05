@@ -78,6 +78,7 @@ namespace shard
 			gmt::vector<EscapeLevel> levels;
 			gmt::vector<EscapeChannel> channelSets;
 			gmt::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
+			gmt::vector<bool> borrowedAlias; // the node stores a reference created outside it
 			gmt::vector<bool> identityExposed;
 			gmt::vector<MethodSymbol*> idOwners;
 			gmt::vector<bool> allocationNodes;
@@ -107,6 +108,8 @@ namespace shard
 		int m_inDefer = 0;
 		int m_coldDepth = 0;
 
+		int add_node(bool allocation);
+		void contain_expression(int containerId, const ExpressionSyntax* expression);
 		int ensure_local_id(SyntaxSymbol* symbol);
 		int ensure_site_id(const ExpressionSyntax* site);
 		void add_edge(int from, int to);
@@ -131,6 +134,7 @@ namespace shard
 		void collect_expression_refs(const ExpressionSyntax* expression, ExpressionRefs& refs, bool includeReceivers);
 		void expose_expression(const ExpressionSyntax* expression, EscapeLevel level, EscapeChannel channel, bool includeReceivers = false);
 		bool is_fresh_invokation(const ExpressionSyntax* expression);
+		bool is_fresh_value(const ExpressionSyntax* expression);
 		void mark_identity(const ExpressionSyntax* expression, bool includeReceivers);
 		void mark_wrap_identity(const ExpressionSyntax* expression);
 		void record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver);
@@ -159,6 +163,7 @@ namespace shard
 		bool participates_in_reference_cycle(StructSymbol* type);
 
 		AllocationSiteVerdict classify_node(int id, StructSymbol* nodeType, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
+		AllocationSiteVerdict classify_local(int id, SyntaxSymbol* local, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
 
 		void record_cold_point(int id, const ExpressionSyntax* expression);
 		bool reaches_site(int from, int to) const;

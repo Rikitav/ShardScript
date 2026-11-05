@@ -1,5 +1,7 @@
 #include <shard/pragmatic/EscapeAnalyzer.hpp>
 
+#include "LocalType.hpp"
+
 #include <shard/parsing/SyntaxKind.hpp>
 
 #include <shard/parsing/nodes/BlockSyntax.hpp>
@@ -136,12 +138,7 @@ void EscapeAnalyzer::materialize_capture(const ExpressionSyntax* closureSite, Sy
 
 	captures.push_back(symbol);
 
-	StructSymbol* captureType = nullptr;
-	SyntaxKind symbolKind = symbol->get_kind();
-	if (symbolKind == SyntaxKind::VariableStatement)
-		captureType = static_cast<VariableSymbol*>(symbol)->get_type();
-	else if (symbolKind == SyntaxKind::Parameter)
-		captureType = static_cast<ParameterSymbol*>(symbol)->get_type();
+	StructSymbol* captureType = local_type(symbol);
 
 	// primitives are snapshotted inline into the box; composites keep a
 	// reference slot, which is what shallow capture means for objects

@@ -1,5 +1,7 @@
 #include <shard/pragmatic/EscapeAnalyzer.hpp>
 
+#include "LocalType.hpp"
+
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
@@ -7,7 +9,7 @@
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
-#include <shard/semantic/symbols/VariableSymbol.hpp>
+#include <shard/parsing/nodes/statements/VariableStatementSyntax.hpp>
 
 #include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
@@ -415,6 +417,12 @@ AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, StructSymbol* nodeTy
 	verdict.level = m_graph.levels[id];
 	verdict.channels = m_graph.channelSets[id];
 
+	if (m_graph.borrowedAlias[id] && get_model().is_reference_shaped(nodeType))
+	{
+		verdict.verdict = PlacementVerdict::Heap;
+		return verdict;
+	}
+
 	if (verdict.level == EscapeLevel::GlobalEscape)
 	{
 		bool returnOnly = verdict.channels == EscapeChannel::Return;
@@ -456,6 +464,51 @@ AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, StructSymbol* nodeTy
 	return verdict;
 }
 
+AllocationSiteVerdict EscapeAnalyzer::classify_local(int id, SyntaxSymbol* local, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
+{
+	StructSymbol* type = local_type(local);
+	AllocationSiteVerdict verdict = classify_node(id, type, summaries);
+	if (local->get_kind() == SyntaxKind::Parameter || type == nullptr)
+		return verdict;
+
+	if (type->get_kind() == SyntaxKind::ArrayType)
+	{
+		verdict.verdict = PlacementVerdict::Heap;
+		return verdict;
+	}
+
+	if (verdict.verdict != PlacementVerdict::Scalar)
+		return verdict;
+
+	if (get_model().is_primitive_type(type))
+	{
+		verdict.verdict = PlacementVerdict::Stack;
+		return verdict;
+	}
+
+	const SyntaxNode* declaration = get_symbol_table().lookup_node(local);
+	if (declaration != nullptr && declaration->get_kind() == SyntaxKind::VariableStatement)
+	{
+		const ExpressionSyntax* initializer = static_cast<const VariableStatementSyntax*>(declaration)->get_expression();
+		if (initializer == nullptr)
+			return verdict;
+
+		switch (initializer->get_kind())
+		{
+		case SyntaxKind::ObjectExpression:
+		case SyntaxKind::RangeExpression:
+		case SyntaxKind::InvokationExpression:
+			verdict.verdict = PlacementVerdict::Stack;
+			return verdict;
+		default:
+			break;
+		}
+	}
+
+	verdict.verdict = PlacementVerdict::Heap;
+	return verdict;
+}
+
 void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	for (const auto& pair : m_graph.siteIds)
@@ -467,15 +520,7 @@ void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<MethodSymbol*, Esc
 	for (const auto& pair : m_graph.localIds)
 	{
 		int id = pair.second;
-
-		StructSymbol* localType = nullptr;
-		SyntaxKind localKind = pair.first->get_kind();
-		if (localKind == SyntaxKind::VariableStatement)
-			localType = static_cast<VariableSymbol*>(pair.first)->get_type();
-		else if (localKind == SyntaxKind::Parameter)
-			localType = static_cast<ParameterSymbol*>(pair.first)->get_type();
-
-		m_pragmatic.set_local_verdict(m_graph.idOwners[id], pair.first, classify_node(id, localType, summaries));
+		m_pragmatic.set_local_verdict(m_graph.idOwners[id], pair.first, classify_local(id, pair.first, summaries));
 	}
 
 	commit_promotion_points();

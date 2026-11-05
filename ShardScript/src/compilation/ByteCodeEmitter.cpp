@@ -267,7 +267,7 @@ PlacementVerdict ByteCodeEmitter::local_verdict(SyntaxSymbol* symbol) const
 	if (m_generatingFor == nullptr)
 		return PlacementVerdict::Heap;
 
-	// the frame layout is the post-demotion truth for slot placement
+	// the frame layout records the effective slot representation
 	if (m_layout != nullptr)
 	{
 		std::optional<std::uint16_t> slot = m_pragmatic.get_local_slot(m_generatingFor, symbol);
