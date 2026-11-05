@@ -1,5 +1,7 @@
 #include <shard/pragmatic/EscapeAnalyzer.hpp>
 
+#include "LocalType.hpp"
+
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
@@ -80,19 +82,6 @@ namespace
 		return type != nullptr && type->get_kind() == SyntaxKind::InterfaceDeclaration;
 	}
 
-	StructSymbol* declared_type_of(SyntaxSymbol* symbol)
-	{
-		if (symbol == nullptr)
-			return nullptr;
-
-		if (symbol->get_kind() == SyntaxKind::VariableStatement)
-			return static_cast<VariableSymbol*>(symbol)->get_type();
-
-		if (symbol->get_kind() == SyntaxKind::Parameter)
-			return static_cast<ParameterSymbol*>(symbol)->get_type();
-
-		return nullptr;
-	}
 }
 
 // collects the locals and allocation sites an expression directly refers to;
@@ -203,6 +192,7 @@ void EscapeAnalyzer::clear_graph()
 	m_graph.levels.clear();
 	m_graph.channelSets.clear();
 	m_graph.coldChannels.clear();
+	m_graph.borrowedAlias.clear();
 	m_graph.identityExposed.clear();
 	m_graph.idOwners.clear();
 	m_graph.allocationNodes.clear();
@@ -221,26 +211,30 @@ void EscapeAnalyzer::clear_graph()
 	m_coldDepth = 0;
 }
 
+int EscapeAnalyzer::add_node(bool allocation)
+{
+	int id = m_graph.nextId++;
+	m_graph.levels.push_back(EscapeLevel::NoEscape);
+	m_graph.channelSets.push_back(EscapeChannel::None);
+	m_graph.coldChannels.push_back(EscapeChannel::None);
+	m_graph.borrowedAlias.push_back(false);
+	m_graph.identityExposed.push_back(false);
+	m_graph.idOwners.push_back(in_frame() ? current_frame().method : nullptr);
+	m_graph.allocationNodes.push_back(allocation);
+	m_graph.successors.emplace_back();
+	return id;
+}
+
 int EscapeAnalyzer::ensure_local_id(SyntaxSymbol* symbol)
 {
 	auto it = m_graph.localIds.find(symbol);
 	if (it != m_graph.localIds.end())
 		return it->second;
 
-	int id = m_graph.nextId++;
+	int id = add_node(false);
 	m_graph.localIds[symbol] = id;
-	m_graph.levels.push_back(EscapeLevel::NoEscape);
-	m_graph.channelSets.push_back(EscapeChannel::None);
-	m_graph.coldChannels.push_back(EscapeChannel::None);
-	m_graph.identityExposed.push_back(false);
-	MethodSymbol* owner = in_frame() ? current_frame().method : nullptr;
-	m_graph.idOwners.push_back(owner);
-	m_graph.allocationNodes.push_back(false);
-	m_graph.successors.emplace_back();
-	bool receiver = symbol->get_kind() == SyntaxKind::Parameter;
-	receiver = receiver && symbol->get_name() == L"this";
-	if (receiver)
-		m_graph.receiverIds[owner] = id;
+	if (symbol->get_kind() == SyntaxKind::Parameter && symbol->get_name() == L"this")
+		m_graph.receiverIds[m_graph.idOwners[id]] = id;
 
 	return id;
 }
@@ -251,17 +245,23 @@ int EscapeAnalyzer::ensure_site_id(const ExpressionSyntax* site)
 	if (it != m_graph.siteIds.end())
 		return it->second;
 
-	int id = m_graph.nextId++;
+	int id = add_node(true);
 	m_graph.siteIds[site] = id;
-	m_graph.levels.push_back(EscapeLevel::NoEscape);
-	m_graph.channelSets.push_back(EscapeChannel::None);
-	m_graph.coldChannels.push_back(EscapeChannel::None);
-	m_graph.identityExposed.push_back(false);
-	m_graph.idOwners.push_back(in_frame() ? current_frame().method : nullptr);
-	m_graph.allocationNodes.push_back(true);
-	m_graph.successors.emplace_back();
-
 	return id;
+}
+
+void EscapeAnalyzer::contain_expression(int containerId, const ExpressionSyntax* expression)
+{
+	if (containerId < 0 || expression == nullptr)
+		return;
+
+	ExpressionRefs refs;
+	collect_expression_refs(expression, refs, false);
+	for (SyntaxSymbol* local : refs.locals.get_vector())
+		add_edge(containerId, ensure_local_id(local));
+
+	for (const ExpressionSyntax* site : refs.sites.get_vector())
+		add_edge(containerId, ensure_site_id(site));
 }
 
 void EscapeAnalyzer::add_edge(int from, int to)
@@ -453,6 +453,26 @@ bool EscapeAnalyzer::is_fresh_invokation(const ExpressionSyntax* expression)
 	return summary.computed && summary.returnDisposition == ReturnDisposition::Fresh;
 }
 
+bool EscapeAnalyzer::is_fresh_value(const ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return false;
+
+	switch (expression->get_kind())
+	{
+		case SyntaxKind::ObjectExpression:
+		case SyntaxKind::CollectionExpression:
+		case SyntaxKind::RangeExpression:
+			return true;
+
+		case SyntaxKind::InvokationExpression:
+			return is_fresh_invokation(expression);
+
+		default:
+			return false;
+	}
+}
+
 void EscapeAnalyzer::mark_identity(const ExpressionSyntax* expression, bool includeReceivers)
 {
 	if (expression == nullptr)
@@ -519,7 +539,7 @@ void EscapeAnalyzer::alias_into(SyntaxSymbol* target, const ExpressionSyntax* so
 
 	// a copy into interface storage is a box: the slot keeps only the reference,
 	// so the value has to be recoverable from the heap header
-	if (is_interface_storage(declared_type_of(target)))
+	if (is_interface_storage(local_type(target)))
 		expose_expression(sourceExpression, EscapeLevel::GlobalEscape, EscapeChannel::Store);
 
 	mark_wrap_identity(sourceExpression);
@@ -529,8 +549,22 @@ void EscapeAnalyzer::alias_into(SyntaxSymbol* target, const ExpressionSyntax* so
 
 	int targetId = ensure_local_id(target);
 
+	// the slot has to keep naming whatever object the source names: an
+	// inline-placed slot would copy the pointee and silently break aliasing
+	if (!is_fresh_value(sourceExpression))
+		m_graph.borrowedAlias[targetId] = true;
+
 	for (SyntaxSymbol* local : refs.locals.get_vector())
-		add_edge(ensure_local_id(local), targetId);
+	{
+		int sourceId = ensure_local_id(local);
+		add_edge(sourceId, targetId);
+
+		if (m_graph.borrowedAlias[targetId] && get_model().is_reference_shaped(local_type(target)))
+		{
+			m_graph.borrowedAlias[sourceId] = true;
+			add_edge(targetId, sourceId);
+		}
+	}
 
 	// the target names every allocation site of the source expression:
 	// an escaping target takes the site with it
@@ -959,18 +993,7 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 
 				const ExpressionSyntax* argumentExpression = argument->get_expression();
 
-				// constructor arguments are stored into the new object (E2): they escape wherever the object escapes
-				if (siteId >= 0 && argumentExpression != nullptr)
-				{
-					ExpressionRefs refs;
-					collect_expression_refs(argumentExpression, refs, false);
-
-					for (SyntaxSymbol* local : refs.locals.get_vector())
-						add_edge(siteId, ensure_local_id(local));
-
-					for (const ExpressionSyntax* argumentSite : refs.sites.get_vector())
-						add_edge(siteId, ensure_site_id(argumentSite));
-				}
+				contain_expression(siteId, argumentExpression);
 
 				EscapeLevel argumentLevel = hasKnownConstructor ? EscapeLevel::ArgEscape : EscapeLevel::GlobalEscape;
 				expose_expression(argumentExpression, argumentLevel, EscapeChannel::UnknownCallee);
@@ -996,21 +1019,8 @@ void EscapeAnalyzer::visit_collection_expression(const CollectionExpressionSynta
 		auto nodeRef = ref_from(node);
 		int siteId = nodeRef.has_value() ? ensure_site_id(*nodeRef) : -1;
 
-		// elements are stored into the collection: they escape where it escapes
 		for (ExpressionSyntax* const& value : node->get_values())
-		{
-			if ((value == nullptr) || siteId < 0)
-				continue;
-
-			ExpressionRefs refs;
-			collect_expression_refs(value, refs, false);
-
-			for (SyntaxSymbol* local : refs.locals.get_vector())
-				add_edge(siteId, ensure_local_id(local));
-
-			for (const ExpressionSyntax* elementSite : refs.sites.get_vector())
-				add_edge(siteId, ensure_site_id(elementSite));
-		}
+			contain_expression(siteId, value);
 	}
 
 	SyntaxVisitor::visit_collection_expression(node);

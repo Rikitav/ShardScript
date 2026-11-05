@@ -1,0 +1,34 @@
+using stdio;
+
+struct PlacementPair
+{
+    First: int;
+    Second: int;
+}
+
+func PlacementMake() -> PlacementPair
+{
+    return new PlacementPair();
+}
+
+func Main() -> void
+{
+    primitive: int = 7;
+    values: int[] = [1, 2, 3];
+    scalar: PlacementPair = new PlacementPair();
+    scalar.First = primitive;
+    scalar.Second = values[1];
+    println(scalar.First);
+    println(scalar.Second);
+
+    constructed: PlacementPair = new PlacementPair();
+    constructed.First = 11;
+    println(constructed.First);
+
+    returned: PlacementPair = PlacementMake();
+    returned.First = 13;
+    alias: PlacementPair = returned;
+    alias.First = 17;
+    println(returned.First);
+    println(values[2]);
+}
