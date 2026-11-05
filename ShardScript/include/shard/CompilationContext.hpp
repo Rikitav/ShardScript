@@ -23,24 +23,14 @@
 
 namespace shard
 {
-	// Owns the whole compilation pipeline state (tree, diagnostics, models,
-	// program image, loaded native libraries) and drives the phases in order.
-	// The context must outlive any ApplicationDomain produced by compile(),
-	// since the domain borrows the semantic and pragmatic models.
-	// Native libraries must be loaded before analyze_tree(), so their symbols
-	// participate in analysis.
 	class SHARD_API CompilationContext
 	{
-		// libraries must unload only after every arena is destroyed: symbols a
-		// library emplaces register destructor thunks instantiated inside the
-		// library binary, so the library code must stay loaded while the
-		// semantic model tears down
-		gmt::vector<gmt::SharedLibrary> m_libraries;
-
-		SyntaxTree m_tree;
-		DiagnosticsContext m_diagnostics;
-		SemanticModel m_model;
-		PragmaticModel m_pragmatic;
+		gmt::shared_ptr<CompilationState> m_state;
+		gmt::vector<gmt::SharedLibrary>& m_libraries;
+		SyntaxTree& m_tree;
+		DiagnosticsContext& m_diagnostics;
+		SemanticModel& m_model;
+		PragmaticModel& m_pragmatic;
 		gmt::unique_ptr<VirtualProgramImage> m_image;
 
 	public:

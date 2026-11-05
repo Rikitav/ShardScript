@@ -270,10 +270,12 @@ namespace
 }
 
 CompilationContext::CompilationContext() :
-	m_tree(),
-	m_diagnostics(),
-	m_model(m_tree),
-	m_pragmatic()
+	m_state(gmt::make_shared<CompilationState>()),
+	m_libraries(m_state->m_libraries),
+	m_tree(m_state->m_tree),
+	m_diagnostics(m_state->m_diagnostics),
+	m_model(m_state->m_model),
+	m_pragmatic(m_state->m_pragmatic)
 {
 }
 
@@ -387,7 +389,10 @@ bool CompilationContext::emit_program()
 
 gmt::unique_ptr<ApplicationDomain> CompilationContext::compile()
 {
-	return gmt::make_unique<ApplicationDomain>(std::move(m_image), m_model, m_pragmatic);
+	if (m_image == nullptr)
+		throw std::logic_error("compile requires an emitted program image");
+
+	return gmt::make_unique<ApplicationDomain>(std::move(m_image), m_state);
 }
 
 SyntaxTree& CompilationContext::get_syntax_tree()
