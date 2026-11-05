@@ -151,6 +151,9 @@ bool GarbageCollector::HeapTable::erase(std::byte* value)
 
 bool GarbageCollector::HeapTable::contains(std::byte* value) const
 {
+	if (value == nullptr || value == Tombstone)
+		return false;
+
 	return locate(value) != m_slots.size();
 }
 
@@ -217,6 +220,9 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 
 	const std::size_t allocationBytes = checked_add(sizeof(GcHeader), payloadBytes);
 	GcHeader* header = static_cast<GcHeader*>(gmt::mem_alloc(allocationBytes));
+	if (header == nullptr)
+		throw std::bad_alloc();
+
 	header->magic = Magic;
 	header->shape = shape;
 	header->marked = 0;
