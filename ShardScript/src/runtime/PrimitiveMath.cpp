@@ -7,6 +7,7 @@
 #include <gmt/Allocator.hpp>
 #include <gmt/Containers.hpp>
 
+#include <bit>
 #include <cmath>
 #include <cstdio>
 #include <limits>
@@ -188,10 +189,13 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 			if (rightValue < 0 || rightValue >= 64)
 				return PrimitiveStatus::Overflow;
 
-			if (leftValue < 0 || leftValue > (std::numeric_limits<std::int64_t>::max)() >> rightValue)
+			const auto minimum = (std::numeric_limits<std::int64_t>::min)() >> rightValue;
+			const auto maximum = (std::numeric_limits<std::int64_t>::max)() >> rightValue;
+			if (leftValue < minimum || leftValue > maximum)
 				return PrimitiveStatus::Overflow;
 
-			computed = leftValue << rightValue;
+			const auto bits = static_cast<std::uint64_t>(leftValue) << rightValue;
+			computed = std::bit_cast<std::int64_t>(bits);
 			break;
 		}
 
