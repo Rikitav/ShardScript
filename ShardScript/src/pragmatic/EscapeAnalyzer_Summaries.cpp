@@ -57,21 +57,9 @@ ParameterEscapeSummary EscapeAnalyzer::derive_parameter_summary(MethodSymbol* me
 	}
 	else
 	{
-		// the binder declares 'this' ad-hoc in the callee scope, so the
-		// symbol is absent from get_parameters(): recover its graph id by
-		// owner and name
-		for (const auto& pair : m_graph.localIds)
-		{
-			bool ownedHere = m_graph.idOwners[pair.second] == method;
-			bool isThisParameter = pair.first->get_kind() == SyntaxKind::Parameter;
-			isThisParameter = isThisParameter && pair.first->get_name() == L"this";
-
-			if (ownedHere && isThisParameter)
-			{
-				id = pair.second;
-				break;
-			}
-		}
+		auto receiver = m_graph.receiverIds.find(method);
+		if (receiver != m_graph.receiverIds.end())
+			id = receiver->second;
 	}
 
 	if (id < 0)
@@ -222,17 +210,7 @@ int EscapeAnalyzer::classify_local_roots(MethodSymbol* method, SyntaxSymbol* loc
 		if (escapedToUnknown)
 			return 0;
 
-		bool isSite = false;
-		for (const auto& pair : m_graph.siteIds)
-		{
-			if (pair.second == id)
-			{
-				isSite = true;
-				break;
-			}
-		}
-
-		if (isSite)
+		if (m_graph.allocationNodes[id])
 		{
 			mark |= 1; // fresh site created in this method
 			continue;
@@ -245,11 +223,8 @@ int EscapeAnalyzer::classify_local_roots(MethodSymbol* method, SyntaxSymbol* loc
 			continue;
 		}
 
-		for (const std::pair<int, int>& edge : m_graph.edges)
-		{
-			if (edge.first == id)
-				stack.push_back(edge.second);
-		}
+		for (int successor : m_graph.successors[id])
+			stack.push_back(successor);
 	}
 
 	return mark;

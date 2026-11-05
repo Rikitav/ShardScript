@@ -80,6 +80,9 @@ namespace shard
 			gmt::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
 			gmt::vector<bool> identityExposed;
 			gmt::vector<MethodSymbol*> idOwners;
+			gmt::vector<bool> allocationNodes;
+			gmt::vector<gmt::vector<int>> successors;
+			gmt::unordered_map<MethodSymbol*, int> receiverIds;
 			gmt::vector<std::pair<int, int>> edges; // level[b] >= level[a]
 			gmt::vector<Event> events;
 
