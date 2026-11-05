@@ -56,9 +56,9 @@ namespace
 		return ObjectInstance(shape, payload);
 	}
 
-	ObjectInstance state_from_payload(std::byte* payload)
+	ObjectInstance state_from_payload(GarbageCollector& collector, std::byte* payload)
 	{
-		if ((payload == nullptr) || !GarbageCollector::is_heap_pointer(payload))
+		if ((payload == nullptr) || !collector.is_heap_backed(payload))
 			return ObjectInstance::null();
 
 		const TypeShape* shape = GarbageCollector::get_header(payload)->shape;
@@ -78,7 +78,7 @@ namespace
 		return state != nullptr && state.get_shape() != nullptr && state.get_shape()->get_slot_count() >= 3;
 	}
 
-	ObjectInstance read_task_exception(ObjectInstance state)
+	ObjectInstance read_task_exception(GarbageCollector& collector, ObjectInstance state)
 	{
 		if (state == nullptr)
 			return ObjectInstance::null();
@@ -94,7 +94,7 @@ namespace
 
 		// the slot is typed 'IThrowable'; catch matching needs the concrete
 		// exception type carried by the heap header
-		if (GarbageCollector::is_heap_pointer(payload))
+		if (collector.is_heap_backed(payload))
 			shape = GarbageCollector::get_header(payload)->shape;
 
 		return ObjectInstance(shape, payload);
@@ -320,7 +320,7 @@ ObjectInstance VirtualMachine::await_task(ObjectInstance task)
 
 	if (status == static_cast<int>(TaskStatus::Faulted))
 	{
-		raise_exception(read_task_exception(state));
+		raise_exception(read_task_exception(m_collector, state));
 		return ObjectInstance::null();
 	}
 
@@ -572,7 +572,7 @@ void VirtualMachine::deliver_await_result(CallStackFrame* frame)
 	std::byte* payload = frame->get_awaited_state();
 	frame->set_awaited_state(nullptr);
 
-	ObjectInstance state = state_from_payload(payload);
+	ObjectInstance state = state_from_payload(m_collector, payload);
 	if (state == nullptr)
 	{
 		raise_runtime_exception(L"awaited task state is no longer available");
@@ -586,7 +586,7 @@ void VirtualMachine::deliver_await_result(CallStackFrame* frame)
 	int status = read_task_status(state);
 	if (status == static_cast<int>(TaskStatus::Faulted))
 	{
-		frame->set_current_exception(read_task_exception(state));
+		frame->set_current_exception(read_task_exception(m_collector, state));
 		frame->set_interruption(InterruptionReason::ExceptionRaised);
 		return;
 	}
@@ -637,7 +637,7 @@ void VirtualMachine::execute_await(CallStackFrame* frame, ByteCodeDecoder& decod
 
 	if (status == static_cast<int>(TaskStatus::Faulted))
 	{
-		frame->set_current_exception(read_task_exception(state));
+		frame->set_current_exception(read_task_exception(m_collector, state));
 		frame->set_interruption(InterruptionReason::ExceptionRaised);
 		return;
 	}
@@ -846,7 +846,7 @@ void VirtualMachine::run_pending_continuation()
 
 	int status = read_task_status(job.sourceState);
 	ObjectInstance sourceException = (status == static_cast<int>(TaskStatus::Faulted))
-		? read_task_exception(job.sourceState)
+		? read_task_exception(m_collector, job.sourceState)
 		: ObjectInstance::null();
 	ObjectInstance sourceResult = (status == static_cast<int>(TaskStatus::Completed))
 		? read_task_result(job.sourceState)
