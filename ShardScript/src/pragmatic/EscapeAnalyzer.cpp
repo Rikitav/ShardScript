@@ -205,6 +205,9 @@ void EscapeAnalyzer::clear_graph()
 	m_graph.coldChannels.clear();
 	m_graph.identityExposed.clear();
 	m_graph.idOwners.clear();
+	m_graph.allocationNodes.clear();
+	m_graph.successors.clear();
+	m_graph.receiverIds.clear();
 	m_graph.edges.clear();
 	m_graph.events.clear();
 	m_graph.callExposures.clear();
@@ -230,7 +233,14 @@ int EscapeAnalyzer::ensure_local_id(SyntaxSymbol* symbol)
 	m_graph.channelSets.push_back(EscapeChannel::None);
 	m_graph.coldChannels.push_back(EscapeChannel::None);
 	m_graph.identityExposed.push_back(false);
-	m_graph.idOwners.push_back(in_frame() ? current_frame().method : nullptr);
+	MethodSymbol* owner = in_frame() ? current_frame().method : nullptr;
+	m_graph.idOwners.push_back(owner);
+	m_graph.allocationNodes.push_back(false);
+	m_graph.successors.emplace_back();
+	bool receiver = symbol->get_kind() == SyntaxKind::Parameter;
+	receiver = receiver && symbol->get_name() == L"this";
+	if (receiver)
+		m_graph.receiverIds[owner] = id;
 
 	return id;
 }
@@ -248,6 +258,8 @@ int EscapeAnalyzer::ensure_site_id(const ExpressionSyntax* site)
 	m_graph.coldChannels.push_back(EscapeChannel::None);
 	m_graph.identityExposed.push_back(false);
 	m_graph.idOwners.push_back(in_frame() ? current_frame().method : nullptr);
+	m_graph.allocationNodes.push_back(true);
+	m_graph.successors.emplace_back();
 
 	return id;
 }
@@ -255,6 +267,7 @@ int EscapeAnalyzer::ensure_site_id(const ExpressionSyntax* site)
 void EscapeAnalyzer::add_edge(int from, int to)
 {
 	m_graph.edges.emplace_back(from, to);
+	m_graph.successors[from].push_back(to);
 }
 
 void EscapeAnalyzer::add_event(int id, EscapeLevel level, EscapeChannel channel, bool cold)
@@ -565,12 +578,7 @@ void EscapeAnalyzer::run_graph_fixpoint()
 	// channels or identity exposure.
 	const std::size_t nodeCount = static_cast<std::size_t>(m_graph.nextId);
 
-	gmt::vector<gmt::vector<int>> successors(nodeCount);
-	for (const std::pair<int, int>& edge : m_graph.edges)
-	{
-		if (edge.first >= 0 && static_cast<std::size_t>(edge.first) < nodeCount)
-			successors[edge.first].push_back(edge.second);
-	}
+	const auto& successors = m_graph.successors;
 
 	gmt::vector<int> work;
 	work.reserve(nodeCount);
