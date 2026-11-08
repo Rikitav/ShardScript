@@ -81,9 +81,11 @@ int shard::get_operator_precendence(TokenType type)
 			return 5;
 
 		case TokenType::AndOperator:
+		case TokenType::AmpersandOperator:
 			return 4;
 
 		case TokenType::OrOperator:
+		case TokenType::PipeOperator:
 			return 3;
 
 		case TokenType::NullCoalescingOperator:
@@ -154,6 +156,8 @@ bool shard::is_binary_bit_operator(shard::TokenType type)
 	{
 		case TokenType::LeftShiftOperator:
 		case TokenType::RightShiftOperator:
+		case TokenType::PipeOperator:
+		case TokenType::AmpersandOperator:
 			return true;
 
 		default:
@@ -583,6 +587,8 @@ std::wstring_view shard::get_operator_method_name(shard::TokenType type)
 
 		case TokenType::OrOperator: return L"op_OrOperator";
 		case TokenType::AndOperator: return L"op_AndOperator";
+		case TokenType::PipeOperator: return L"op_PipeOperator";
+		case TokenType::AmpersandOperator: return L"op_AmpersandOperator";
 		case TokenType::RightShiftOperator: return L"op_RightShiftOperator";
 		case TokenType::LeftShiftOperator: return L"op_LeftShiftOperator";
 
@@ -627,6 +633,8 @@ shard::TokenType shard::get_operator_type(const std::wstring_view name)
 
 	if (name == L"OrOperator") return TokenType::OrOperator;
 	if (name == L"AndOperator") return TokenType::AndOperator;
+	if (name == L"PipeOperator") return TokenType::PipeOperator;
+	if (name == L"AmpersandOperator") return TokenType::AmpersandOperator;
 	if (name == L"RightShiftOperator") return TokenType::RightShiftOperator;
 	if (name == L"LeftShiftOperator") return TokenType::LeftShiftOperator;
 

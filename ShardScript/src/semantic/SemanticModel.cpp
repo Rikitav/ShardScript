@@ -436,7 +436,7 @@ bool SemanticModel::is_assignable_to(const StructSymbol* target, const StructSym
 	if (!sourceSmallerThanInt)
 		sourceSmallerThanInt = source == m_table.get_nint_primitive();
 
-	if (target == m_table.get_integer_primitive() && sourceSmallerThanInt)
+	if (target == m_table.get_integer_primitive() && (sourceSmallerThanInt || source->get_kind() == SyntaxKind::EnumDeclaration))
 		return true;
 
 	if (target->get_kind() == SyntaxKind::InterfaceDeclaration)

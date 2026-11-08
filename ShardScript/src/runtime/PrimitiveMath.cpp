@@ -1,7 +1,7 @@
 #include <shard/runtime/PrimitiveMath.hpp>
 
+#include <shard/parsing/SyntaxKind.hpp>
 #include <shard/pragmatic/TypeShape.hpp>
-
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Allocator.hpp>
@@ -16,6 +16,14 @@ using namespace shard;
 
 namespace
 {
+	bool is_enum(const TypeShape* shape)
+	{
+		if (shape == nullptr)
+			return false;
+		StructSymbol* baseType = shape->get_base_type();
+		return baseType != nullptr && baseType->get_kind() == SyntaxKind::EnumDeclaration;
+	}
+
 	bool try_multiply(std::int64_t left, std::int64_t right, std::int64_t& result)
 	{
 		if (left > 0)
@@ -99,7 +107,9 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 		return PrimitiveStatus::Success;
 	}
 
-	if (!is_integer(shapes, leftShape) || !is_integer(shapes, rightShape))
+	bool isLeftInt = is_integer(shapes, leftShape) || is_enum(leftShape);
+	bool isRightInt = is_integer(shapes, rightShape) || is_enum(rightShape);
+	if (!isLeftInt || !isRightInt)
 		return PrimitiveStatus::NotPrimitive;
 
 	std::int64_t leftValue = left.as_integer();
@@ -207,11 +217,34 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 			computed = leftValue >> rightValue;
 			break;
 		}
+
+		case OpCode::MATH_OR:
+		{
+			computed = leftValue | rightValue;
+			break;
+		}
+
+		case OpCode::MATH_AND:
+		{
+			computed = leftValue & rightValue;
+			break;
+		}
+
 		default:
 			return PrimitiveStatus::NotPrimitive;
 	}
 
-	result.shape = shapes.integer;
+	const TypeShape* resultShape = shapes.integer;
+	if (is_enum(leftShape))
+		resultShape = leftShape;
+	else if (is_enum(rightShape))
+		resultShape = rightShape;
+	else if (leftShape == shapes.nint || rightShape == shapes.nint)
+		resultShape = shapes.nint;
+	else if (leftShape == shapes.byte && rightShape == shapes.byte)
+		resultShape = shapes.byte;
+
+	result.shape = resultShape;
 	std::memcpy(&result.payload, &computed, sizeof(std::int64_t));
 	return PrimitiveStatus::Success;
 }
@@ -319,6 +352,19 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	}
 
 	if (targetShape == shapes.integer || targetShape == shapes.nint)
+	{
+		std::int64_t converted;
+		if (is_double(shapes, value.get_shape()))
+			converted = static_cast<std::int64_t>(value.as_double());
+		else
+			converted = value.as_integer();
+
+		result.shape = targetShape;
+		std::memcpy(&result.payload, &converted, sizeof(std::int64_t));
+		return PrimitiveStatus::Success;
+	}
+
+	if (is_enum(targetShape))
 	{
 		std::int64_t converted;
 		if (is_double(shapes, value.get_shape()))

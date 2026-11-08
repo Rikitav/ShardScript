@@ -12,7 +12,7 @@
 			#define SHARD_API __declspec(dllimport)
 		#endif
 
-		#define FORCE_INLINE __forceinline
+		#define FORCE_INLINE __forceinline inline
 
 	// GCC / Clang
 	#elif defined(__GNUC__)

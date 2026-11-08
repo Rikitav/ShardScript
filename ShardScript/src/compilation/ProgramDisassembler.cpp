@@ -79,6 +79,8 @@ namespace
 			case OpCode::MATH_NEGATIVE:             opcode = L"neg"; break;
 			case OpCode::MATH_SHL:                  opcode = L"shl"; break;
 			case OpCode::MATH_SHR:                  opcode = L"shr"; break;
+			case OpCode::MATH_OR:                   opcode = L"bor"; break;
+			case OpCode::MATH_AND:                  opcode = L"band"; break;
 
 			case OpCode::COMPARE_EQUAL:             opcode = L"cmp_eq"; break;
 			case OpCode::COMPARE_NOTEQUAL:          opcode = L"cmp_neq"; break;
@@ -536,7 +538,7 @@ void ProgramDisassembler::visit_function_declaration(const FunctionDeclarationSy
 	MethodSymbol* method = lookup_symbol<MethodSymbol>(node);
 	if (method != nullptr && method != m_domain.get_program().get_entry_point())
 	{
-		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
+		auto start = reinterpret_cast<std::size_t>(method->get_function_pointer());
 		auto it = std::lower_bound(
 			m_foundMethods.begin(), m_foundMethods.end(), start,
 			[&](MethodSymbol* methodF, std::size_t) -> bool

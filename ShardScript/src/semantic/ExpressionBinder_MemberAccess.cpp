@@ -238,7 +238,7 @@ StructSymbol* ExpressionBinder::resolve_symbol_type(SyntaxSymbol* symbol, Syntax
 			if (staticContext && field->get_linking() == LINK_INSTANCE)
 				diagnostics.report_error(location, gmt::concat(L"Cannot access instance field '", field->get_full_name(), L"' from type context"));
 
-			if (!staticContext && field->get_linking() == LINK_STATIC)
+			if (!staticContext && field->get_linking() == LINK_STATIC && !field->get_is_enum_value())
 				diagnostics.report_error(location, gmt::concat(L"Cannot access static field '", field->get_full_name(), L"' from instance reference"));
 
 			return fieldType;

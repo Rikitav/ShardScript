@@ -22,9 +22,6 @@ set_source_files_properties(${STRING_INTERN_SOURCES} PROPERTIES COMPILE_FLAGS "-
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     ${LIBUV_DEFINES}
     ${MIMALLOC_DEFINES}
-    "MI_SHARED_LIB"
-    "MI_SHARED_LIB_EXPORT"
-    "MI_WIN_NOREDIRECT"
     "SHARD_API_EXPORT"
     "UNICODE"
     "_UNICODE"
@@ -103,5 +100,11 @@ if(ENABLE_ASAN)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         "SHARD_NO_MIMALLOC"
     )
+else()
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    "MI_SHARED_LIB"
+    "MI_SHARED_LIB_EXPORT"
+    "MI_WIN_NOREDIRECT"
+)
 endif()
 

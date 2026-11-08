@@ -37,6 +37,17 @@ namespace
 		return type == table.get_byte_primitive() || type == table.get_nint_primitive();
 	}
 
+	bool is_integral_primitive(StructSymbol* type, const SymbolTable& table)
+	{
+		if (type == nullptr)
+			return false;
+
+		if (type == table.get_integer_primitive() || type == table.get_char_primitive())
+			return true;
+
+		return type == table.get_byte_primitive() || type == table.get_nint_primitive();
+	}
+
 	bool is_reference_kind(StructSymbol* type)
 	{
 		switch (type->get_kind())
@@ -293,8 +304,10 @@ void ExpressionBinder::visit_cast_expression(const CastExpressionSyntax* node)
 	}
 
 	// 3. built-in primitive conversions
+	bool enumConversion = (sourceType->get_kind() == SyntaxKind::EnumDeclaration && is_integral_primitive(targetType, table))
+		|| (targetType->get_kind() == SyntaxKind::EnumDeclaration && is_integral_primitive(sourceType, table));
 	bool bothScalar = is_scalar_primitive(sourceType, table) && is_scalar_primitive(targetType, table);
-	if (bothScalar)
+	if (bothScalar || enumConversion)
 	{
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, targetType);

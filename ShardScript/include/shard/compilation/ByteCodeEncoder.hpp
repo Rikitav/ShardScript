@@ -80,6 +80,8 @@ namespace shard
 		void emit_math_negative();
 		void emit_math_shl();
 		void emit_math_shr();
+		void emit_math_or();
+		void emit_math_and();
 
 		void emit_compare_equal();
 		void emit_compare_not_equal();

@@ -235,6 +235,18 @@ namespace shard
 		MATH_SHR,
 
 		/// <summary>
+		/// Pops two values, computes their bitwise OR, pushes the result.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		MATH_OR,
+
+		/// <summary>
+		/// Pops two values, computes their bitwise AND, pushes the result.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		MATH_AND,
+
+		/// <summary>
 		/// Pops two values, compares them for equality, pushes boolean result.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
