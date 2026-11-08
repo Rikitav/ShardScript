@@ -155,7 +155,8 @@ namespace shard
 		bool bind_nullable_value_comparison(const BinaryExpressionSyntax* node, StructSymbol* leftType, StructSymbol* rightType);
 		StructSymbol* bind_lifted_operator(const BinaryExpressionSyntax* node, TokenType op, StructSymbol* leftType, StructSymbol* rightType);
 		void record_argument_conversions(MethodSymbol* method, GenericTypeSymbol* genericType, std::span<StructSymbol* const> methodTypeArgs, const ArgumentsListSyntax* arguments, std::size_t parameterOffset = 0);
-		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes);
+		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes, std::span<StructSymbol* const> expectedTypes = {});
+		void rebind_collection_arguments(const ArgumentsListSyntax* argumentsList, std::span<ParameterSymbol* const> parameters, GenericTypeSymbol* genericType, MethodSymbol* method, std::span<StructSymbol* const> typeArgs, std::size_t parameterOffset = 0);
 
 		bool is_pending_lambda(const ExpressionSyntax* expression) const;
 		bool try_bind_pending_lambda(const LambdaExpressionSyntax* node, StructSymbol* expectedType);

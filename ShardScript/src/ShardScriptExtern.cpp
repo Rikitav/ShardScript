@@ -49827,7 +49827,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_jump_table(*static_cast<const gmt::vector<unsigned long long>*>(p0));
+			self->emit_jump_table(*static_cast<const gmt::vector<size_t>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)

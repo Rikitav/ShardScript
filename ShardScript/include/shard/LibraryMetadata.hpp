@@ -1,5 +1,6 @@
 #pragma once
 #include <shard/Definitions.hpp>
+#include <shard/CompilationContext.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 
 #include <cstddef>
@@ -38,7 +39,7 @@ namespace shard
 	#define SHARDLIB_GETMETADATA extern "C" __declspec(dllexport) void SHARDLIB_GETMETADATA_FUNCNAME(shard::ShardLibMetadata& lib)
 	#define SHARDLIB_ENTRYPOINT extern "C" __declspec(dllexport) void SHARDLIB_ENTRYPOINT_FUNCNAME(shard::CompilationContext& context)
 
-//  GCC
+//  GCC / Clang
 #elif defined(__GNUC__)
 	#define SHARDLIB_EXPORT __attribute__((visibility("default")))
 	#define SHARDLIB_GETMETADATA extern "C" __attribute__((visibility("default"))) void SHARDLIB_GETMETADATA_FUNCNAME(shard::ShardLibMetadata& lib)

@@ -406,6 +406,9 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 	{
 		StructSymbol* parameterTypes[] = { leftType, rightType };
 		OperatorSymbol* operatorMethod = resolve_operator_method(leftType, op, parameterTypes);
+		if (operatorMethod == nullptr)
+			operatorMethod = resolve_operator_method(rightType, op, parameterTypes);
+
 		if (operatorMethod != nullptr)
 		{
 			std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
@@ -416,10 +419,12 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		}
 
 		bool leftIsNonPrimitive = !leftIsNull && !model.is_primitive_type(leftType);
+		bool rightIsNonPrimitive = !rightIsNull && !model.is_primitive_type(rightType);
 		bool operatorIsEquality = op == TokenType::EqualsOperator || op == TokenType::NotEqualsOperator;
-		if (leftIsNonPrimitive && !operatorIsEquality)
+		if ((leftIsNonPrimitive || rightIsNonPrimitive) && !operatorIsEquality)
 		{
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
+			StructSymbol* errorType = leftIsNonPrimitive ? leftType : rightType;
+			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", errorType->get_name(), L"'"));
 			return nullptr;
 		}
 	}

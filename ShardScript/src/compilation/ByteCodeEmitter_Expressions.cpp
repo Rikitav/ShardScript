@@ -641,6 +641,27 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 		return;
 
 	TokenType op = node->get_operator_token().get_type();
+	std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
+	if (nodeRef.has_value())
+	{
+		OperatorSymbol* overload = lookup_symbol<OperatorSymbol>(*nodeRef);
+		if (overload != nullptr)
+		{
+			StructSymbol* receiverType = owner_type_of(overload);
+			MethodSymbol* target = resolve_call_target(*nodeRef, overload, receiverType);
+			if (target == nullptr)
+				return;
+
+			node->get_right()->accept(*this);
+			node->get_left()->accept(*this);
+
+			emit_call_method(target);
+			eval_pop(2);
+			eval_push_type(target->get_return_type());
+			return;
+		}
+	}
+
 	if (is_assignment_token(op))
 	{
 		if (op == TokenType::AssignOperator)
@@ -683,27 +704,6 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 		node->get_right()->accept(*this);
 		patch_jump(endAt);
 		return;
-	}
-
-	std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
-	if (nodeRef.has_value())
-	{
-		OperatorSymbol* overload = lookup_symbol<OperatorSymbol>(*nodeRef);
-		if (overload != nullptr)
-		{
-			StructSymbol* receiverType = get_model().get_expression_type(node->get_left());
-			MethodSymbol* target = resolve_call_target(*nodeRef, overload, receiverType);
-			if (target == nullptr)
-				return;
-
-			node->get_right()->accept(*this);
-			node->get_left()->accept(*this);
-
-			emit_call_method(target);
-			eval_pop(2);
-			eval_push_type(target->get_return_type());
-			return;
-		}
 	}
 
 	node->get_left()->accept(*this);
@@ -763,6 +763,24 @@ void ByteCodeEmitter::visit_unary_expression(const UnaryExpressionSyntax* node)
 	{
 		node->get_operand()->accept(*this);
 		return;
+	}
+
+	if (nodeRef.has_value())
+	{
+		OperatorSymbol* overload = lookup_symbol<OperatorSymbol>(*nodeRef);
+		if (overload != nullptr)
+		{
+			StructSymbol* receiverType = owner_type_of(overload);
+			MethodSymbol* target = resolve_call_target(*nodeRef, overload, receiverType);
+			if (target == nullptr)
+				return;
+
+			node->get_operand()->accept(*this);
+			emit_call_method(target);
+			eval_pop(1);
+			eval_push_type(target->get_return_type());
+			return;
+		}
 	}
 
 	if (op == TokenType::NotOperator)
