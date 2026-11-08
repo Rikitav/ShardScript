@@ -129,9 +129,7 @@ void SemanticScope::declare_symbol(SyntaxSymbol* symbol)
 	if (find->second == symbol)
 		return;
 
-	// functions, constructors, operators and accessors may overload each
-	// other within the same scope; the name keeps resolving to the first
-	// declared symbol and the rest are reachable through find_overloads
+	// functions, constructors, operators and accessors may overload each other within the same scope
 	bool bothOverloadable = is_overloadable_kind(find->second->get_kind()) && is_overloadable_kind(symbol->get_kind());
 	if (bothOverloadable)
 	{
@@ -139,5 +137,18 @@ void SemanticScope::declare_symbol(SyntaxSymbol* symbol)
 		return;
 	}
 
-	throw std::runtime_error(("symbol already defined: " + gmt::string(name.begin(), name.end())).c_str());
+	std::string nameStr(name.begin(), name.end());
+	std::string scopeDesc = "global";
+	if (m_owner != nullptr)
+	{
+		auto oName = m_owner->get_name();
+		scopeDesc = "scope of '" + std::string(oName.begin(), oName.end()) + "'";
+	}
+	else if (m_namespace != nullptr)
+	{
+		auto nsName = m_namespace->get_name();
+		scopeDesc = "namespace '" + std::string(nsName.begin(), nsName.end()) + "'";
+	}
+
+	throw std::runtime_error("symbol already defined: '" + nameStr + "' in " + scopeDesc);
 }

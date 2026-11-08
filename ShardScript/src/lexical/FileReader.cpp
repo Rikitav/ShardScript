@@ -85,5 +85,9 @@ bool FileReader::peek_next(wchar_t& ch)
 
 gmt::wstring FileReader::get_name()
 {
+#ifdef __GNUC__
+	return gmt::wstring(m_filename.wstring());
+#else
 	return gmt::wstring(m_filename.c_str());
+#endif
 }

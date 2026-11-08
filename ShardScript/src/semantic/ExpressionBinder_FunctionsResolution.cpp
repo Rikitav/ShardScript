@@ -17,7 +17,12 @@
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+#include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/LeftDenotationSymbol.hpp>
+#include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
+
+#include <shard/parsing/nodes/expressions/CollectionExpressionSyntax.hpp>
 
 #include <gmt/Concat.hpp>
 
@@ -27,6 +32,39 @@ using namespace shard;
 
 namespace
 {
+	StructSymbol* unwrap_nullable(StructSymbol* type)
+	{
+		while (type != nullptr && type->get_kind() == SyntaxKind::NullableType)
+			type = static_cast<NullableTypeSymbol*>(type)->get_underlaying_type();
+		return type;
+	}
+
+	bool contains_type_parameter(const StructSymbol* type)
+	{
+		if (type == nullptr)
+			return false;
+		if (type->get_kind() == SyntaxKind::TypeParameter)
+			return true;
+		if (type->get_kind() == SyntaxKind::ArrayType)
+			return contains_type_parameter(static_cast<const ArrayTypeSymbol*>(type)->get_underlaying_type());
+		if (type->get_kind() == SyntaxKind::NullableType)
+			return contains_type_parameter(static_cast<const NullableTypeSymbol*>(type)->get_underlaying_type());
+		if (type->get_kind() == SyntaxKind::GenericType)
+		{
+			const auto* generic = static_cast<const GenericTypeSymbol*>(type);
+			const StructSymbol* underlaying = generic->get_underlaying_type();
+			if (underlaying != nullptr)
+			{
+				for (TypeParameterSymbol* parameter : underlaying->type_parameters)
+				{
+					if (contains_type_parameter(generic->substitute_type_parameter(parameter)))
+						return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	// lower is better; negative means no conversion
 	int numeric_rank(const StructSymbol* type, const SymbolTable& table)
 	{
@@ -151,17 +189,31 @@ void ExpressionBinder::report_no_matching_overload(std::wstring_view methodName,
 	get_diagnostics().report_error(blameToken, gmt::concat(L"Method '", methodName, L"' does not have an overload that accepts the supplied arguments (", format_argument_list(argTypes, get_model()), L")"));
 }
 
-bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes)
+bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes, std::span<StructSymbol* const> expectedTypes)
 {
 	if ((node->get_arguments() == nullptr))
 		return false;
 
-	for (ArgumentSyntax* const& argument : node->get_arguments()->get_arguments())
+	std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
+	for (std::size_t i = 0; i < arguments.size(); ++i)
 	{
+		ArgumentSyntax* argument = arguments[i];
 		if ((argument == nullptr) || (argument->get_expression() == nullptr))
 			return false;
 
-		visit_expression(argument->get_expression());
+		StructSymbol* expected = (i < expectedTypes.size()) ? expectedTypes[i] : nullptr;
+		if (expected != nullptr)
+		{
+			LeftDenotationSymbol* denotation = get_symbol_table().emplace<LeftDenotationSymbol>(expected, nullptr);
+			push_scope(denotation);
+			visit_expression(argument->get_expression());
+			pop_scope();
+		}
+		else
+		{
+			visit_expression(argument->get_expression());
+		}
+
 		outArgTypes.push_back(get_expression_type(argument->get_expression()));
 	}
 
@@ -346,6 +398,66 @@ void ExpressionBinder::record_argument_conversions(MethodSymbol* method, Generic
 		StructSymbol* parameterType = substitute_type_parameters(parameters[i]->get_type(), genericType, method, methodTypeArgs);
 		StructSymbol* argumentType = get_expression_type(argument->get_expression());
 		record_conversion(argument->get_expression(), parameterType, argumentType);
+	}
+}
+
+void ExpressionBinder::rebind_collection_arguments(const ArgumentsListSyntax* argumentsList, std::span<ParameterSymbol* const> parameters, GenericTypeSymbol* genericType, MethodSymbol* method, std::span<StructSymbol* const> typeArgs, std::size_t parameterOffset)
+{
+	if (argumentsList == nullptr)
+		return;
+
+	std::span<ArgumentSyntax* const> arguments = argumentsList->get_arguments();
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+	{
+		ArgumentSyntax* argument = arguments[i];
+		if ((argument == nullptr) || (argument->get_expression() == nullptr))
+			continue;
+
+		if (argument->get_expression()->get_kind() != SyntaxKind::CollectionExpression)
+			continue;
+
+		if (i + parameterOffset >= parameters.size())
+			continue;
+
+		const CollectionExpressionSyntax* colNode = static_cast<const CollectionExpressionSyntax*>(argument->get_expression());
+		StructSymbol* bestParamType = parameters[i + parameterOffset]->get_type();
+		bestParamType = method != nullptr
+			? substitute_type_parameters(bestParamType, genericType, method, typeArgs)
+			: substitute_type_parameters(bestParamType, genericType);
+
+		bestParamType = unwrap_nullable(bestParamType);
+		if (bestParamType == nullptr || bestParamType->get_kind() != SyntaxKind::ArrayType)
+			continue;
+
+		StructSymbol* bestElemType = static_cast<ArrayTypeSymbol*>(bestParamType)->get_underlaying_type();
+		if (bestElemType == nullptr)
+			continue;
+
+		std::optional<const CollectionExpressionSyntax*> colRef = ref_from(colNode);
+		StructSymbol* currentArrayType = get_expression_type(colNode);
+		StructSymbol* currentElemType = nullptr;
+		if (currentArrayType != nullptr && currentArrayType->get_kind() == SyntaxKind::ArrayType)
+			currentElemType = static_cast<ArrayTypeSymbol*>(currentArrayType)->get_underlaying_type();
+
+		if (currentElemType == nullptr || (!SemanticModel::are_types_equal(currentElemType, bestElemType) && get_model().is_assignable_to(bestElemType, currentElemType)))
+		{
+			ArrayTypeSymbol* arrayType = m_factory.create_array_type(bestElemType, colNode->get_values().size());
+			if (colRef.has_value())
+			{
+				get_symbol_table().bind_symbol<ArrayTypeSymbol>(*colRef, arrayType);
+				set_expression_type(*colRef, arrayType);
+			}
+
+			for (ExpressionSyntax* const& val : colNode->get_values())
+			{
+				StructSymbol* valType = get_expression_type(val);
+				if (valType != nullptr && !SemanticModel::are_types_equal(valType, bestElemType))
+				{
+					if (get_model().is_assignable_to(bestElemType, valType))
+						record_conversion(val, bestElemType, valType);
+				}
+			}
+		}
 	}
 }
 
@@ -747,10 +859,6 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 		return nullptr;
 	}
 
-	gmt::inline_vector<StructSymbol*, 8> argTypes;
-	if (!collect_argument_types(node, argTypes.get_vector()))
-		return nullptr;
-
 	gmt::inline_vector<StructSymbol*, 4> explicitTypeArgs;
 	bool hasExplicitTypeArgs = collect_explicit_type_arguments(node, explicitTypeArgs.get_vector());
 
@@ -766,15 +874,6 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
 	outGenericType = nullptr;
-
-	// extension shape carries the receiver type as the first argument
-	gmt::inline_vector<StructSymbol*, 8> extensionArgs;
-	if (currentType != nullptr && !staticContext)
-	{
-		extensionArgs.get_vector().reserve(argTypes.get_vector().size() + 1);
-		extensionArgs.push_back(currentType);
-		extensionArgs.get_vector().insert(extensionArgs.get_vector().end(), argTypes.get_vector().begin(), argTypes.get_vector().end());
-	}
 
 	struct candidate
 	{
@@ -839,6 +938,94 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 	// the receiver exactly like a scope-level extension
 	for (MethodSymbol* method : get_symbol_table().find_root_functions(methodName))
 		addCandidate(method, asExtension);
+
+	std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
+	std::size_t numArgs = arguments.size();
+	gmt::inline_vector<StructSymbol*, 8> expectedTypes;
+	for (std::size_t i = 0; i < numArgs; ++i)
+	{
+		StructSymbol* expectedTypeForArg = nullptr;
+		bool conflict = false;
+
+		ArgumentSyntax* argument = arguments[i];
+		bool isCollection = (argument != nullptr && argument->get_expression() != nullptr && argument->get_expression()->get_kind() == SyntaxKind::CollectionExpression);
+
+		for (const candidate& item : candidates.get_vector())
+		{
+			std::size_t offset = item.as_extension ? 1 : 0;
+			if (item.method->get_parameters().size() != numArgs + offset)
+				continue;
+
+			if (hasExplicitTypeArgs)
+			{
+				const auto& typeParams = item.method->get_type_parameters();
+				if (typeParams.size() != explicitTypeArgs.get_vector().size())
+					continue;
+			}
+
+			StructSymbol* paramType = item.method->get_parameters()[i + offset]->get_type();
+			paramType = substitute_type_parameters(paramType, genericType, item.method, explicitTypeArgs.get_vector());
+
+			if (paramType == nullptr || contains_type_parameter(paramType))
+				continue;
+
+			if (isCollection)
+			{
+				StructSymbol* target = unwrap_nullable(paramType);
+				if (target == nullptr || (target->get_kind() != SyntaxKind::ArrayType && target->get_kind() != SyntaxKind::GenericType))
+					continue;
+			}
+
+			if (expectedTypeForArg == nullptr)
+			{
+				expectedTypeForArg = paramType;
+			}
+			else if (!SemanticModel::are_types_equal(expectedTypeForArg, paramType))
+			{
+				conflict = true;
+				break;
+			}
+		}
+
+		if (conflict)
+			expectedTypeForArg = nullptr;
+
+		expectedTypes.push_back(expectedTypeForArg);
+	}
+
+	if (candidates.get_vector().empty())
+	{
+		SyntaxSymbol* lookup = get_current_scope()->lookup(methodName);
+		GenericTypeSymbol* delegateInstantiation = nullptr;
+		DelegateTypeSymbol* delegate = try_resolve_delegate_invocation(node, lookup, delegateInstantiation);
+		if (delegate != nullptr)
+		{
+			const auto& parameters = delegate->get_parameters();
+			for (std::size_t i = 0; i < numArgs; ++i)
+			{
+				StructSymbol* paramType = (i < parameters.size()) ? parameters[i]->get_type() : nullptr;
+				if (paramType != nullptr)
+				{
+					paramType = substitute_type_parameters(paramType, delegateInstantiation);
+					if (!contains_type_parameter(paramType))
+						expectedTypes.get_vector()[i] = paramType;
+				}
+			}
+		}
+	}
+
+	gmt::inline_vector<StructSymbol*, 8> argTypes;
+	if (!collect_argument_types(node, argTypes.get_vector(), expectedTypes.get_vector()))
+		return nullptr;
+
+	// extension shape carries the receiver type as the first argument
+	gmt::inline_vector<StructSymbol*, 8> extensionArgs;
+	if (currentType != nullptr && !staticContext)
+	{
+		extensionArgs.get_vector().reserve(argTypes.get_vector().size() + 1);
+		extensionArgs.push_back(currentType);
+		extensionArgs.get_vector().insert(extensionArgs.get_vector().end(), argTypes.get_vector().begin(), argTypes.get_vector().end());
+	}
 
 	if (hasExplicitTypeArgs)
 	{
@@ -939,11 +1126,12 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 	if (!bestTypeArgs.empty() && !check_method_type_constraints(best, bestTypeArgs, node->get_identifier()))
 		return nullptr;
 
+	rebind_collection_arguments(node->get_arguments(), best->get_parameters(), genericType, best, bestTypeArgs, bestExtension ? 1 : 0);
+
 	outMethodTypeArgs = std::move(bestTypeArgs);
 	outGenericType = genericType;
 	return best;
 }
-
 ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionSyntax* node)
 {
 	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
@@ -958,13 +1146,77 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 	if ((node->get_arguments() == nullptr))
 		return nullptr;
 
-	gmt::inline_vector<StructSymbol*, 8> argTypes;
-	for (ArgumentSyntax* const& argument : node->get_arguments()->get_arguments())
+	GenericTypeSymbol* construction = createdType->get_kind() == SyntaxKind::GenericType
+		? static_cast<GenericTypeSymbol*>(createdType)
+		: nullptr;
+
+	std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
+	std::size_t numArgs = arguments.size();
+	gmt::inline_vector<StructSymbol*, 8> expectedTypes;
+	for (std::size_t i = 0; i < numArgs; ++i)
 	{
+		StructSymbol* expectedTypeForArg = nullptr;
+		bool conflict = false;
+
+		ArgumentSyntax* argument = arguments[i];
+		bool isCollection = (argument != nullptr && argument->get_expression() != nullptr && argument->get_expression()->get_kind() == SyntaxKind::CollectionExpression);
+
+		for (ConstructorSymbol* constructor : searchType->constructors)
+		{
+			if (constructor == nullptr || constructor->get_parameters().size() != numArgs)
+				continue;
+
+			StructSymbol* paramType = constructor->get_parameters()[i]->get_type();
+			if (construction != nullptr)
+				paramType = substitute_type_parameters(paramType, construction);
+
+			if (paramType == nullptr || contains_type_parameter(paramType))
+				continue;
+
+			if (isCollection)
+			{
+				StructSymbol* target = unwrap_nullable(paramType);
+				if (target == nullptr || (target->get_kind() != SyntaxKind::ArrayType && target->get_kind() != SyntaxKind::GenericType))
+					continue;
+			}
+
+			if (expectedTypeForArg == nullptr)
+			{
+				expectedTypeForArg = paramType;
+			}
+			else if (!SemanticModel::are_types_equal(expectedTypeForArg, paramType))
+			{
+				conflict = true;
+				break;
+			}
+		}
+
+		if (conflict)
+			expectedTypeForArg = nullptr;
+
+		expectedTypes.push_back(expectedTypeForArg);
+	}
+
+	gmt::inline_vector<StructSymbol*, 8> argTypes;
+	for (std::size_t i = 0; i < numArgs; ++i)
+	{
+		ArgumentSyntax* const& argument = arguments[i];
 		if ((argument == nullptr) || (argument->get_expression() == nullptr))
 			return nullptr;
 
-		visit_expression(argument->get_expression());
+		StructSymbol* expected = (i < expectedTypes.get_vector().size()) ? expectedTypes.get_vector()[i] : nullptr;
+		if (expected != nullptr)
+		{
+			LeftDenotationSymbol* denotation = get_symbol_table().emplace<LeftDenotationSymbol>(expected, nullptr);
+			push_scope(denotation);
+			visit_expression(argument->get_expression());
+			pop_scope();
+		}
+		else
+		{
+			visit_expression(argument->get_expression());
+		}
+
 		StructSymbol* argumentType = get_expression_type(argument->get_expression());
 		if (argumentType == nullptr)
 			return nullptr;
@@ -979,10 +1231,6 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 
 	ConstructorSymbol* best = nullptr;
 	int bestScore = -1;
-
-	GenericTypeSymbol* construction = createdType->get_kind() == SyntaxKind::GenericType
-		? static_cast<GenericTypeSymbol*>(createdType)
-		: nullptr;
 
 	for (ConstructorSymbol* constructor : searchType->constructors)
 	{
@@ -1027,9 +1275,10 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 		return nullptr;
 	}
 
+	rebind_collection_arguments(node->get_arguments(), best->get_parameters(), construction, nullptr, {}, 0);
+
 	return best;
 }
-
 StructSymbol* ExpressionBinder::analyze_object_expression(const ObjectExpressionSyntax* node)
 {
 	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
@@ -1135,12 +1384,65 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 		return nullptr;
 	}
 
-	gmt::inline_vector<StructSymbol*, 8> argTypes;
-	if (!collect_argument_types(node, argTypes.get_vector()))
-		return nullptr;
-
 	gmt::inline_vector<StructSymbol*, 4> explicitTypeArgs;
 	collect_explicit_type_arguments(node, explicitTypeArgs.get_vector());
+
+	std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
+	std::size_t numArgs = arguments.size();
+	gmt::inline_vector<StructSymbol*, 8> expectedTypes;
+	for (std::size_t i = 0; i < numArgs; ++i)
+	{
+		StructSymbol* expectedTypeForArg = nullptr;
+		bool conflict = false;
+
+		ArgumentSyntax* argument = arguments[i];
+		bool isCollection = (argument != nullptr && argument->get_expression() != nullptr && argument->get_expression()->get_kind() == SyntaxKind::CollectionExpression);
+
+		for (SyntaxSymbol* member : namespaceSymbol->members)
+		{
+			if (member == nullptr || member->get_kind() != SyntaxKind::FunctionDeclaration)
+				continue;
+
+			MethodSymbol* method = static_cast<MethodSymbol*>(member);
+			if (method->get_name() != methodName || method->get_linking() != LINK_STATIC)
+				continue;
+
+			if (method->get_parameters().size() != numArgs)
+				continue;
+
+			StructSymbol* paramType = method->get_parameters()[i]->get_type();
+			paramType = substitute_type_parameters(paramType, nullptr, method, explicitTypeArgs.get_vector());
+
+			if (paramType == nullptr || contains_type_parameter(paramType))
+				continue;
+
+			if (isCollection)
+			{
+				StructSymbol* target = unwrap_nullable(paramType);
+				if (target == nullptr || (target->get_kind() != SyntaxKind::ArrayType && target->get_kind() != SyntaxKind::GenericType))
+					continue;
+			}
+
+			if (expectedTypeForArg == nullptr)
+			{
+				expectedTypeForArg = paramType;
+			}
+			else if (!SemanticModel::are_types_equal(expectedTypeForArg, paramType))
+			{
+				conflict = true;
+				break;
+			}
+		}
+
+		if (conflict)
+			expectedTypeForArg = nullptr;
+
+		expectedTypes.push_back(expectedTypeForArg);
+	}
+
+	gmt::inline_vector<StructSymbol*, 8> argTypes;
+	if (!collect_argument_types(node, argTypes.get_vector(), expectedTypes.get_vector()))
+		return nullptr;
 
 	MethodSymbol* best = nullptr;
 	std::pmr::vector<StructSymbol*> bestTypeArgs;
@@ -1148,7 +1450,7 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 
 	for (SyntaxSymbol* member : namespaceSymbol->members)
 	{
-		if ((member == nullptr) || member->get_kind() != SyntaxKind::FunctionDeclaration)
+		if (member == nullptr || member->get_kind() != SyntaxKind::FunctionDeclaration)
 			continue;
 
 		MethodSymbol* method = static_cast<MethodSymbol*>(member);
@@ -1207,6 +1509,8 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 
 		get_symbol_table().bind_symbol<MethodSymbol>(*nodeRef, best);
 		bind_invocation_type_arguments(*nodeRef, best, nullptr, bestTypeArgs);
+		rebind_collection_arguments(node->get_arguments(), best->get_parameters(), nullptr, best, bestTypeArgs, 0);
+		record_argument_conversions(best, nullptr, bestTypeArgs, node->get_arguments());
 	}
 
 	if ((best->get_return_type() == nullptr))
@@ -1218,7 +1522,6 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 	StructSymbol* type = substitute_type_parameters(best->get_return_type(), nullptr, best, bestTypeArgs);
 	return wrap_async_return_type(best, type);
 }
-
 StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationExpressionSyntax* node, StructSymbol* currentType)
 {
 	const ExpressionSyntax* receiver = node->get_previous();

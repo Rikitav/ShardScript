@@ -116,17 +116,30 @@ void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<MethodSymbol*
 {
 	for (const Graph::CallExposure& exposure : m_graph.callExposures)
 	{
+		EscapeSummary precomputed;
+		const EscapeSummary* summaryPtr = nullptr;
+
 		auto it = summaries.find(exposure.callee);
+		if (it != summaries.end() && it->second.computed)
+		{
+			summaryPtr = &it->second;
+		}
+		else
+		{
+			precomputed = m_pragmatic.get_summary(exposure.callee);
+			if (precomputed.computed)
+				summaryPtr = &precomputed;
+		}
 
 		// a callee with no derived summary was never walked in this tree
 		// (libfunc, bodyless member): the trusted conservative default
-		if (it == summaries.end() || !it->second.computed)
+		if (summaryPtr == nullptr)
 		{
 			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, EscapeChannel::UnknownCallee, exposure.cold);
 			continue;
 		}
 
-		const EscapeSummary& summary = it->second;
+		const EscapeSummary& summary = *summaryPtr;
 		if (exposure.parameterIndex >= summary.parameters.size())
 		{
 			// arity mismatch: the binder resolved an overload the summary does not cover
@@ -276,7 +289,15 @@ int EscapeAnalyzer::classify_return_expression(MethodSymbol* method, const Expre
 		{
 			auto it = summaries.find(callee);
 			if (it != summaries.end() && it->second.returnDisposition == ReturnDisposition::Fresh)
+			{
 				mark = 1;
+			}
+			else
+			{
+				EscapeSummary precomputed = m_pragmatic.get_summary(callee);
+				if (precomputed.computed && precomputed.returnDisposition == ReturnDisposition::Fresh)
+					mark = 1;
+			}
 		}
 	}
 
@@ -342,7 +363,11 @@ bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<MethodSymbol*,
 			continue;
 
 		auto it = summaries.find(exposure.callee);
-		if (it == summaries.end() || !it->second.computed)
+		if (it != summaries.end() && it->second.computed)
+			continue;
+
+		EscapeSummary precomputed = m_pragmatic.get_summary(exposure.callee);
+		if (!precomputed.computed)
 			return false;
 	}
 
@@ -519,9 +544,12 @@ void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<MethodSymbol*, Esc
 
 	for (const auto& pair : m_graph.localIds)
 	{
+		SyntaxSymbol* local = pair.first;
 		int id = pair.second;
-		m_pragmatic.set_local_verdict(m_graph.idOwners[id], pair.first, classify_local(id, pair.first, summaries));
-	}
+		MethodSymbol* owner = m_graph.idOwners[id];
+		if (owner == nullptr)
+			continue;
 
-	commit_promotion_points();
+		m_pragmatic.set_local_verdict(owner, local, classify_local(id, local, summaries));
+	}
 }

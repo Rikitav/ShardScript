@@ -6,10 +6,14 @@
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/LeftDenotationSymbol.hpp>
 #include <shard/semantic/symbols/LiteralSymbol.hpp>
+#include <shard/semantic/symbols/NullableTypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/Concat.hpp>
 #include <gmt/Containers.hpp>
+#include <gmt/InlineVector.hpp>
 
 #include <cerrno>
 #include <charconv>
@@ -210,6 +214,13 @@ namespace
 			return { false, L"Invalid floating point number format" };
 		}
 	}
+
+	StructSymbol* unwrap_nullable(StructSymbol* type)
+	{
+		while (type != nullptr && type->get_kind() == SyntaxKind::NullableType)
+			type = static_cast<NullableTypeSymbol*>(type)->get_underlaying_type();
+		return type;
+	}
 }
 
 static bool is_default_constructible_type(SymbolTable& table, const StructSymbol* type)
@@ -397,28 +408,99 @@ StructSymbol* ExpressionBinder::analyze_double_literal(const LiteralExpressionSy
 	return get_symbol_table().get_double_primitive();
 }
 
-void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_collection_expression(const CollectionExpressionSyntax* node)
 {
 	const std::span<ExpressionSyntax* const> values = node->get_values();
 
-	for (ExpressionSyntax* const& value : values)
-		visit_expression(value);
-
-	// TODO: target-typed or joined element inference
-	StructSymbol* elementType = nullptr;
-	for (ExpressionSyntax* const& value : values)
+	StructSymbol* leftDenotation = resolve_left_denotation();
+	StructSymbol* targetType = unwrap_nullable(leftDenotation);
+	StructSymbol* targetElementType = nullptr;
+	if (targetType != nullptr)
 	{
-		if (elementType == nullptr)
-			elementType = get_expression_type(value);
+		if (targetType->get_kind() == SyntaxKind::ArrayType)
+		{
+			targetElementType = static_cast<ArrayTypeSymbol*>(targetType)->get_underlaying_type();
+		}
+		else if (targetType->get_kind() == SyntaxKind::GenericType)
+		{
+			auto* genericType = gmt::as<GenericTypeSymbol>(targetType);
+			StructSymbol* underlaying = genericType->get_underlaying_type();
+			if (underlaying != nullptr && underlaying->type_parameters.size() == 1)
+				targetElementType = genericType->substitute_type_parameter(underlaying->type_parameters[0]);
+		}
 	}
 
-	for (ExpressionSyntax* const& value : values)
+	if (targetElementType != nullptr)
 	{
-		StructSymbol* valueType = get_expression_type(value);
-		if (valueType != nullptr && !SemanticModel::are_types_equal(valueType, elementType))
-			get_diagnostics().report_error(node->get_location(), L"Element have type different from collection's target type");
-		else if (valueType != nullptr && get_model().is_assignable_to(elementType, valueType))
-			record_conversion(value, elementType, valueType);
+		for (ExpressionSyntax* const& value : values)
+		{
+			LeftDenotationSymbol* elemDenotation = get_symbol_table().emplace<LeftDenotationSymbol>(targetElementType, nullptr);
+			push_scope(elemDenotation);
+			visit_expression(value);
+			pop_scope();
+		}
+	}
+	else
+	{
+		for (ExpressionSyntax* const& value : values)
+			visit_expression(value);
+	}
+
+	StructSymbol* elementType = targetElementType;
+	if (elementType == nullptr)
+	{
+		struct TypeCount
+		{
+			StructSymbol* type = nullptr;
+			std::size_t count = 0;
+		};
+
+		gmt::inline_vector<TypeCount, 8> counts;
+		for (ExpressionSyntax* const& value : values)
+		{
+			StructSymbol* valueType = get_expression_type(value);
+			if (valueType == nullptr)
+				continue;
+
+			bool found = false;
+			for (auto& entry : counts.get_vector())
+			{
+				if (SemanticModel::are_types_equal(entry.type, valueType))
+				{
+					entry.count++;
+					found = true;
+					break;
+				}
+			}
+
+			if (!found)
+				counts.push_back({ valueType, 1 });
+		}
+
+		std::size_t maxCount = 0;
+		for (const auto& entry : counts.get_vector())
+		{
+			if (entry.count > maxCount)
+			{
+				maxCount = entry.count;
+				elementType = entry.type;
+			}
+		}
+	}
+
+	if (elementType != nullptr)
+	{
+		for (ExpressionSyntax* const& value : values)
+		{
+			StructSymbol* valueType = get_expression_type(value);
+			if (valueType != nullptr && !SemanticModel::are_types_equal(valueType, elementType))
+			{
+				if (get_model().is_assignable_to(elementType, valueType))
+					record_conversion(value, elementType, valueType);
+				else
+					get_diagnostics().report_error(node->get_location(), L"Element have type different from collection's target type");
+			}
+		}
 	}
 
 	std::optional<const CollectionExpressionSyntax*> nodeRef = ref_from(node);
@@ -426,7 +508,7 @@ void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyn
 	{
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, nullptr);
-		return;
+		return nullptr;
 	}
 
 	ArrayTypeSymbol* arrayType = m_factory.create_array_type(elementType, values.size());
@@ -435,6 +517,12 @@ void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyn
 		get_symbol_table().bind_symbol<ArrayTypeSymbol>(*nodeRef, arrayType);
 		set_expression_type(*nodeRef, arrayType);
 	}
+	return arrayType;
+}
+
+void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyntax* node)
+{
+	analyze_collection_expression(node);
 }
 
 void ExpressionBinder::visit_range_expression(const RangeExpressionSyntax* node)
