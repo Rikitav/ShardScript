@@ -302,14 +302,25 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		record_conversion(node->get_right(), leftType, rightType);
 		return leftType;
 	}
+	
+	bool isBitwiseOp = op == TokenType::PipeOperator
+		|| op == TokenType::AmpersandOperator
+		|| op == TokenType::OrOperator
+		|| op == TokenType::AndOperator;
 
+	bool isEnumContextOp = isBitwiseOp
+		|| op == TokenType::EqualsOperator
+		|| op == TokenType::NotEqualsOperator;
+	
 	bool enumBitwiseContext = false;
 	if (leftType != nullptr && leftType->get_kind() == SyntaxKind::EnumDeclaration)
-		enumBitwiseContext = op == TokenType::OrOperator || op == TokenType::AndOperator;
+		enumBitwiseContext = isEnumContextOp;
 
+	LeftDenotationSymbol* enumDenotation = nullptr;
 	if (enumBitwiseContext)
 	{
-		push_scope(nullptr);
+		enumDenotation = table.emplace<LeftDenotationSymbol>(leftType, nullptr);
+		push_scope(enumDenotation);
 		for (FieldSymbol* field : static_cast<EnumSymbol*>(leftType)->fields)
 		{
 			if (field != nullptr && field->get_is_enum_value())
@@ -386,15 +397,21 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 	if (lifted != nullptr)
 		return lifted;
 
-	bool bothPrimitive = false;
-	if (!leftIsNull && !rightIsNull)
-		bothPrimitive = model.is_primitive_type(leftType) && model.is_primitive_type(rightType);
+	bool isLeftPrimitive = false;
+	if (!leftIsNull)
+		isLeftPrimitive = model.is_primitive_type(leftType);
+
+	bool isRightPrimitive = false;
+	if (!rightIsNull)
+		isRightPrimitive = model.is_primitive_type(rightType);
 
 	bool bothTypeParameters = false;
 	if (!leftIsNull && leftType->get_kind() == SyntaxKind::TypeParameter)
 		bothTypeParameters = leftType == rightType;
 
+	bool bothPrimitive = isLeftPrimitive && isRightPrimitive;
 	bool isPrimitiveBinaryOp = false;
+
 	if (bothPrimitive || bothTypeParameters)
 	{
 		isPrimitiveBinaryOp = is_binary_arithmetic_operator(op)
@@ -418,12 +435,20 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 			return operatorMethod->get_return_type();
 		}
 
-		bool leftIsNonPrimitive = !leftIsNull && !model.is_primitive_type(leftType);
-		bool rightIsNonPrimitive = !rightIsNull && !model.is_primitive_type(rightType);
 		bool operatorIsEquality = op == TokenType::EqualsOperator || op == TokenType::NotEqualsOperator;
-		if ((leftIsNonPrimitive || rightIsNonPrimitive) && !operatorIsEquality)
+		bool isBitwise = op == TokenType::PipeOperator
+			|| op == TokenType::AmpersandOperator
+			|| op == TokenType::OrOperator
+			|| op == TokenType::AndOperator;
+
+		bool leftIsEnum = leftType != nullptr && leftType->get_kind() == SyntaxKind::EnumDeclaration;
+		bool rightIsEnum = rightType != nullptr && rightType->get_kind() == SyntaxKind::EnumDeclaration;
+
+		bool enumBitwise = isBitwise && (leftIsEnum || rightIsEnum);
+
+		if ((!isRightPrimitive || !isLeftPrimitive) && !operatorIsEquality && !enumBitwise)
 		{
-			StructSymbol* errorType = leftIsNonPrimitive ? leftType : rightType;
+			StructSymbol* errorType = !isLeftPrimitive ? leftType : rightType;
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", errorType->get_name(), L"'"));
 			return nullptr;
 		}
@@ -452,11 +477,37 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 		case TokenType::OrOperator:
 		case TokenType::AndOperator:
+		case TokenType::PipeOperator:
+		case TokenType::AmpersandOperator:
 		{
 			if (bothTypeParameters)
 				return leftType;
 
-			bool boolOp = leftType == table.get_boolean_primitive() && rightType == table.get_boolean_primitive();
+			bool leftIsEnum = leftType != nullptr && leftType->get_kind() == SyntaxKind::EnumDeclaration;
+			bool rightIsEnum = rightType != nullptr && rightType->get_kind() == SyntaxKind::EnumDeclaration;
+
+			if (leftIsEnum || rightIsEnum)
+			{
+				if (!leftIsEnum || !rightIsEnum || !SemanticModel::are_types_equal(leftType, rightType))
+				{
+					get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' cannot be applied to operands of type '", model.get_type_display_name(leftType), L"' and '", model.get_type_display_name(rightType), L"'"));
+					return leftType;
+				}
+
+				EnumSymbol* enumSymbol = static_cast<EnumSymbol*>(leftType);
+				if (!enumSymbol->get_is_flags())
+				{
+					get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot combine values of non-flags enum '", leftType->get_name(), L"'"));
+					return leftType;
+				}
+
+				return leftType;
+			}
+
+			bool boolOp = (op == TokenType::OrOperator || op == TokenType::AndOperator)
+				&& leftType == table.get_boolean_primitive()
+				&& rightType == table.get_boolean_primitive();
+
 			bool bitwiseOp = is_integral_primitive(leftType, table) && is_integral_primitive(rightType, table);
 
 			if (!boolOp && !bitwiseOp)

@@ -1228,6 +1228,8 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		case OpCode::MATH_POWER:
 		case OpCode::MATH_SHL:
 		case OpCode::MATH_SHR:
+		case OpCode::MATH_OR:
+		case OpCode::MATH_AND:
 		{
 			ObjectInstance right = frame->pop_entry();
 			ObjectInstance left = frame->pop_entry();

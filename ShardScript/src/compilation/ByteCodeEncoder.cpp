@@ -344,6 +344,16 @@ void ByteCodeEncoder::emit_math_shr()
 	append_data_value(m_image.get_text_section(), OpCode::MATH_SHR);
 }
 
+void ByteCodeEncoder::emit_math_or()
+{
+	append_data_value(m_image.get_text_section(), OpCode::MATH_OR);
+}
+
+void ByteCodeEncoder::emit_math_and()
+{
+	append_data_value(m_image.get_text_section(), OpCode::MATH_AND);
+}
+
 void ByteCodeEncoder::emit_compare_equal()
 {
 	append_data_value(m_image.get_text_section(), OpCode::COMPARE_EQUAL);

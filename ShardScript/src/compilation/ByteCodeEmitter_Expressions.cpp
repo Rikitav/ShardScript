@@ -685,7 +685,10 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 	if (emit_lifted_operator(node, op))
 		return;
 
-	if (op == TokenType::AndOperator || op == TokenType::OrOperator)
+	StructSymbol* leftExprType = substitute_type(get_model().get_expression_type(node->get_left()));
+	bool isBoolean = leftExprType == get_symbol_table().get_boolean_primitive();
+
+	if ((op == TokenType::AndOperator || op == TokenType::OrOperator) && isBoolean)
 	{
 		node->get_left()->accept(*this);
 		m_encoder.emit_duplicate();
@@ -747,6 +750,10 @@ bool ByteCodeEmitter::emit_arithmetic_op(TokenType type)
 		case TokenType::PowOperator: m_encoder.emit_math_pow(); return true;
 		case TokenType::LeftShiftOperator: m_encoder.emit_math_shl(); return true;
 		case TokenType::RightShiftOperator: m_encoder.emit_math_shr(); return true;
+		case TokenType::PipeOperator:
+		case TokenType::OrOperator: m_encoder.emit_math_or(); return true;
+		case TokenType::AmpersandOperator:
+		case TokenType::AndOperator: m_encoder.emit_math_and(); return true;
 		default: return false;
 	}
 }
