@@ -84,7 +84,7 @@ SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view
 SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, parent) { }
 
-SymbolBuilder<ConstructorSymbol> SymbolBuilder<StructSymbol>::add_init(SymbolAccesibility access)
+SymbolBuilder<ConstructorSymbol> SymbolBuilder<StructSymbol>::add_constructor(SymbolAccesibility access)
 {
 	return SymbolBuilder<ConstructorSymbol>(*m_table, access, m_symbol);
 }
@@ -278,8 +278,30 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_callback(MethodSym
 	if (callback == nullptr)
 		throw std::invalid_argument("method callback cannot be null");
 
-	m_symbol->set_calling_convention(CallingConvention::ShardDecl);
+	m_symbol->set_calling_convention(CallingConvention::NativeSync);
 	m_symbol->set_function_pointer(reinterpret_cast<void*>(callback));
+	m_symbol->set_effects_computed(true);
+	return *this;
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_callback(AsyncFuncHandler callback)
+{
+	return set_async_handler(callback);
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_handler(FuncHandler handler)
+{
+	return set_callback(handler);
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_async_handler(AsyncFuncHandler handler)
+{
+	if (handler == nullptr)
+		throw std::invalid_argument("async method handler cannot be null");
+
+	m_symbol->set_calling_convention(CallingConvention::NativeAsync);
+	m_symbol->set_function_pointer(reinterpret_cast<void*>(handler));
+	m_symbol->set_is_async(true);
 	m_symbol->set_effects_computed(true);
 	return *this;
 }

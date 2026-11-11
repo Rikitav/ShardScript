@@ -12,12 +12,14 @@
 			#define SHARD_API __declspec(dllimport)
 		#endif
 
-		#define FORCE_INLINE __forceinline inline
+		#define SHARD_FORCE_INLINE __forceinline inline
+		#define SHARD_NOINLINE __declspec(noinline)
 
 	// GCC / Clang
 	#elif defined(__GNUC__)
 		#define SHARD_API __attribute__((visibility("default")))
 		#define FORCE_INLINE __attribute__((always_inline)) inline
+		#define SHARD_NOINLINE __attribute__((noinline))
 
 	// do nothing and hope for the best?
 	#else

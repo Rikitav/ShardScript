@@ -88,7 +88,13 @@ EventLoop::~EventLoop()
 			uv_close(reinterpret_cast<uv_handle_t*>(&request->handle), &timer_close_cb);
 	}
 
-	// drain the close callbacks so uv_loop_close does not report busy handles
+	uv_walk(&m_impl->loop, [](uv_handle_t* handle, void*)
+	{
+		if (!uv_is_closing(handle))
+			uv_close(handle, nullptr);
+	}, nullptr);
+
+	// drain close callbacks and outstanding requests before releasing the loop
 	uv_run(&m_impl->loop, UV_RUN_DEFAULT);
 	uv_loop_close(&m_impl->loop);
 
@@ -111,6 +117,11 @@ bool EventLoop::is_alive() const
 void EventLoop::stop()
 {
 	uv_stop(&m_impl->loop);
+}
+
+void* EventLoop::get_native_loop() const
+{
+	return &m_impl->loop;
 }
 
 void EventLoop::schedule_timer(std::uint64_t milliseconds, TimerCallback callback, void* context, TimerCallback cancel)

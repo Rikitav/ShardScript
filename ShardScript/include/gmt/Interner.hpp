@@ -1,6 +1,6 @@
 #pragma once
 #include <shard/Definitions.hpp>
-#include <string-intern/include/string_intern.h>
+#include <string_intern.h>
 
 #include <string_view>
 

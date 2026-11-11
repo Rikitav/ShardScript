@@ -23,7 +23,9 @@ namespace shard
 	{
 		None,		// Unknown or unresolved calling convention. VM treats that as panic and halts immidietly
 		Managed,	// Managed bytecode calling convention. VM expects symbol to contain offset of starting opcode for th program
-		ShardDecl	// Managed foreighn function calling convention. VM expects CDecl function with signature that accepts MethodCallState argument
+		NativeSync,	// Native synchronous callback accepting FuncCallState
+		NativeAsync,	// Native asynchronous callback accepting AsyncFuncCallState
+		ShardDecl = NativeSync
 	};
 
 	class SHARD_API MethodSymbol : public MemberSymbol

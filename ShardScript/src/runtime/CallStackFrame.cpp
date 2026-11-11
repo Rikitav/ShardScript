@@ -202,6 +202,9 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	}
 
 	std::size_t evalSlotPayload = layout != nullptr ? layout->get_eval_slot_payload() : 0;
+	if (layout == nullptr || !layout->is_complete())
+		evalSlotPayload = (std::max)(evalSlotPayload, sizeof(bool) + sizeof(void*));
+	
 	std::size_t evalStride = EntryHeaderSize + gmt::align_up((std::max)(evalSlotPayload, sizeof(void*)), sizeof(void*));
 
 	std::size_t evalCapacity = 64;
@@ -215,6 +218,7 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	std::byte* block = pool != nullptr
 		? pool->acquire(totalBytes)
 		: static_cast<std::byte*>(gmt::mem_alloc(totalBytes));
+	
 	CallStackFrame* frame = new (block) CallStackFrame();
 
 	frame->m_blockBytes = totalBytes;

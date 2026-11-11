@@ -10,6 +10,7 @@
 
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/NativeHandlers.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/PrimitiveMath.hpp>
 
@@ -34,6 +35,8 @@ namespace shard
 
 	class SHARD_API VirtualMachine
 	{
+		friend class AsyncFuncCallState;
+
 		VirtualProgramImage& m_program;
 		SemanticModel& m_model;
 		PragmaticModel& m_pragmatic;
@@ -74,6 +77,8 @@ namespace shard
 
 		ObjectInstance invoke_managed(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr);
 		ObjectInstance invoke_native(MethodSymbol* method, std::span<const ObjectInstance> arguments);
+		ObjectInstance invoke_native_callback(FuncHandler callback, MethodSymbol* method, std::span<const ObjectInstance> arguments);
+		ObjectInstance invoke_native_async(MethodSymbol* method, std::span<const ObjectInstance> arguments);
 		void invoke_into(MethodSymbol* method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry, const FrameLayout* layout = nullptr);
 		void write_entry_value(const FrameEntryView& view, std::size_t payloadBytes, ObjectInstance value);
 
@@ -98,7 +103,6 @@ namespace shard
 		void deliver_await_result(CallStackFrame* frame);
 		void execute_await(CallStackFrame* frame, ByteCodeDecoder& decoder);
 		TaskRuntime& ensure_task_record(ObjectInstance state);
-		ObjectInstance build_runtime_exception(std::wstring_view message);
 		void abandon_children(CallStackFrame* frame);
 		ObjectInstance take_unobserved_fault(CallStackFrame* frame);
 		void prune_tasks_for_frame(CallStackFrame* frame);
@@ -131,14 +135,24 @@ namespace shard
 		ObjectInstance delay_task(std::int64_t milliseconds);
 		ObjectInstance continue_task(ObjectInstance task, ObjectInstance continuation);
 
+		using AsyncPollHook = bool(*)(VirtualMachine& vm, bool block);
+		using NativeTaskCallback = void(*)(VirtualMachine& vm, int status, ObjectInstance result, ObjectInstance exception, void* context);
+		using NativeCleanupHook = void(*)(VirtualMachine& vm);
+		void on_task_completed(ObjectInstance task, NativeTaskCallback callback, void* context);
+		void register_native_cleanup_hook(NativeCleanupHook hook);
+		void register_async_poll_hook(AsyncPollHook hook);
+		void unregister_async_poll_hook(AsyncPollHook hook);
+
 		VirtualProgramImage& get_program() const;
 		SemanticModel& get_model() const;
 		PragmaticModel& get_pragmatic() const;
 		GarbageCollector& get_collector();
 		const PrimitiveShapes& get_primitive_shapes() const;
+		EventLoop& get_event_loop();
 
 		CallStackFrame* get_current_frame() const;
 		ObjectInstance create_string(std::wstring_view value);
+		ObjectInstance build_runtime_exception(std::wstring_view message);
 		void raise_runtime_exception(std::wstring_view message);
 		void raise_exception(ObjectInstance exception);
 

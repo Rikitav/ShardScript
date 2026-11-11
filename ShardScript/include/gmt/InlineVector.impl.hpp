@@ -14,19 +14,19 @@ namespace gmt
 	{ }
 
 	template<typename T, std::size_t Capacity>
-	FORCE_INLINE std::pmr::vector<T>& inline_vector<T, Capacity>::get_vector()
+	SHARD_FORCE_INLINE std::pmr::vector<T>& inline_vector<T, Capacity>::get_vector()
 	{
 		return m_list;
 	}
 
 	template<typename T, std::size_t Capacity>
-	FORCE_INLINE void inline_vector<T, Capacity>::push_back(const T& val)
+	SHARD_FORCE_INLINE void inline_vector<T, Capacity>::push_back(const T& val)
 	{
 		m_list.push_back(val);
 	}
 
 	template<typename T, std::size_t Capacity>
-	FORCE_INLINE std::span<T> inline_vector<T, Capacity>::commit_array(Arena& arena)
+	SHARD_FORCE_INLINE std::span<T> inline_vector<T, Capacity>::commit_array(Arena& arena)
 	{
 		std::span<T> span = arena.emplace_array<T>(m_list.size());
 		std::copy(m_list.begin(), m_list.end(), span.data());

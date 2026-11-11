@@ -1,5 +1,6 @@
 #include <shard/runtime/VirtualMachine.hpp>
 
+#include <shard/runtime/AsyncFuncCallState.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
@@ -24,6 +25,7 @@
 
 #include <gmt/Allocator.hpp>
 #include <gmt/Containers.hpp>
+#include <gmt/Strings.hpp>
 
 #include <algorithm>
 #include <cstring>
@@ -170,7 +172,6 @@ namespace
 	{
 		auto* delay = static_cast<DelayContext*>(context);
 		delay->vm->complete_task_state(delay->state, ObjectInstance::null());
-		delay->vm->get_collector().remove_root(delay->state);
 		gmt::mem_free(delay);
 	}
 
@@ -188,6 +189,11 @@ AsyncRuntime::AsyncRuntime(VirtualMachine& virtualMachine)
 { }
 
 AsyncRuntime::~AsyncRuntime() = default;
+
+EventLoop& VirtualMachine::get_event_loop()
+{
+	return *m_async->eventLoop;
+}
 
 ObjectInstance VirtualMachine::create_task_wrapper(ObjectInstance state)
 {
@@ -259,12 +265,22 @@ void VirtualMachine::complete_task_status(ObjectInstance state, int status, Obje
 		m_async->pendingContinuations.push_back({ continuation.continuation, state, continuation.resultState });
 	}
 
-	if (continuations.empty() && !record.frameOwned)
+	gmt::vector<NativeTaskContinuation> nativeContinuations = std::move(record.nativeContinuations);
+	record.nativeContinuations.clear();
+	bool frameOwned = record.frameOwned;
+	for (const NativeTaskContinuation& continuation : nativeContinuations)
+		continuation.callback(*this, status, result, exception, continuation.context);
+
+	if (continuations.empty() && !frameOwned)
 	{
 		// waiters fall back to the state fields; a job keeps the state rooted
 		// through the extra roots taken above
-		m_collector.remove_root(record.state);
-		m_async->tasks.erase(state.get_memory());
+		auto current = m_async->tasks.find(state.get_memory());
+		if (current != m_async->tasks.end())
+		{
+			m_collector.remove_root(current->second.state);
+			m_async->tasks.erase(current);
+		}
 	}
 }
 
@@ -300,6 +316,29 @@ bool VirtualMachine::is_task_completed(ObjectInstance task)
 		return false;
 
 	return read_task_status(state) != static_cast<int>(TaskStatus::Pending);
+}
+
+void VirtualMachine::on_task_completed(ObjectInstance task, NativeTaskCallback callback, void* context)
+{
+	if (callback == nullptr)
+		return;
+
+	ObjectInstance state = task_state_of(task);
+	if (state == nullptr)
+	{
+		callback(*this, static_cast<int>(TaskStatus::Faulted), ObjectInstance::null(), build_runtime_exception(L"Callback target is not a Task"), context);
+		return;
+	}
+
+	int status = read_task_status(state);
+	if (status != static_cast<int>(TaskStatus::Pending))
+	{
+		callback(*this, status, read_task_result(state), read_task_exception(m_collector, state), context);
+		return;
+	}
+
+	TaskRuntime& record = ensure_task_record(state);
+	record.nativeContinuations.push_back({ callback, context });
 }
 
 ObjectInstance VirtualMachine::await_task(ObjectInstance task)
@@ -338,6 +377,60 @@ ObjectInstance VirtualMachine::await_task(ObjectInstance task)
 ObjectInstance VirtualMachine::launch_async_method(MethodSymbol* method, std::span<const ObjectInstance> arguments)
 {
 	return invoke_async_method(method, arguments, nullptr);
+}
+
+ObjectInstance VirtualMachine::invoke_native_async(MethodSymbol* method, std::span<const ObjectInstance> arguments)
+{
+	SymbolTable& table = m_model.get_table();
+	StructSymbol* stateType = nullptr;
+
+	if (is_void_method(method))
+	{
+		stateType = static_cast<StructSymbol*>(table.get_standard_type(StandardTypes::TaskState));
+	}
+	else
+	{
+		StructSymbol* returnType = method->get_return_type();
+		if (!arguments.empty() && arguments.front().get_shape() != nullptr)
+		{
+			StructSymbol* receiverType = arguments.front().get_shape()->get_base_type();
+			if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::GenericType)
+				returnType = m_model.substitute_type(returnType, static_cast<GenericTypeSymbol*>(receiverType));
+		}
+
+		StructSymbol* openState = static_cast<StructSymbol*>(table.get_standard_type(StandardTypes::TaskState_T));
+		StructSymbol* stateArguments[1] = { returnType };
+		stateType = table.find_or_create_generic_type(openState, std::span<StructSymbol* const>(stateArguments, 1));
+	}
+
+	ObjectInstance taskState = m_collector.allocate_instance(resolve_shape(stateType));
+	m_collector.add_root(taskState);
+	ObjectInstance wrapper = create_task_wrapper(taskState);
+
+	for (const ObjectInstance& argument : arguments)
+		m_collector.pin(argument);
+
+	AsyncFuncHandler callback = reinterpret_cast<AsyncFuncHandler>(method->get_function_pointer());
+	AsyncFuncCallState state(*this, m_currentFrame, arguments, method, taskState);
+
+	try
+	{
+		callback(state);
+	}
+	catch (const std::exception& error)
+	{
+		state.fail(gmt::utf8_to_wide(error.what()));
+	}
+	catch (...)
+	{
+		state.fail(L"Native async callback threw an unknown exception");
+	}
+
+	m_collector.unpin(arguments.size());
+	if (!state.is_finished())
+		state.fail(L"Native async method returned without completing or deferring its task");
+
+	return wrapper;
 }
 
 ObjectInstance VirtualMachine::delay_task(std::int64_t milliseconds)
@@ -671,6 +764,17 @@ bool VirtualMachine::pump_async_once(bool block)
 		return true;
 	}
 
+	bool polledAny = false;
+	auto hooks = m_async->pollHooks;
+	for (auto hook : hooks)
+	{
+		if (hook != nullptr && hook(*this, block))
+			polledAny = true;
+	}
+
+	if (polledAny)
+		return true;
+
 	if (m_async->eventLoop->is_alive())
 	{
 		m_async->eventLoop->run_once(block);
@@ -888,4 +992,34 @@ void VirtualMachine::run_pending_continuation()
 		m_collector.remove_root(sourceRecord->second.state);
 		m_async->tasks.erase(sourceRecord);
 	}
+}
+
+void VirtualMachine::register_native_cleanup_hook(NativeCleanupHook hook)
+{
+	if (m_async == nullptr || hook == nullptr)
+		return;
+
+	auto it = std::find(m_async->cleanupHooks.begin(), m_async->cleanupHooks.end(), hook);
+	if (it == m_async->cleanupHooks.end())
+		m_async->cleanupHooks.push_back(hook);
+}
+
+void VirtualMachine::register_async_poll_hook(AsyncPollHook hook)
+{
+	if (m_async == nullptr || hook == nullptr)
+		return;
+
+	auto it = std::find(m_async->pollHooks.begin(), m_async->pollHooks.end(), hook);
+	if (it == m_async->pollHooks.end())
+		m_async->pollHooks.push_back(hook);
+}
+
+void VirtualMachine::unregister_async_poll_hook(AsyncPollHook hook)
+{
+	if (m_async == nullptr || hook == nullptr)
+		return;
+
+	auto it = std::find(m_async->pollHooks.begin(), m_async->pollHooks.end(), hook);
+	if (it != m_async->pollHooks.end())
+		m_async->pollHooks.erase(it);
 }

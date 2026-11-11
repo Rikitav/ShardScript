@@ -978,17 +978,22 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 			if (getter == nullptr)
 				return;
 
-			if (previous != nullptr)
-				emit_receiver(previous);
-			else
+			bool isStatic = (getter->get_linking() == LINK_STATIC) || (property->get_linking() == LINK_STATIC);
+			if (!isStatic)
 			{
-				m_encoder.emit_load_local(0);
-				eval_push(sizeof(void*));
+				if (previous != nullptr)
+					emit_receiver(previous);
+				else
+				{
+					m_encoder.emit_load_local(0);
+					eval_push(sizeof(void*));
+				}
 			}
 
 			emit_call_method(getter);
 
-			eval_pop();
+			if (!isStatic)
+				eval_pop();
 
 			// the binder's expression type carries the substituted value type;
 			// the open declared type can still be a type parameter
@@ -1452,6 +1457,9 @@ void ByteCodeEmitter::visit_is_expression(const IsExpressionSyntax* node)
 			targetType = static_cast<StructSymbol*>(bound);
 	}
 
+	if (targetType == nullptr)
+		targetType = get_model().get_expression_type(node);
+
 	targetType = substitute_type(targetType);
 
 	node->get_expression()->accept(*this);
@@ -1520,8 +1528,8 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 	else
 		m_encoder.emit_cast(targetType);
 
-	eval_push(sizeof(void*));
-	eval_pop(2);
+	eval_pop();
+	eval_push_type(targetType);
 }
 
 void ByteCodeEmitter::visit_if_expression(const IfExpressionSyntax* node)

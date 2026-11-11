@@ -220,7 +220,7 @@ static StructSymbol* contract_type(SemanticModel& model, StructSymbol* type, Gen
 	return model.substitute_type(type, within);
 }
 
-static bool parameters_match(SemanticModel& model, GenericTypeSymbol* within, const gmt::vector<ParameterSymbol*>& contractParameters, const gmt::vector<ParameterSymbol*>& candidateParameters)
+static bool parameters_match(SemanticModel& model, GenericTypeSymbol* within, const gmt::vector<ParameterSymbol*>& contractParameters, const gmt::vector<ParameterSymbol*>& candidateParameters, GenericTypeSymbol* receiverWithin = nullptr)
 {
 	if (contractParameters.size() != candidateParameters.size())
 		return false;
@@ -231,7 +231,7 @@ static bool parameters_match(SemanticModel& model, GenericTypeSymbol* within, co
 		const ParameterSymbol* right = candidateParameters[i];
 
 		StructSymbol* leftType = (left == nullptr) ? nullptr : contract_type(model, left->get_type(), within);
-		StructSymbol* rightType = (right == nullptr) ? nullptr : right->get_type();
+		StructSymbol* rightType = (right == nullptr) ? nullptr : (receiverWithin != nullptr ? model.substitute_type(right->get_type(), receiverWithin) : right->get_type());
 
 		if (!signature_type_matches(leftType, rightType))
 			return false;
@@ -577,6 +577,16 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 	if ((receiverType == nullptr) || (interfaceMethod == nullptr))
 		return nullptr;
 
+	StructSymbol* searchType = receiverType;
+	GenericTypeSymbol* receiverWithin = nullptr;
+	if (searchType->get_kind() == SyntaxKind::GenericType)
+	{
+		receiverWithin = static_cast<GenericTypeSymbol*>(searchType);
+		searchType = receiverWithin->get_underlaying_type();
+	}
+	if (searchType == nullptr)
+		return nullptr;
+
 	// accessors resolve through their owning member: the receiver's property or
 	// indexator that matches the interface member's owner
 	const SyntaxSymbol* interfaceOwner = interfaceMethod->get_parent();
@@ -587,12 +597,15 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 		const PropertySymbol* interfaceProperty = gmt::as<PropertySymbol>(interfaceOwner);
 		bool asGetter = interfaceProperty->get_getter() == interfaceMethod;
 
-		for (PropertySymbol* property : receiverType->properties)
+		for (PropertySymbol* property : searchType->properties)
 		{
 			if ((property == nullptr) || (property->get_name() != interfaceProperty->get_name()))
 				continue;
 
-			if (!signature_type_matches(contract_type(*this, interfaceProperty->get_return_type(), interfaceWithin), property->get_return_type()))
+			StructSymbol* expectedType = contract_type(*this, interfaceProperty->get_return_type(), interfaceWithin);
+			StructSymbol* candidateType = receiverWithin != nullptr ? substitute_type(property->get_return_type(), receiverWithin) : property->get_return_type();
+
+			if (!signature_type_matches(expectedType, candidateType))
 				continue;
 
 			return asGetter ? static_cast<MethodSymbol*>(property->get_getter()) : static_cast<MethodSymbol*>(property->get_setter());
@@ -606,15 +619,18 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 		const IndexatorSymbol* interfaceIndexator = gmt::as<IndexatorSymbol>(interfaceOwner);
 		bool asGetter = interfaceIndexator->get_getter() == interfaceMethod;
 
-		for (IndexatorSymbol* indexator : receiverType->indexators)
+		for (IndexatorSymbol* indexator : searchType->indexators)
 		{
 			if (indexator == nullptr)
 				continue;
 
-			if (!signature_type_matches(contract_type(*this, interfaceIndexator->get_return_type(), interfaceWithin), indexator->get_return_type()))
+			StructSymbol* expectedType = contract_type(*this, interfaceIndexator->get_return_type(), interfaceWithin);
+			StructSymbol* candidateType = receiverWithin != nullptr ? substitute_type(indexator->get_return_type(), receiverWithin) : indexator->get_return_type();
+
+			if (!signature_type_matches(expectedType, candidateType))
 				continue;
 
-			if (!parameters_match(*this, interfaceWithin, interfaceIndexator->get_parameters(), indexator->get_parameters()))
+			if (!parameters_match(*this, interfaceWithin, interfaceIndexator->get_parameters(), indexator->get_parameters(), receiverWithin))
 				continue;
 
 			return asGetter ? static_cast<MethodSymbol*>(indexator->get_getter()) : static_cast<MethodSymbol*>(indexator->get_setter());
@@ -623,7 +639,7 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 		return nullptr;
 	}
 
-	for (MethodSymbol* candidate : receiverType->methods)
+	for (MethodSymbol* candidate : searchType->methods)
 	{
 		if ((candidate == nullptr) || (candidate->get_name() != interfaceMethod->get_name()))
 			continue;
@@ -632,10 +648,13 @@ MethodSymbol* SemanticModel::find_interface_implementation(StructSymbol* receive
 		if (candidate->get_linking() != LINK_INSTANCE)
 			continue;
 
-		if (!signature_type_matches(contract_type(*this, interfaceMethod->get_return_type(), interfaceWithin), candidate->get_return_type()))
+		StructSymbol* expectedType = contract_type(*this, interfaceMethod->get_return_type(), interfaceWithin);
+		StructSymbol* candidateType = receiverWithin != nullptr ? substitute_type(candidate->get_return_type(), receiverWithin) : candidate->get_return_type();
+
+		if (!signature_type_matches(expectedType, candidateType))
 			continue;
 
-		if (!parameters_match(*this, interfaceWithin, interfaceMethod->get_parameters(), candidate->get_parameters()))
+		if (!parameters_match(*this, interfaceWithin, interfaceMethod->get_parameters(), candidate->get_parameters(), receiverWithin))
 			continue;
 
 		return candidate;
@@ -687,7 +706,8 @@ bool SemanticModel::is_primitive_type(const StructSymbol* type) const
 		|| type == m_table.get_char_primitive()
 		|| type == m_table.get_string_primitive()
 		|| type == m_table.get_array_primitive()
-		|| type == m_table.get_nint_primitive();
+		|| type == m_table.get_nint_primitive()
+		|| type == m_table.get_byte_primitive();
 }
 
 bool SemanticModel::is_task_or_task_like(StructSymbol* type)
