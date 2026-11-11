@@ -178,7 +178,7 @@ void SymbolTable::resolve_async_types()
 
 	GenericTypeSymbol* completionTaskType = find_or_create_generic_type(taskT, std::span<StructSymbol* const>(completionArguments, 1));
 
-	ConstructorSymbol* completionConstructor = completionSourceBuilder.add_init(ACS_PUBLIC)
+	ConstructorSymbol* completionConstructor = completionSourceBuilder.add_constructor(ACS_PUBLIC)
 		.set_callback(&task_completion_source_ctor)
 		.get();
 

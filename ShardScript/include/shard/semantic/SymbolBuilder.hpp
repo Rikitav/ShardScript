@@ -86,7 +86,7 @@ namespace shard
 		SymbolBuilder(SymbolTable& table, StructSymbol* symbol);
 		SymbolBuilder(SymbolTable& table, std::wstring_view name, SyntaxSymbol* parent);
 
-		SymbolBuilder<ConstructorSymbol> add_init(SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<ConstructorSymbol> add_constructor(SymbolAccesibility access = ACS_PUBLIC);
 
 		SymbolBuilder<MethodSymbol> add_method(std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
 		SymbolBuilder<FieldSymbol> add_field(std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
@@ -151,6 +151,9 @@ namespace shard
 
 		SymbolBuilder<MethodSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
 		SymbolBuilder<MethodSymbol>& set_callback(MethodSymbolDelegate callback);
+		SymbolBuilder<MethodSymbol>& set_callback(AsyncFuncHandler callback);
+		SymbolBuilder<MethodSymbol>& set_handler(FuncHandler handler);
+		SymbolBuilder<MethodSymbol>& set_async_handler(AsyncFuncHandler handler);
 		SymbolBuilder<TypeParameterSymbol> add_type_parameter(std::wstring_view name);
 		SymbolBuilder<MethodSymbol>& declare_global();
 

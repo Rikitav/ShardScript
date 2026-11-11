@@ -232,17 +232,21 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		m_encoder.emit_store_local(temp);
 		eval_pop();
 
-		if (previous != nullptr)
-			emit_receiver(previous);
-		else
+		bool isStatic = (setter->get_linking() == LINK_STATIC) || (property->get_linking() == LINK_STATIC);
+		if (!isStatic)
 		{
-			m_encoder.emit_load_local(0);
-			eval_push(sizeof(void*));
+			if (previous != nullptr)
+				emit_receiver(previous);
+			else
+			{
+				m_encoder.emit_load_local(0);
+				eval_push(sizeof(void*));
+			}
 		}
 
 		emit_call_method(setter);
 
-		eval_pop(2);
+		eval_pop(isStatic ? 1 : 2);
 
 		m_encoder.emit_load_local(temp);
 		eval_push(sizeof(void*));

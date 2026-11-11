@@ -6,14 +6,14 @@
 namespace shard
 {
 	template<typename T>
-	FORCE_INLINE T* SemanticVisitor::lookup_symbol(const SyntaxNode* node)
+	SHARD_FORCE_INLINE T* SemanticVisitor::lookup_symbol(const SyntaxNode* node)
 	{
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "lookup target must derive from SyntaxSymbol");
 		return static_cast<T*>(m_table->lookup_symbol(node));
 	}
 
 	template<typename T>
-	FORCE_INLINE std::optional<const T*> SemanticVisitor::ref_from(const T* ptr)
+	SHARD_FORCE_INLINE std::optional<const T*> SemanticVisitor::ref_from(const T* ptr)
 	{
 		return m_model->get_tree().get_arena().ref_from_ptr(ptr);
 	}

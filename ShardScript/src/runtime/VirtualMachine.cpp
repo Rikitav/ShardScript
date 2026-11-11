@@ -38,71 +38,6 @@ using namespace shard;
 
 namespace
 {
-#if defined(_MSC_VER)
-#define SHARD_NOINLINE __declspec(noinline)
-#else
-#define SHARD_NOINLINE __attribute__((noinline))
-#endif
-
-	// Argument buffer for the call opcodes: inline storage for the common
-	// arity, heap only past it. The previous pmr::vector did a virtual
-	// allocation per push_back even when it stayed inside its inline buffer.
-	// The overflow path stays out of line so it does not bloat process_code.
-	class PoppedArguments
-	{
-		static constexpr std::size_t InlineCapacity = 8;
-
-		ObjectInstance m_inline[InlineCapacity];
-		gmt::vector<ObjectInstance> m_heap;
-		std::size_t m_size = 0;
-
-		SHARD_NOINLINE void push_back_slow(const ObjectInstance& value)
-		{
-			if (m_heap.empty())
-			{
-				m_heap.reserve(InlineCapacity * 2);
-				for (std::size_t i = 0; i < InlineCapacity; ++i)
-					m_heap.push_back(m_inline[i]);
-			}
-
-			m_heap.push_back(value);
-			++m_size;
-		}
-
-	public:
-		void push_back(const ObjectInstance& value)
-		{
-			if (m_size < InlineCapacity)
-			{
-				m_inline[m_size++] = value;
-				return;
-			}
-
-			push_back_slow(value);
-		}
-
-		ObjectInstance& operator[](std::size_t index)
-		{
-			return index < InlineCapacity ? m_inline[index] : m_heap[index - InlineCapacity];
-		}
-
-		std::span<const ObjectInstance> view() const
-		{
-			if (m_size <= InlineCapacity)
-				return std::span<const ObjectInstance>(m_inline, m_size);
-
-			return std::span<const ObjectInstance>(m_heap.data(), m_heap.size());
-		}
-
-		std::span<ObjectInstance> entries()
-		{
-			if (m_size <= InlineCapacity)
-				return std::span<ObjectInstance>(m_inline, m_size);
-
-			return std::span<ObjectInstance>(m_heap.data(), m_heap.size());
-		}
-	};
-
 	std::size_t native_argument_count(MethodSymbol* method)
 	{
 		std::size_t count = method->get_parameters().size();
@@ -182,6 +117,13 @@ VirtualMachine::~VirtualMachine()
 	// before the collector and the frame pool die
 	if (m_async)
 	{
+		auto cleanupHooks = m_async->cleanupHooks;
+		for (VirtualMachine::NativeCleanupHook hook : cleanupHooks)
+		{
+			if (hook != nullptr)
+				hook(*this);
+		}
+
 		for (auto& [key, record] : m_async->tasks)
 		{
 			if (record.child == nullptr)
@@ -553,7 +495,7 @@ void VirtualMachine::invoke_into(MethodSymbol* method, std::span<const ObjectIns
 
 	// native methods overwhelmingly return primitives; the canonical shapes
 	// are already cached, so skip the shape-cache lookup for them
-	const TypeShape* returnShape = convention == CallingConvention::ShardDecl
+	const TypeShape* returnShape = convention == CallingConvention::NativeSync
 		? primitive_shape(returnType)
 		: nullptr;
 	if (returnShape == nullptr)
@@ -561,9 +503,11 @@ void VirtualMachine::invoke_into(MethodSymbol* method, std::span<const ObjectIns
 
 	std::size_t returnPayload = returnShape != nullptr ? returnShape->get_size() : 0;
 
-	if (convention == CallingConvention::ShardDecl)
+	if (convention == CallingConvention::NativeSync || convention == CallingConvention::NativeAsync)
 	{
-		ObjectInstance result = invoke_native(method, arguments);
+		ObjectInstance result = convention == CallingConvention::NativeAsync
+			? invoke_native_async(method, arguments)
+			: invoke_native(method, arguments);
 		FrameEntryView view = CallStackFrame::peek_entry(destinationEntry);
 		write_entry_value(view, returnPayload, result);
 		return;
@@ -645,12 +589,11 @@ ObjectInstance VirtualMachine::invoke_managed(MethodSymbol* method, std::span<co
 	return result;
 }
 
-ObjectInstance VirtualMachine::invoke_native(MethodSymbol* method, std::span<const ObjectInstance> arguments)
+ObjectInstance VirtualMachine::invoke_native_callback(FuncHandler callback, MethodSymbol* method, std::span<const ObjectInstance> arguments)
 {
 	for (const ObjectInstance& argument : arguments)
 		m_collector.pin(argument);
 
-	MethodSymbolDelegate callback = reinterpret_cast<MethodSymbolDelegate>(method->get_function_pointer());
 	MethodCallState state(*this, m_currentFrame, arguments, method);
 
 	try
@@ -677,6 +620,12 @@ ObjectInstance VirtualMachine::invoke_native(MethodSymbol* method, std::span<con
 	return result;
 }
 
+ObjectInstance VirtualMachine::invoke_native(MethodSymbol* method, std::span<const ObjectInstance> arguments)
+{
+	FuncHandler callback = reinterpret_cast<FuncHandler>(method->get_function_pointer());
+	return invoke_native_callback(callback, method, arguments);
+}
+
 ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout, std::uint32_t interfaceSlot)
 {
 	if (method->get_is_virtual())
@@ -691,8 +640,11 @@ ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<con
 		case CallingConvention::Managed:
 			return invoke_managed(method, arguments, layout);
 			
-		case CallingConvention::ShardDecl:
+		case CallingConvention::NativeSync:
 			return invoke_native(method, arguments);
+
+		case CallingConvention::NativeAsync:
+			return invoke_native_async(method, arguments);
 
 		default:
 			break;
@@ -732,12 +684,13 @@ ObjectInstance VirtualMachine::invoke_virtual(MethodSymbol* interfaceMethod, std
 	if (receiver.get_shape() == arguments.front().get_shape())
 		return invoke_method(implementation, arguments);
 
-	PoppedArguments swapped;
+	gmt::inline_vector<ObjectInstance, 8> swapped;
 	swapped.push_back(receiver);
 	for (std::size_t i = 1; i < arguments.size(); ++i)
 		swapped.push_back(arguments[i]);
 
-	return invoke_method(implementation, swapped.view());
+	std::span<const ObjectInstance> span(swapped.get_vector().data(), swapped.get_vector().size());
+	return invoke_method(implementation, span);
 }
 
 MethodSymbol* VirtualMachine::resolve_interface_target(std::span<const ObjectInstance> arguments, MethodSymbol* interfaceMethod, std::uint32_t interfaceSlot, ObjectInstance& outReceiver)
@@ -1719,23 +1672,25 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			else
 				argumentCount = native_argument_count(method);
 
-			PoppedArguments arguments;
+			gmt::inline_vector<ObjectInstance, 8> arguments;			
 			for (std::size_t i = 0; i < argumentCount; ++i)
 				arguments.push_back(frame->pop_entry());
+
+			std::span<const ObjectInstance> span(arguments.get_vector().data(), arguments.get_vector().size());
 
 			MethodSymbol* target = method;
 			if (interfaceSlot != DirectCallSlot)
 			{
 				ObjectInstance receiver;
-				target = resolve_interface_target(arguments.view(), method, interfaceSlot, receiver);
+				target = resolve_interface_target(span, method, interfaceSlot, receiver);
 				if (target == nullptr)
 					break;
 
-				arguments[0] = receiver;
+				arguments.get_vector()[0] = receiver;
 				layout = m_pragmatic.find_frame_layout(target);
 			}
 
-			ObjectInstance result = invoke_method(target, arguments.view(), layout, interfaceSlot);
+			ObjectInstance result = invoke_method(target, span, layout, interfaceSlot);
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
 				break;
 
@@ -1758,9 +1713,11 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			else
 				argumentCount = native_argument_count(method);
 
-			PoppedArguments arguments;
+			gmt::inline_vector<ObjectInstance, 8> arguments;
 			for (std::size_t i = 0; i < argumentCount; ++i)
 				arguments.push_back(frame->pop_entry());
+
+			std::span<const ObjectInstance> span(arguments.get_vector().data(), arguments.get_vector().size());
 
 			// a real caller slot, or the caller's own return slot when a tail
 			// call forwards its result into the chained return storage
@@ -1768,7 +1725,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				? frame->get_return_entry()
 				: frame->get_local_entry(slot);
 
-			invoke_into(method, arguments.view(), destinationEntry, layout);
+			invoke_into(method, span, destinationEntry, layout);
 			break;
 		}
 
@@ -1820,12 +1777,14 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			MethodSymbol* target = boxType->methods.front();
 			std::size_t parameterCount = delegateType->get_parameters().size();
 
-			PoppedArguments arguments;
+			gmt::inline_vector<ObjectInstance, 8> arguments;
 			arguments.push_back(delegate);
 			for (std::size_t i = 0; i < parameterCount; ++i)
 				arguments.push_back(frame->pop_entry());
 
-			ObjectInstance result = invoke_method(target, arguments.view());
+			std::span<const ObjectInstance> span(arguments.get_vector().data(), arguments.get_vector().size());
+
+			ObjectInstance result = invoke_method(target, span);
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
 				break;
 

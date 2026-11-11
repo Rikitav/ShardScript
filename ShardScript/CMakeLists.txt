@@ -39,10 +39,10 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third-party/string-intern/include"
 )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/third-party/string-intern/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party/mimalloc/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party/libuv/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party/libuv/src"
@@ -60,51 +60,21 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types -Wno-discarded-qualifiers>)
 endif()
 
+set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    DISABLE_PRECOMPILE_HEADERS ON
+    RUNTIME_OUTPUT_DIRECTORY "${TARGET_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${TARGET_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${TARGET_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${TARGET_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${TARGET_OUTPUT_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY "${TARGET_OUTPUT_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG "${TARGET_OUTPUT_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE "${TARGET_OUTPUT_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${TARGET_OUTPUT_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL "${TARGET_OUTPUT_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY "${TARGET_OUTPUT_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${TARGET_OUTPUT_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${TARGET_OUTPUT_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${TARGET_OUTPUT_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL "${TARGET_OUTPUT_DIR}"
 )
-
-if(ENABLE_ASAN)
-    # --- CLANG (Windows, macOS, Linux) ---
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-        if(MSVC)
-            target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address /Oy-)
-        else()
-            target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        endif()
-
-        if(WIN32)
-            set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
-            target_link_options(${PROJECT_NAME} PRIVATE
-                "-fuse-ld=link"
-                "/wholearchive:clang_rt.asan_dynamic-x86_64.lib"
-                "/wholearchive:clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
-            )
-        else()
-            target_link_options(${PROJECT_NAME} PRIVATE -shared-libasan)
-        endif()
-
-    # --- GCC (Linux) ---
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-        target_link_options(${PROJECT_NAME} PRIVATE -shared-libasan)
-
-    # --- MSVC (Windows Native) ---
-    elseif(MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
-    endif()
-
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        "SHARD_NO_MIMALLOC"
-    )
-else()
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    "MI_SHARED_LIB"
-    "MI_SHARED_LIB_EXPORT"
-    "MI_WIN_NOREDIRECT"
-)
-endif()
-

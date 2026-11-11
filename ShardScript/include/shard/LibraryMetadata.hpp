@@ -2,12 +2,12 @@
 #include <shard/Definitions.hpp>
 #include <shard/CompilationContext.hpp>
 #include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/NativeHandlers.hpp>
 
 #include <cstddef>
 
 namespace shard
 {
-	typedef void (*MethodSymbolDelegate)(MethodCallState& context);
 
 	struct SHARD_API ShardLibDependencyInfo
 	{

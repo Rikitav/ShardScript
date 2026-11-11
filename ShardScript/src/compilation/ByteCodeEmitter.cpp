@@ -1,4 +1,5 @@
 #include <shard/compilation/ByteCodeEmitter.hpp>
+#include <iostream>
 
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
@@ -422,7 +423,8 @@ MethodSymbol* ByteCodeEmitter::resolve_call_target(const SyntaxNode* node, Metho
 	if ((method == nullptr) || method->get_is_generic_instantiation())
 		return method;
 
-	if (method->get_calling_convention() == CallingConvention::ShardDecl)
+	CallingConvention convention = method->get_calling_convention();
+	if (convention == CallingConvention::NativeSync || convention == CallingConvention::NativeAsync)
 		return method;
 
 	StructSymbol* ownerType = owner_type_of(method);

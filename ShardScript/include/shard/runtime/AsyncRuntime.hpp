@@ -35,6 +35,12 @@ namespace shard
 		ObjectInstance resultState;
 	};
 
+	struct NativeTaskContinuation
+	{
+		VirtualMachine::NativeTaskCallback callback;
+		void* context;
+	};
+
 	// Runtime bookkeeping for one '__TaskState' instance. The script-facing
 	// Task wrapper only carries a reference to the state; everything the VM
 	// needs to resume waiters lives here.
@@ -52,6 +58,7 @@ namespace shard
 		ObjectInstance exception;
 		gmt::vector<CallStackFrame*> waiters;
 		gmt::vector<TaskContinuation> continuations;
+		gmt::vector<NativeTaskContinuation> nativeContinuations;
 	};
 
 	// All async state owned by the VM. Kept out of the public header so libuv
@@ -70,5 +77,7 @@ namespace shard
 		gmt::vector<CallStackFrame*> runnable;
 		std::size_t runnableHead = 0;
 		gmt::vector<ContinuationJob> pendingContinuations;
+		gmt::vector<VirtualMachine::AsyncPollHook> pollHooks;
+		gmt::vector<VirtualMachine::NativeCleanupHook> cleanupHooks;
 	};
 }

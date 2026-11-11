@@ -144,7 +144,6 @@ std::uint32_t PragmaticModel::get_interface_slot_count() const
 
 void PragmaticModel::fill_vtable(SemanticModel& model, TypeShape* shape)
 {
-
 	if ((shape == nullptr) || shape->has_vtable() || (m_interfaceSlotCount == 0))
 		return;
 
@@ -152,18 +151,26 @@ void PragmaticModel::fill_vtable(SemanticModel& model, TypeShape* shape)
 	if ((baseType == nullptr) || baseType->get_kind() == SyntaxKind::InterfaceDeclaration)
 		return;
 
-	if (baseType->interfaces.empty())
+	StructSymbol* definition = baseType;
+	if (baseType->get_kind() == SyntaxKind::GenericType)
+		definition = static_cast<GenericTypeSymbol*>(baseType)->get_underlaying_type();
+
+	if ((definition == nullptr) || definition->interfaces.empty())
 		return;
 
 	gmt::vector<MethodSymbol*> entries(m_interfaceSlotCount, nullptr);
 	gmt::unordered_set<StructSymbol*> visited;
 
-	fill_vtable_for_interfaces(model, baseType, baseType, entries, visited);
+	fill_vtable_for_interfaces(model, baseType, definition, entries, visited);
 	shape->set_vtable(std::move(entries));
 }
 
 void PragmaticModel::fill_vtable_for_interfaces(SemanticModel& model, StructSymbol* concrete, StructSymbol* source, gmt::vector<MethodSymbol*>& entries, gmt::unordered_set<StructSymbol*>& visited)
 {
+	GenericTypeSymbol* concreteGeneric = nullptr;
+	if (concrete != nullptr && concrete->get_kind() == SyntaxKind::GenericType)
+		concreteGeneric = static_cast<GenericTypeSymbol*>(concrete);
+
 	for (StructSymbol* interfaceType : source->interfaces)
 	{
 		if (interfaceType == nullptr)
@@ -174,6 +181,13 @@ void PragmaticModel::fill_vtable_for_interfaces(SemanticModel& model, StructSymb
 		GenericTypeSymbol* constructed = nullptr;
 		if (interfaceType->get_kind() == SyntaxKind::GenericType)
 			constructed = static_cast<GenericTypeSymbol*>(interfaceType);
+
+		if (constructed != nullptr && concreteGeneric != nullptr)
+		{
+			StructSymbol* substituted = model.substitute_type(constructed, concreteGeneric);
+			if (substituted != nullptr && substituted->get_kind() == SyntaxKind::GenericType)
+				constructed = static_cast<GenericTypeSymbol*>(substituted);
+		}
 
 		StructSymbol* definition = constructed != nullptr ? constructed->get_underlaying_type() : interfaceType;
 		if ((definition == nullptr) || !visited.insert(definition).second)

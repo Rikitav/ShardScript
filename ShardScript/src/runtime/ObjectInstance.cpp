@@ -103,6 +103,9 @@ bool ObjectInstance::as_boolean() const
 
 std::int64_t ObjectInstance::as_integer() const
 {
+	if (m_shape != nullptr && m_shape->get_size() == 1)
+		return static_cast<std::int64_t>(*reinterpret_cast<const std::uint8_t*>(m_memory));
+
 	std::int64_t value;
 	std::memcpy(&value, m_memory, sizeof(std::int64_t));
 	return value;
