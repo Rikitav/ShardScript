@@ -17,7 +17,7 @@ set(INTERPRETER_HEADERS
 	utilities/whereami.h
 )
 
-if(WIN32)
+if(WIN32 AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	set(INTERPRETER_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/res/resources.rc")
 endif()
 
@@ -40,7 +40,7 @@ if(ENABLE_ASAN)
 	endif()
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/res")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CPPDAP_INCLUDE_DIRS})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${CPPDAP_DEFINES})
 

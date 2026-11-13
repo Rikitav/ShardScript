@@ -31,3 +31,5 @@ else()
     find_package(Threads REQUIRED)
     set(CPPDAP_LIBRARIES Threads::Threads)
 endif()
+
+set_source_files_properties(${CPPDAP_SOURCES} PROPERTIES COMPILE_FLAGS "-w")

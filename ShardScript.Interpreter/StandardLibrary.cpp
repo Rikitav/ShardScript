@@ -1,6 +1,6 @@
 #include "StandardLibrary.hpp"
 
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 
 #include <shard/pragmatic/PragmaticModel.hpp>
 #include <shard/pragmatic/TypeShape.hpp>
@@ -26,42 +26,42 @@ using namespace shard;
 
 namespace
 {
-	void native_print_integer(MethodCallState& state)
+	void native_print_integer(FuncCallState& state)
 	{
 		std::wcout << state.get_integer_argument(0);
 	}
 
-	void native_println_integer(MethodCallState& state)
+	void native_println_integer(FuncCallState& state)
 	{
 		std::wcout << state.get_integer_argument(0) << std::endl;
 	}
 
-	void native_print_string(MethodCallState& state)
+	void native_print_string(FuncCallState& state)
 	{
 		std::wcout << state.get_string_argument(0);
 	}
 
-	void native_println_string(MethodCallState& state)
+	void native_println_string(FuncCallState& state)
 	{
 		std::wcout << state.get_string_argument(0) << std::endl;
 	}
 
-	void native_print_double(MethodCallState& state)
+	void native_print_double(FuncCallState& state)
 	{
 		std::wcout << state.get_double_argument(0);
 	}
 
-	void native_println_double(MethodCallState& state)
+	void native_println_double(FuncCallState& state)
 	{
 		std::wcout << state.get_double_argument(0) << std::endl;
 	}
 
-	void native_print_boolean(MethodCallState& state)
+	void native_print_boolean(FuncCallState& state)
 	{
 		std::wcout << (state.get_boolean_argument(0) ? L"true" : L"false");
 	}
 
-	void native_println_boolean(MethodCallState& state)
+	void native_println_boolean(FuncCallState& state)
 	{
 		std::wcout << (state.get_boolean_argument(0) ? L"true" : L"false") << std::endl;
 	}
@@ -110,7 +110,7 @@ namespace
 	}
 
 	template<typename TValue>
-	void print_nullable_primitive(MethodCallState& state, bool newline)
+	void print_nullable_primitive(FuncCallState& state, bool newline)
 	{
 		if (!state.get_nullable_has_value(0))
 		{
@@ -128,18 +128,18 @@ namespace
 	}
 
 	template<typename TValue>
-	void native_print_nullable(MethodCallState& state)
+	void native_print_nullable(FuncCallState& state)
 	{
 		print_nullable_primitive<TValue>(state, false);
 	}
 
 	template<typename TValue>
-	void native_println_nullable(MethodCallState& state)
+	void native_println_nullable(FuncCallState& state)
 	{
 		print_nullable_primitive<TValue>(state, true);
 	}
 
-	void print_nullable_string(MethodCallState& state, bool newline)
+	void print_nullable_string(FuncCallState& state, bool newline)
 	{
 		if (!state.get_nullable_has_value(0))
 		{
@@ -153,7 +153,7 @@ namespace
 			write_newline();
 	}
 
-	void native_sum_sequence(MethodCallState& state)
+	void native_sum_sequence(FuncCallState& state)
 	{
 		std::int64_t total = 0;
 		EnumerableAdapter sequence(state, state.get_argument(0));
@@ -164,7 +164,7 @@ namespace
 		state.set_return_integer(total);
 	}
 
-	void native_parse_integer(MethodCallState& state)
+	void native_parse_integer(FuncCallState& state)
 	{
 		std::wstring_view text = state.get_string_argument(0);
 
@@ -184,17 +184,17 @@ namespace
 		state.set_return_empty_nullable();
 	}
 
-	void native_print_nullable_string(MethodCallState& state)
+	void native_print_nullable_string(FuncCallState& state)
 	{
 		print_nullable_string(state, false);
 	}
 
-	void native_println_nullable_string(MethodCallState& state)
+	void native_println_nullable_string(FuncCallState& state)
 	{
 		print_nullable_string(state, true);
 	}
 
-	void print_printable(MethodCallState& state, ObjectInstance value, bool newline)
+	void print_printable(FuncCallState& state, ObjectInstance value, bool newline)
 	{
 		if (value == nullptr)
 		{
@@ -225,17 +225,17 @@ namespace
 			write_newline();
 	}
 
-	void native_print_printable(MethodCallState& state)
+	void native_print_printable(FuncCallState& state)
 	{
 		print_printable(state, state.get_argument(0), false);
 	}
 
-	void native_println_printable(MethodCallState& state)
+	void native_println_printable(FuncCallState& state)
 	{
 		print_printable(state, state.get_argument(0), true);
 	}
 
-	void print_nullable_printable(MethodCallState& state, bool newline)
+	void print_nullable_printable(FuncCallState& state, bool newline)
 	{
 		if (!state.get_nullable_has_value(0))
 		{
@@ -246,17 +246,17 @@ namespace
 		print_printable(state, state.get_nullable_argument(0), newline);
 	}
 
-	void native_print_nullable_printable(MethodCallState& state)
+	void native_print_nullable_printable(FuncCallState& state)
 	{
 		print_nullable_printable(state, false);
 	}
 
-	void native_println_nullable_printable(MethodCallState& state)
+	void native_println_nullable_printable(FuncCallState& state)
 	{
 		print_nullable_printable(state, true);
 	}
 
-	MethodSymbol* register_native(SymbolTable& table, NamespaceSymbol* owner, const wchar_t* name, StructSymbol* parameterType, void (*callback)(MethodCallState&), StructSymbol* returnType = nullptr)
+	MethodSymbol* register_native(SymbolTable& table, NamespaceSymbol* owner, const wchar_t* name, StructSymbol* parameterType, void (*callback)(FuncCallState&), StructSymbol* returnType = nullptr)
 	{
 		MethodSymbol* method = table.emplace<MethodSymbol>(name, owner);
 		method->set_calling_convention(CallingConvention::ShardDecl);
@@ -274,7 +274,7 @@ namespace
 		return method;
 	}
 
-	MethodSymbol* register_nullable_native(SymbolTable& table, NamespaceSymbol* owner, const wchar_t* name, StructSymbol* underlayingType, void (*callback)(MethodCallState&))
+	MethodSymbol* register_nullable_native(SymbolTable& table, NamespaceSymbol* owner, const wchar_t* name, StructSymbol* underlayingType, void (*callback)(FuncCallState&))
 	{
 		return register_native(table, owner, name, table.find_or_create_nullable_type(underlayingType), callback);
 	}
