@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
 
 		if (machine.get_has_unhandled_exception())
 		{
-			std::wcerr << L"Unhandled exception: " << machine.get_unhandled_message() << std::endl;
+			std::cerr << "Unhandled exception: " << gmt::wide_to_utf8(machine.get_unhandled_message()) << std::endl;
 			return 1;
 		}
 
