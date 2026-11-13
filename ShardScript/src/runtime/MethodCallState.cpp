@@ -1,4 +1,4 @@
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
@@ -150,7 +150,7 @@ ObjectInstance DelegateRef::operator()(std::initializer_list<ObjectInstance> arg
 	return m_vm->invoke_method(target, fullArgs.get_vector());
 }
 
-MethodCallState::MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments, MethodSymbol* method)
+FuncCallState::FuncCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments, MethodSymbol* method)
 	: m_vm(vm)
 	, m_frame(frame)
 	, m_method(method)
@@ -158,22 +158,22 @@ MethodCallState::MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std:
 	, m_returnValue(ObjectInstance::null())
 { }
 
-VirtualMachine& MethodCallState::get_vm() const
+VirtualMachine& FuncCallState::get_vm() const
 {
 	return m_vm;
 }
 
-CallStackFrame* MethodCallState::get_frame() const
+CallStackFrame* FuncCallState::get_frame() const
 {
 	return m_frame;
 }
 
-std::size_t MethodCallState::get_argument_count() const
+std::size_t FuncCallState::get_argument_count() const
 {
 	return m_arguments.size();
 }
 
-ObjectInstance MethodCallState::get_argument(std::size_t index) const
+ObjectInstance FuncCallState::get_argument(std::size_t index) const
 {
 	if (index >= m_arguments.size())
 		throw std::out_of_range("argument index out of range");
@@ -181,32 +181,32 @@ ObjectInstance MethodCallState::get_argument(std::size_t index) const
 	return m_arguments[index];
 }
 
-bool MethodCallState::get_boolean_argument(std::size_t index) const
+bool FuncCallState::get_boolean_argument(std::size_t index) const
 {
 	return get_argument(index).as_boolean();
 }
 
-std::int64_t MethodCallState::get_integer_argument(std::size_t index) const
+std::int64_t FuncCallState::get_integer_argument(std::size_t index) const
 {
 	return get_argument(index).as_integer();
 }
 
-double MethodCallState::get_double_argument(std::size_t index) const
+double FuncCallState::get_double_argument(std::size_t index) const
 {
 	return get_argument(index).as_double();
 }
 
-std::uintptr_t MethodCallState::get_nint_argument(std::size_t index) const
+std::uintptr_t FuncCallState::get_nint_argument(std::size_t index) const
 {
 	return get_argument(index).as_nint();
 }
 
-wchar_t MethodCallState::get_char_argument(std::size_t index) const
+wchar_t FuncCallState::get_char_argument(std::size_t index) const
 {
 	return get_argument(index).as_char();
 }
 
-std::wstring_view MethodCallState::get_string_argument(std::size_t index) const
+std::wstring_view FuncCallState::get_string_argument(std::size_t index) const
 {
 	ObjectInstance instance = get_argument(index);
 	if (instance == nullptr)
@@ -217,7 +217,7 @@ std::wstring_view MethodCallState::get_string_argument(std::size_t index) const
 	return std::wstring_view(data, static_cast<std::size_t>(length));
 }
 
-bool MethodCallState::is_nullable_argument(std::size_t index) const
+bool FuncCallState::is_nullable_argument(std::size_t index) const
 {
 	ObjectInstance instance = get_argument(index);
 	const TypeShape* shape = instance.get_shape();
@@ -227,7 +227,7 @@ bool MethodCallState::is_nullable_argument(std::size_t index) const
 	return shape->get_base_type()->get_kind() == SyntaxKind::NullableType;
 }
 
-bool MethodCallState::get_nullable_has_value(std::size_t index) const
+bool FuncCallState::get_nullable_has_value(std::size_t index) const
 {
 	if (!is_nullable_argument(index))
 		throw std::invalid_argument("argument is not nullable");
@@ -235,7 +235,7 @@ bool MethodCallState::get_nullable_has_value(std::size_t index) const
 	return get_argument(index).get_field(static_cast<std::uint32_t>(NullableFlagSlot)).as_boolean();
 }
 
-ObjectInstance MethodCallState::get_nullable_argument(std::size_t index) const
+ObjectInstance FuncCallState::get_nullable_argument(std::size_t index) const
 {
 	if (!is_nullable_argument(index))
 		throw std::invalid_argument("argument is not nullable");
@@ -251,59 +251,59 @@ ObjectInstance MethodCallState::get_nullable_argument(std::size_t index) const
 	return ObjectInstance(valueShape, slot.as_pointer());
 }
 
-void MethodCallState::set_return(ObjectInstance value)
+void FuncCallState::set_return(ObjectInstance value)
 {
 	m_returnValue = value;
 }
 
-void MethodCallState::set_return_boolean(bool value)
+void FuncCallState::set_return_boolean(bool value)
 {
 	const TypeShape* shape = m_vm.get_primitive_shapes().boolean;
 	std::memcpy(m_returnBuffer, &value, sizeof(bool));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void MethodCallState::set_return_integer(std::int64_t value)
+void FuncCallState::set_return_integer(std::int64_t value)
 {
 	const TypeShape* shape = m_vm.get_primitive_shapes().integer;
 	std::memcpy(m_returnBuffer, &value, sizeof(std::int64_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void MethodCallState::set_return_nint(std::uintptr_t value)
+void FuncCallState::set_return_nint(std::uintptr_t value)
 {
 	const TypeShape* shape = m_vm.get_primitive_shapes().nint;
 	std::memcpy(m_returnBuffer, &value, sizeof(std::uintptr_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void MethodCallState::set_return_double(double value)
+void FuncCallState::set_return_double(double value)
 {
 	const TypeShape* shape = m_vm.get_primitive_shapes().doubleReal;
 	std::memcpy(m_returnBuffer, &value, sizeof(double));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void MethodCallState::set_return_char(wchar_t value)
+void FuncCallState::set_return_char(wchar_t value)
 {
 	const TypeShape* shape = m_vm.get_primitive_shapes().character;
 	std::memcpy(m_returnBuffer, &value, sizeof(wchar_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void MethodCallState::set_return_byte(std::uint8_t value)
+void FuncCallState::set_return_byte(std::uint8_t value)
 {
 	const TypeShape* shape = m_vm.get_primitive_shapes().byte;
 	std::memcpy(m_returnBuffer, &value, sizeof(std::uint8_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void MethodCallState::set_return_string(std::wstring_view value)
+void FuncCallState::set_return_string(std::wstring_view value)
 {
 	m_returnValue = m_vm.create_string(value);
 }
 
-const TypeShape* MethodCallState::nullable_return_shape() const
+const TypeShape* FuncCallState::nullable_return_shape() const
 {
 	StructSymbol* returnType = nullptr;
 	if (m_method != nullptr)
@@ -317,7 +317,7 @@ const TypeShape* MethodCallState::nullable_return_shape() const
 	return m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), returnType);
 }
 
-void MethodCallState::write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes)
+void FuncCallState::write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes)
 {
 	const TypeShape* shape = nullable_return_shape();
 
@@ -330,42 +330,42 @@ void MethodCallState::write_nullable_return(bool hasValue, const void* payload, 
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void MethodCallState::set_return_empty_nullable()
+void FuncCallState::set_return_empty_nullable()
 {
 	write_nullable_return(false, nullptr, 0);
 }
 
-void MethodCallState::set_return_nullable_boolean(bool hasValue, bool value)
+void FuncCallState::set_return_nullable_boolean(bool hasValue, bool value)
 {
 	write_nullable_return(hasValue, &value, sizeof(bool));
 }
 
-void MethodCallState::set_return_nullable_integer(bool hasValue, std::int64_t value)
+void FuncCallState::set_return_nullable_integer(bool hasValue, std::int64_t value)
 {
 	write_nullable_return(hasValue, &value, sizeof(std::int64_t));
 }
 
-void MethodCallState::set_return_nullable_nint(bool hasValue, std::uintptr_t value)
+void FuncCallState::set_return_nullable_nint(bool hasValue, std::uintptr_t value)
 {
 	write_nullable_return(hasValue, &value, sizeof(std::uintptr_t));
 }
 
-void MethodCallState::set_return_nullable_double(bool hasValue, double value)
+void FuncCallState::set_return_nullable_double(bool hasValue, double value)
 {
 	write_nullable_return(hasValue, &value, sizeof(double));
 }
 
-void MethodCallState::set_return_nullable_char(bool hasValue, wchar_t value)
+void FuncCallState::set_return_nullable_char(bool hasValue, wchar_t value)
 {
 	write_nullable_return(hasValue, &value, sizeof(wchar_t));
 }
 
-void MethodCallState::set_return_nullable_byte(bool hasValue, std::uint8_t value)
+void FuncCallState::set_return_nullable_byte(bool hasValue, std::uint8_t value)
 {
 	write_nullable_return(hasValue, &value, sizeof(std::uint8_t));
 }
 
-void MethodCallState::set_return_nullable_string(bool hasValue, std::wstring_view value)
+void FuncCallState::set_return_nullable_string(bool hasValue, std::wstring_view value)
 {
 	if (!hasValue)
 	{
@@ -378,7 +378,7 @@ void MethodCallState::set_return_nullable_string(bool hasValue, std::wstring_vie
 	write_nullable_return(true, &pointer, sizeof(std::byte*));
 }
 
-void MethodCallState::set_return_nullable_reference(bool hasValue, ObjectInstance value)
+void FuncCallState::set_return_nullable_reference(bool hasValue, ObjectInstance value)
 {
 	std::byte* pointer = value.get_memory();
 	bool present = hasValue && (pointer != nullptr);
@@ -386,29 +386,29 @@ void MethodCallState::set_return_nullable_reference(bool hasValue, ObjectInstanc
 	write_nullable_return(present, &pointer, sizeof(std::byte*));
 }
 
-ObjectInstance MethodCallState::get_return_value() const
+ObjectInstance FuncCallState::get_return_value() const
 {
 	return m_returnValue;
 }
 
-void MethodCallState::propagate(ObjectInstance exception)
+void FuncCallState::propagate(ObjectInstance exception)
 {
 	m_vm.raise_exception(exception);
 }
 
-InvokeResult MethodCallState::try_invoke_method(MethodSymbol* method, std::span<const ObjectInstance> args)
+InvokeResult FuncCallState::try_invoke_method(MethodSymbol* method, std::span<const ObjectInstance> args)
 {
 	ObjectInstance exception = ObjectInstance::null();
 	ObjectInstance result = m_vm.try_invoke_method(method, args, exception);
 	return InvokeResult(result, exception);
 }
 
-InvokeResult MethodCallState::try_invoke_method(MethodSymbol* method, std::initializer_list<ObjectInstance> args)
+InvokeResult FuncCallState::try_invoke_method(MethodSymbol* method, std::initializer_list<ObjectInstance> args)
 {
 	return try_invoke_method(method, std::span<const ObjectInstance>(args.begin(), args.size()));
 }
 
-InvokeResult MethodCallState::new_object(StructSymbol* type)
+InvokeResult FuncCallState::new_object(StructSymbol* type)
 {
 	ConstructorSymbol* ctor = find_parameterless_constructor(type);
 	if (ctor == nullptr)
@@ -421,7 +421,7 @@ InvokeResult MethodCallState::new_object(StructSymbol* type)
 	return new_object(type, ctor, {});
 }
 
-InvokeResult MethodCallState::new_object(StructSymbol* type, ConstructorSymbol* ctor, std::span<const ObjectInstance> args)
+InvokeResult FuncCallState::new_object(StructSymbol* type, ConstructorSymbol* ctor, std::span<const ObjectInstance> args)
 {
 	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), type);
 	ObjectInstance instance = m_vm.get_collector().allocate_instance(shape);
@@ -440,12 +440,12 @@ InvokeResult MethodCallState::new_object(StructSymbol* type, ConstructorSymbol* 
 	return InvokeResult(instance, ObjectInstance::null());
 }
 
-InvokeResult MethodCallState::new_object(StructSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance> args)
+InvokeResult FuncCallState::new_object(StructSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance> args)
 {
 	return new_object(type, ctor, std::span<const ObjectInstance>(args.begin(), args.size()));
 }
 
-InvokeResult MethodCallState::get_property(ObjectInstance obj, PropertySymbol* property)
+InvokeResult FuncCallState::get_property(ObjectInstance obj, PropertySymbol* property)
 {
 	AccessorSymbol* getter = property->get_getter();
 	if (getter == nullptr)
@@ -455,7 +455,7 @@ InvokeResult MethodCallState::get_property(ObjectInstance obj, PropertySymbol* p
 	return try_invoke_method(getter, std::span<const ObjectInstance>(args, 1));
 }
 
-InvokeResult MethodCallState::set_property(ObjectInstance obj, PropertySymbol* property, ObjectInstance value)
+InvokeResult FuncCallState::set_property(ObjectInstance obj, PropertySymbol* property, ObjectInstance value)
 {
 	AccessorSymbol* setter = property->get_setter();
 	if (setter == nullptr)
@@ -465,42 +465,42 @@ InvokeResult MethodCallState::set_property(ObjectInstance obj, PropertySymbol* p
 	return try_invoke_method(setter, std::span<const ObjectInstance>(args, 2));
 }
 
-DelegateRef MethodCallState::wrap_delegate(ObjectInstance delegate)
+DelegateRef FuncCallState::wrap_delegate(ObjectInstance delegate)
 {
 	return DelegateRef(m_vm, delegate);
 }
 
-ObjectInstance MethodCallState::launch_async(MethodSymbol* method, std::span<const ObjectInstance> args)
+ObjectInstance FuncCallState::launch_async(MethodSymbol* method, std::span<const ObjectInstance> args)
 {
 	return m_vm.launch_async_method(method, args);
 }
 
-ObjectInstance MethodCallState::launch_async(MethodSymbol* method, std::initializer_list<ObjectInstance> args)
+ObjectInstance FuncCallState::launch_async(MethodSymbol* method, std::initializer_list<ObjectInstance> args)
 {
 	return launch_async(method, std::span<const ObjectInstance>(args.begin(), args.size()));
 }
 
-ObjectInstance MethodCallState::await(ObjectInstance task)
+ObjectInstance FuncCallState::await(ObjectInstance task)
 {
 	return m_vm.await_task(task);
 }
 
-bool MethodCallState::is_task_completed(ObjectInstance task)
+bool FuncCallState::is_task_completed(ObjectInstance task)
 {
 	return m_vm.is_task_completed(task);
 }
 
-void MethodCallState::complete(ObjectInstance task, ObjectInstance result)
+void FuncCallState::complete(ObjectInstance task, ObjectInstance result)
 {
 	m_vm.complete_task(task, result);
 }
 
-void MethodCallState::complete(ObjectInstance task)
+void FuncCallState::complete(ObjectInstance task)
 {
 	m_vm.complete_task(task);
 }
 
-void MethodCallState::fail(ObjectInstance task, ObjectInstance exception)
+void FuncCallState::fail(ObjectInstance task, ObjectInstance exception)
 {
 	m_vm.fail_task(task, exception);
 }

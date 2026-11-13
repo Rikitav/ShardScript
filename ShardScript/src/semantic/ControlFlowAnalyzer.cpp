@@ -276,7 +276,7 @@ void ControlFlowAnalyzer::report_missing_return(const TextLocation& location, St
 
 	get_diagnostics().report_error(
 		location,
-		gmt::concat(L"Method must return a value of type '", returnType->get_name(), L"'"));
+		gmt::wconcat(L"Method must return a value of type '", returnType->get_name(), L"'"));
 }
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::merge_branches(FlowState a, FlowState b)
@@ -816,7 +816,7 @@ void ControlFlowAnalyzer::analyze_expression_for_use(const ExpressionSyntax* exp
 			{
 				get_diagnostics().report_error(
 					identifier->get_identifier(),
-					gmt::concat(L"Use of unassigned local variable '", symbol->get_name(), L"'"));
+					gmt::wconcat(L"Use of unassigned local variable '", symbol->get_name(), L"'"));
 			}
 
 			break;
@@ -1185,7 +1185,7 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 					std::wstring_view typeName = (thrownType == nullptr) ? L"unknown" : thrownType->get_name();
 					get_diagnostics().report_error(
 						edge.callSite,
-						gmt::concat(L"Await on '", callee->get_name(), L"' may throw '", typeName, L"'"));
+						gmt::wconcat(L"Await on '", callee->get_name(), L"' may throw '", typeName, L"'"));
 				}
 			}
 		}
@@ -1202,7 +1202,7 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 				std::wstring_view typeName = (thrownType == nullptr) ? L"unknown" : thrownType->get_name();
 				get_diagnostics().report_error(
 					edge.callSite,
-					gmt::concat(L"Call to '", callee->get_name(), L"' may throw '", typeName, L"'"));
+					gmt::wconcat(L"Call to '", callee->get_name(), L"' may throw '", typeName, L"'"));
 			}
 		}
 	}
@@ -1216,8 +1216,8 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 	if (!edge.isTryWrapped && !enclosedByCatch && throwsUnknown)
 	{
 		gmt::wstring message = callee->get_is_async() && edge.isAwaited
-			? gmt::concat(L"Await on '", callee->get_name(), L"' may throw an exception")
-			: gmt::concat(L"Call to '", callee->get_name(), L"' may throw an exception");
+			? gmt::wconcat(L"Await on '", callee->get_name(), L"' may throw an exception")
+			: gmt::wconcat(L"Call to '", callee->get_name(), L"' may throw an exception");
 
 		get_diagnostics().report_error(edge.callSite, message);
 	}

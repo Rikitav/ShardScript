@@ -125,7 +125,7 @@ void ExpressionBinder::visit_using_directive(const UsingDirectiveSyntax* node)
 	NamespaceSymbol* symbol = find_namespace_by_name(node->get_qualifier());
 	if (symbol == nullptr)
 	{
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Namespace '", node->get_qualifier_string(), L"' was not found"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Namespace '", node->get_qualifier_string(), L"' was not found"));
 		return;
 	}
 
@@ -410,7 +410,7 @@ void ExpressionBinder::visit_field_declaration(const FieldDeclarationSyntax* nod
 
 	if (!model.is_assignable_to(returnType, initializerType))
 	{
-		get_diagnostics().report_error(location, gmt::concat(L"Field initializer type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(initializerType), L"'"));
+		get_diagnostics().report_error(location, gmt::wconcat(L"Field initializer type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(initializerType), L"'"));
 		return;
 	}
 
@@ -434,7 +434,7 @@ void ExpressionBinder::visit_property_declaration(const PropertyDeclarationSynta
 	const ExpressionSyntax* initializer = node->get_expression();
 
 	if (returnType == get_symbol_table().get_void_primitive())
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Property '", node->get_identifier().get_lexeme(), L"' must have return value"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Property '", node->get_identifier().get_lexeme(), L"' must have return value"));
 
 	if (initializer != nullptr)
 	{
@@ -570,7 +570,7 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 
 		if (!model.is_assignable_to(symbolType, expressionType))
 		{
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot assign 'null' to non-nullable type '", model.get_type_display_name(symbolType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Cannot assign 'null' to non-nullable type '", model.get_type_display_name(symbolType), L"'"));
 			return;
 		}
 
@@ -586,7 +586,7 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 
 	if (!model.is_assignable_to(symbolType, expressionType))
 	{
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch: expected '", model.get_type_display_name(symbolType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch: expected '", model.get_type_display_name(symbolType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
 		return;
 	}
 
@@ -744,7 +744,7 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 
 	if (expression == nullptr)
 	{
-		get_diagnostics().report_error(location, gmt::concat(L"Return statement must return a value of type '", model.get_type_display_name(returnType), L"'"));
+		get_diagnostics().report_error(location, gmt::wconcat(L"Return statement must return a value of type '", model.get_type_display_name(returnType), L"'"));
 		return;
 	}
 
@@ -761,7 +761,7 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 	else if (returnType->get_kind() != SyntaxKind::TypeParameter)
 	{
 		if (!model.is_assignable_to(returnType, expressionType))
-			get_diagnostics().report_error(location, gmt::concat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
+			get_diagnostics().report_error(location, gmt::wconcat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
 		else
 			record_conversion(expression, returnType, expressionType);
 	}
@@ -784,7 +784,7 @@ void ExpressionBinder::visit_if_statement(const IfStatementSyntax* node)
 		if (conditionType == nullptr)
 			get_diagnostics().report_error(node->get_location(), L"If condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"If condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"If condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
 	if (!(node->get_block() == nullptr))
@@ -806,7 +806,7 @@ void ExpressionBinder::visit_unless_statement(const UnlessStatementSyntax* node)
 		if (conditionType == nullptr)
 			get_diagnostics().report_error(node->get_location(), L"Unless condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Unless condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Unless condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
 	if (!(node->get_block() == nullptr))
@@ -837,7 +837,7 @@ void ExpressionBinder::visit_while_statement(const WhileStatementSyntax* node)
 		if (conditionType == nullptr)
 			get_diagnostics().report_error(node->get_location(), L"While loop condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"While loop condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"While loop condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
 	if (!(node->get_block() == nullptr))
@@ -856,7 +856,7 @@ void ExpressionBinder::visit_until_statement(const UntilStatementSyntax* node)
 		if (conditionType == nullptr)
 			get_diagnostics().report_error(node->get_location(), L"Until loop condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Until loop condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Until loop condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
 	if (!(node->get_block() == nullptr))
@@ -1051,7 +1051,7 @@ void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 
 	SemanticModel& model = get_model();
 	if (!model.is_assignable_to(returnType, expressionType))
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Return type mismatch: expected '", model.get_type_display_name(returnType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
 	else
 		record_conversion(expression, returnType, expressionType);
 }
@@ -1080,7 +1080,7 @@ void ExpressionBinder::visit_if_expression(const IfExpressionSyntax* node)
 		if (get_model().is_assignable_to(thenType, elseType))
 			type = elseType;
 		else if (!get_model().is_assignable_to(elseType, thenType))
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in conditional expression: '", get_model().get_type_display_name(thenType), L"' and '", get_model().get_type_display_name(elseType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in conditional expression: '", get_model().get_type_display_name(thenType), L"' and '", get_model().get_type_display_name(elseType), L"'"));
 	}
 
 	set_expression_type(*nodeRef, type);

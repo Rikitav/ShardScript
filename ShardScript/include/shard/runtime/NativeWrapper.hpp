@@ -4,7 +4,7 @@
 
 #include <gmt/Containers.hpp>
 
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
 #include <gmt/Strings.hpp>
@@ -109,7 +109,7 @@ namespace shard::detail
 			gmt::wstring,
 			std::conditional_t<
 				is_string_v<bare> || is_char_pointer_v<bare>,
-				gmt::string,
+				std::string,
 				bare>>;
 	};
 
@@ -118,7 +118,7 @@ namespace shard::detail
 
 	// Reads one managed argument and casts it into the storage type
 	template<typename Storage>
-	Storage read_native_argument(const MethodCallState& state, std::size_t index)
+	Storage read_native_argument(const FuncCallState& state, std::size_t index)
 	{
 		if constexpr (is_wstring_v<Storage>)
 		{
@@ -170,7 +170,7 @@ namespace shard::detail
 
 	template<typename... Args, std::size_t... Indices>
 	std::tuple<arg_storage_t<Args>...> read_native_arguments(
-		const MethodCallState& state,
+		const FuncCallState& state,
 		std::index_sequence<Indices...>)
 	{
 		return std::make_tuple(read_native_argument<arg_storage_t<Args>>(state, Indices)...);
@@ -213,7 +213,7 @@ namespace shard::detail
 	}
 
 	template<typename R>
-	void set_native_return(MethodCallState& state, R&& value)
+	void set_native_return(FuncCallState& state, R&& value)
 	{
 		using D = bare_t<R>;
 
@@ -276,7 +276,7 @@ namespace shard::detail
 
 namespace shard
 {
-	// Maps a cdecl function onto a MethodSymbolDelegate at compile time
+	// Maps a cdecl function onto a FuncHandler at compile time
 	template<auto Func>
 	struct native_wrapper;
 
@@ -286,7 +286,7 @@ namespace shard
 		static_assert((detail::is_allowed_arg_v<Args> && ...), "unsupported native argument type");
 		static_assert(detail::is_allowed_return_v<R>, "unsupported native return type");
 
-		static void invoke(MethodCallState& state)
+		static void invoke(FuncCallState& state)
 		{
 			constexpr std::size_t expectedCount = sizeof...(Args);
 			if (state.get_argument_count() != expectedCount)
@@ -319,5 +319,5 @@ namespace shard
 	};
 
 	template<auto Func>
-	inline constexpr MethodSymbolDelegate wrap_native = &native_wrapper<Func>::invoke;
+	inline constexpr FuncHandler wrap_native = &native_wrapper<Func>::invoke;
 }

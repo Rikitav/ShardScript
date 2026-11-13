@@ -61,10 +61,10 @@ namespace
 
 	bool try_read_library_metadata(const std::filesystem::path& path, ResolvedLibrary& outLibrary)
 	{
-		gmt::SharedLibrary library;
+		gmt::SharedLibrary library(path);
 		try
 		{
-			library.load(path);
+			library.load();
 		}
 		catch (...)
 		{
@@ -109,7 +109,7 @@ namespace
 		if (lib->version.empty())
 			return lib->name;
 
-		return gmt::concat(lib->name, L"@", lib->version);
+		return gmt::wconcat(lib->name, L"@", lib->version);
 	}
 
 	bool resolve_library_dependencies(
@@ -140,7 +140,7 @@ namespace
 				{
 					diagnostics.report_error(
 						SyntaxToken(),
-						gmt::concat(L"Library '", get_library_display_name(&lib), L"' depends on '", depName, L"' which was not found"));
+						gmt::wconcat(L"Library '", get_library_display_name(&lib), L"' depends on '", depName, L"' which was not found"));
 
 					return false;
 				}
@@ -153,7 +153,7 @@ namespace
 					{
 						diagnostics.report_error(
 							SyntaxToken(),
-							gmt::concat(L"Library '", get_library_display_name(&lib), L"' has invalid version expression '", versionExpr, L"' for dependency '", depName, L"'"));
+							gmt::wconcat(L"Library '", get_library_display_name(&lib), L"' has invalid version expression '", versionExpr, L"' for dependency '", depName, L"'"));
 
 						return false;
 					}
@@ -195,7 +195,7 @@ namespace
 				{
 					diagnostics.report_error(
 						SyntaxToken(),
-						gmt::concat(L"Library '", get_library_display_name(&lib), L"' requires '", depName, L" ", versionExpr, L"' but no matching version was found"));
+						gmt::wconcat(L"Library '", get_library_display_name(&lib), L"' requires '", depName, L" ", versionExpr, L"' but no matching version was found"));
 
 					return false;
 				}
@@ -259,7 +259,7 @@ namespace
 			gmt::wstring cycleNodeName = get_library_display_name(cycleNode);
 			diagnostics.report_error(
 				SyntaxToken(),
-				gmt::concat(L"Circular library dependency detected involving '", cycleNodeName, L"'"));
+				gmt::wconcat(L"Circular library dependency detected involving '", cycleNodeName, L"'"));
 
 			return false;
 		}

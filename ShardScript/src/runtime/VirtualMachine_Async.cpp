@@ -265,12 +265,7 @@ void VirtualMachine::complete_task_status(ObjectInstance state, int status, Obje
 		m_async->pendingContinuations.push_back({ continuation.continuation, state, continuation.resultState });
 	}
 
-	gmt::vector<NativeTaskContinuation> nativeContinuations = std::move(record.nativeContinuations);
-	record.nativeContinuations.clear();
 	bool frameOwned = record.frameOwned;
-	for (const NativeTaskContinuation& continuation : nativeContinuations)
-		continuation.callback(*this, status, result, exception, continuation.context);
-
 	if (continuations.empty() && !frameOwned)
 	{
 		// waiters fall back to the state fields; a job keeps the state rooted
@@ -316,29 +311,6 @@ bool VirtualMachine::is_task_completed(ObjectInstance task)
 		return false;
 
 	return read_task_status(state) != static_cast<int>(TaskStatus::Pending);
-}
-
-void VirtualMachine::on_task_completed(ObjectInstance task, NativeTaskCallback callback, void* context)
-{
-	if (callback == nullptr)
-		return;
-
-	ObjectInstance state = task_state_of(task);
-	if (state == nullptr)
-	{
-		callback(*this, static_cast<int>(TaskStatus::Faulted), ObjectInstance::null(), build_runtime_exception(L"Callback target is not a Task"), context);
-		return;
-	}
-
-	int status = read_task_status(state);
-	if (status != static_cast<int>(TaskStatus::Pending))
-	{
-		callback(*this, status, read_task_result(state), read_task_exception(m_collector, state), context);
-		return;
-	}
-
-	TaskRuntime& record = ensure_task_record(state);
-	record.nativeContinuations.push_back({ callback, context });
 }
 
 ObjectInstance VirtualMachine::await_task(ObjectInstance task)
@@ -764,17 +736,6 @@ bool VirtualMachine::pump_async_once(bool block)
 		return true;
 	}
 
-	bool polledAny = false;
-	auto hooks = m_async->pollHooks;
-	for (auto hook : hooks)
-	{
-		if (hook != nullptr && hook(*this, block))
-			polledAny = true;
-	}
-
-	if (polledAny)
-		return true;
-
 	if (m_async->eventLoop->is_alive())
 	{
 		m_async->eventLoop->run_once(block);
@@ -952,6 +913,7 @@ void VirtualMachine::run_pending_continuation()
 	ObjectInstance sourceException = (status == static_cast<int>(TaskStatus::Faulted))
 		? read_task_exception(m_collector, job.sourceState)
 		: ObjectInstance::null();
+
 	ObjectInstance sourceResult = (status == static_cast<int>(TaskStatus::Completed))
 		? read_task_result(job.sourceState)
 		: ObjectInstance::null();
@@ -994,32 +956,12 @@ void VirtualMachine::run_pending_continuation()
 	}
 }
 
-void VirtualMachine::register_native_cleanup_hook(NativeCleanupHook hook)
+NativeAsyncResource* VirtualMachine::add_native_resource(std::unique_ptr<NativeAsyncResource> resource)
 {
-	if (m_async == nullptr || hook == nullptr)
-		return;
+	if (resource == nullptr)
+		return nullptr;
 
-	auto it = std::find(m_async->cleanupHooks.begin(), m_async->cleanupHooks.end(), hook);
-	if (it == m_async->cleanupHooks.end())
-		m_async->cleanupHooks.push_back(hook);
-}
-
-void VirtualMachine::register_async_poll_hook(AsyncPollHook hook)
-{
-	if (m_async == nullptr || hook == nullptr)
-		return;
-
-	auto it = std::find(m_async->pollHooks.begin(), m_async->pollHooks.end(), hook);
-	if (it == m_async->pollHooks.end())
-		m_async->pollHooks.push_back(hook);
-}
-
-void VirtualMachine::unregister_async_poll_hook(AsyncPollHook hook)
-{
-	if (m_async == nullptr || hook == nullptr)
-		return;
-
-	auto it = std::find(m_async->pollHooks.begin(), m_async->pollHooks.end(), hook);
-	if (it != m_async->pollHooks.end())
-		m_async->pollHooks.erase(it);
+	NativeAsyncResource* result = resource.get();
+	m_async->nativeResources.push_back(std::move(resource));
+	return result;
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
 namespace shard
@@ -16,12 +16,12 @@ namespace shard
 		{
 			friend class EnumerableAdapter;
 
-			MethodCallState* m_context = nullptr;
+			FuncCallState* m_context = nullptr;
 			ObjectInstance m_enumerator;
 			ObjectInstance m_current;
 			bool m_finished = true;
 
-			iterator(MethodCallState& context, ObjectInstance enumerator);
+			iterator(FuncCallState& context, ObjectInstance enumerator);
 			void advance();
 
 		public:
@@ -35,11 +35,11 @@ namespace shard
 		};
 
 	private:
-		MethodCallState& m_context;
+		FuncCallState& m_context;
 		ObjectInstance m_enumerable;
 
 	public:
-		EnumerableAdapter(MethodCallState& context, ObjectInstance enumerable);
+		EnumerableAdapter(FuncCallState& context, ObjectInstance enumerable);
 
 		EnumerableAdapter(const EnumerableAdapter&) = delete;
 		EnumerableAdapter& operator=(const EnumerableAdapter&) = delete;

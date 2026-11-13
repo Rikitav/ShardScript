@@ -10,7 +10,7 @@
 
 namespace
 {
-	shard::MethodSymbol* standard_method(shard::MethodCallState& context, shard::StandardTypes slot)
+	shard::MethodSymbol* standard_method(shard::FuncCallState& context, shard::StandardTypes slot)
 	{
 		shard::SymbolTable& table = context.get_vm().get_model().get_table();
 		shard::SyntaxSymbol* symbol = table.get_standard_type(slot);
@@ -23,12 +23,12 @@ namespace
 
 using namespace shard;
 
-EnumerableAdapter::EnumerableAdapter(MethodCallState& context, ObjectInstance enumerable)
+EnumerableAdapter::EnumerableAdapter(FuncCallState& context, ObjectInstance enumerable)
 	: m_context(context)
 	, m_enumerable(enumerable)
 { }
 
-EnumerableAdapter::iterator::iterator(MethodCallState& context, ObjectInstance enumerator)
+EnumerableAdapter::iterator::iterator(FuncCallState& context, ObjectInstance enumerator)
 	: m_context(&context)
 	, m_enumerator(enumerator)
 	, m_finished(false)

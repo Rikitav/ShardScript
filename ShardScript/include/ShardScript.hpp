@@ -226,8 +226,8 @@
 #include <shard/runtime/PrimitiveMath.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
-#include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/NativeHandlers.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 #include <shard/runtime/AsyncFuncCallState.hpp>
 #include <shard/runtime/NativeWrapper.hpp>
 #include <shard/runtime/VirtualMachine.hpp>

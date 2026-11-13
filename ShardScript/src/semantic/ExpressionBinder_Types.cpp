@@ -275,7 +275,7 @@ void ExpressionBinder::visit_cast_expression(const CastExpressionSyntax* node)
 
 	if (conversionCount > 1)
 	{
-		get_diagnostics().report_error(node->get_operator_token(), gmt::concat(L"Ambiguous cast from '", get_model().get_type_display_name(sourceType), L"' to '", get_model().get_type_display_name(targetType), L"'. Multiple user-defined 'operator as' conversions are available"));
+		get_diagnostics().report_error(node->get_operator_token(), gmt::wconcat(L"Ambiguous cast from '", get_model().get_type_display_name(sourceType), L"' to '", get_model().get_type_display_name(targetType), L"'. Multiple user-defined 'operator as' conversions are available"));
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, targetType);
 
@@ -324,7 +324,7 @@ void ExpressionBinder::visit_cast_expression(const CastExpressionSyntax* node)
 		return;
 	}
 
-	get_diagnostics().report_error(node->get_operator_token(), gmt::concat(L"Cannot cast from '", get_model().get_type_display_name(sourceType), L"' to '", get_model().get_type_display_name(targetType), L"'"));
+	get_diagnostics().report_error(node->get_operator_token(), gmt::wconcat(L"Cannot cast from '", get_model().get_type_display_name(sourceType), L"' to '", get_model().get_type_display_name(targetType), L"'"));
 	if (nodeRef.has_value())
 		set_expression_type(*nodeRef, targetType);
 }

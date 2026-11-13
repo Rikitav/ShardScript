@@ -603,7 +603,7 @@ void ByteCodeEmitter::unsupported(const SyntaxNode* blame, const wchar_t* featur
 	if (blame != nullptr)
 		location = blame->get_location();
 
-	get_diagnostics().report_error(location, gmt::concat(feature, L" is not yet supported by the code generator"));
+	get_diagnostics().report_error(location, gmt::wconcat(feature, L" is not yet supported by the code generator"));
 }
 
 void ByteCodeEmitter::emit(SyntaxTree& tree)

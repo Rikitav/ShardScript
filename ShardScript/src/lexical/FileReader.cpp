@@ -17,10 +17,6 @@ using namespace shard;
 
 namespace
 {
-	// Bulk equivalent of the old std::wfstream(..., classic) character path:
-	// same codecvt facet, one conversion instead of one streambuf peek/get per
-	// character. On a conversion error the text stops where the stream would
-	// have reported EOF.
 	gmt::wstring load_source_text(const std::filesystem::path& filename)
 	{
 		std::ifstream input(filename, std::ios::binary);

@@ -3,7 +3,9 @@
 
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/TokenType.hpp>
+
 #include <shard/semantic/SyntaxSymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Arena.hpp>
 #include <gmt/Ref.hpp>
@@ -14,8 +16,6 @@
 
 namespace shard
 {
-	class StructSymbol;
-
 	class SHARD_API LiteralSymbol final : public SyntaxSymbol
 	{
 		union

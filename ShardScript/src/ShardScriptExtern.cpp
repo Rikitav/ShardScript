@@ -299,7 +299,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t gmt_SharedLibrary_load(shard_gmt_SharedLibrary_t self, const wchar_t* p0)
+	SHARD_API shard_status_t gmt_SharedLibrary_try_load(shard_gmt_SharedLibrary_t self)
 	{
 		if (!self)
 		{
@@ -307,7 +307,44 @@ extern "C"
 		}
 		try
 		{
-			self->load(std::filesystem::path(p0 ? p0 : L""));
+			self->try_load();
+			return SHARD_STATUS_OK;
+		}
+		catch (const std::invalid_argument&)
+		{
+			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
+		}
+		catch (const std::out_of_range&)
+		{
+			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
+		}
+		catch (const std::length_error&)
+		{
+			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
+		}
+		catch (const std::bad_alloc&)
+		{
+			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
+		}
+		catch (const std::exception&)
+		{
+			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
+		}
+		catch (...)
+		{
+			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
+		}
+	}
+	
+	SHARD_API shard_status_t gmt_SharedLibrary_load(shard_gmt_SharedLibrary_t self)
+	{
+		if (!self)
+		{
+			return SHARD_STATUS_ERROR_NULL_POINTER;
+		}
+		try
+		{
+			self->load();
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -1264,7 +1301,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::FileReader>(gmt::string(p0 ? p0 : ""));
+			auto* value = shard_make_new<shard::FileReader>(std::string(p0 ? p0 : ""));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -54311,7 +54348,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_MethodCallState_create(shard_VirtualMachine_t p0, shard_CallStackFrame_t p1, const void* p2, shard_MethodCallState_t* out_handle)
+	SHARD_API shard_status_t shard_FuncCallState_FuncCallState_create(shard_VirtualMachine_t p0, shard_CallStackFrame_t p1, const void* p2, shard_FuncCallState_t* out_handle)
 	{
 		if (!out_handle)
 		{
@@ -54320,7 +54357,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::MethodCallState>(*p0, p1, *static_cast<const std::span<const shard::ObjectInstance>*>(p2));
+			auto* value = shard_make_new<shard::FuncCallState>(*p0, p1, *static_cast<const std::span<const shard::ObjectInstance>*>(p2));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -54354,7 +54391,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void shard_MethodCallState_MethodCallState_destroy(shard_MethodCallState_t self)
+	SHARD_API void shard_FuncCallState_FuncCallState_destroy(shard_FuncCallState_t self)
 	{
 		if (!self)
 		{
@@ -54362,14 +54399,14 @@ extern "C"
 		}
 		try
 		{
-			shard_release<shard::MethodCallState>(self);
+			shard_release<shard::FuncCallState>(self);
 		}
 		catch (...)
 		{
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_argument(shard_MethodCallState_t self, std::size_t p0, shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_FuncCallState_get_argument(shard_FuncCallState_t self, std::size_t p0, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -54417,7 +54454,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::size_t shard_MethodCallState_get_argument_count(shard_MethodCallState_t self)
+	SHARD_API std::size_t shard_FuncCallState_get_argument_count(shard_FuncCallState_t self)
 	{
 		if (!self)
 		{
@@ -54434,7 +54471,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_MethodCallState_get_boolean_argument(shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API int shard_FuncCallState_get_boolean_argument(shard_FuncCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54451,7 +54488,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API wchar_t shard_MethodCallState_get_char_argument(shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API wchar_t shard_FuncCallState_get_char_argument(shard_FuncCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54468,7 +54505,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_MethodCallState_get_double_argument(shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API double shard_FuncCallState_get_double_argument(shard_FuncCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54485,7 +54522,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_CallStackFrame_t shard_MethodCallState_get_frame(shard_MethodCallState_t self)
+	SHARD_API shard_CallStackFrame_t shard_FuncCallState_get_frame(shard_FuncCallState_t self)
 	{
 		if (!self)
 		{
@@ -54502,7 +54539,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API std::int64_t shard_MethodCallState_get_integer_argument(shard_MethodCallState_t self, std::size_t p0)
+	SHARD_API std::int64_t shard_FuncCallState_get_integer_argument(shard_FuncCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54519,7 +54556,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_property(shard_MethodCallState_t self, shard_ObjectInstance_t p0, const void* p1, shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_FuncCallState_get_property(shard_FuncCallState_t self, shard_ObjectInstance_t p0, const void* p1, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -54567,7 +54604,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_return_value(shard_MethodCallState_t self, shard_ObjectInstance_t* out_value)
+	SHARD_API shard_status_t shard_FuncCallState_get_return_value(shard_FuncCallState_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
 		{
@@ -54615,7 +54652,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_get_string_argument(shard_MethodCallState_t self, std::size_t p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
+	SHARD_API shard_status_t shard_FuncCallState_get_string_argument(shard_FuncCallState_t self, std::size_t p0, wchar_t* buffer, std::size_t buffer_len, std::size_t* out_len)
 	{
 		if (!self)
 		{
@@ -54663,7 +54700,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_VirtualMachine_t shard_MethodCallState_get_vm(shard_MethodCallState_t self)
+	SHARD_API shard_VirtualMachine_t shard_FuncCallState_get_vm(shard_FuncCallState_t self)
 	{
 		if (!self)
 		{
@@ -54680,7 +54717,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_new_object(shard_MethodCallState_t self, const void* p0, shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_FuncCallState_new_object(shard_FuncCallState_t self, const void* p0, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -54728,7 +54765,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_propagate(shard_MethodCallState_t self, shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_FuncCallState_propagate(shard_FuncCallState_t self, shard_ObjectInstance_t p0)
 	{
 		if (!self)
 		{
@@ -54765,7 +54802,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_property(shard_MethodCallState_t self, shard_ObjectInstance_t p0, const void* p1, shard_ObjectInstance_t p2, shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_FuncCallState_set_property(shard_FuncCallState_t self, shard_ObjectInstance_t p0, const void* p1, shard_ObjectInstance_t p2, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -54813,7 +54850,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return(shard_MethodCallState_t self, shard_ObjectInstance_t p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return(shard_FuncCallState_t self, shard_ObjectInstance_t p0)
 	{
 		if (!self)
 		{
@@ -54850,7 +54887,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_boolean(shard_MethodCallState_t self, int p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return_boolean(shard_FuncCallState_t self, int p0)
 	{
 		if (!self)
 		{
@@ -54887,7 +54924,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_byte(shard_MethodCallState_t self, std::uint8_t p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return_byte(shard_FuncCallState_t self, std::uint8_t p0)
 	{
 		if (!self)
 		{
@@ -54924,7 +54961,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_char(shard_MethodCallState_t self, wchar_t p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return_char(shard_FuncCallState_t self, wchar_t p0)
 	{
 		if (!self)
 		{
@@ -54961,7 +54998,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_double(shard_MethodCallState_t self, double p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return_double(shard_FuncCallState_t self, double p0)
 	{
 		if (!self)
 		{
@@ -54998,7 +55035,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_integer(shard_MethodCallState_t self, std::int64_t p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return_integer(shard_FuncCallState_t self, std::int64_t p0)
 	{
 		if (!self)
 		{
@@ -55035,7 +55072,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_set_return_string(shard_MethodCallState_t self, const wchar_t* p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return_string(shard_FuncCallState_t self, const wchar_t* p0)
 	{
 		if (!self)
 		{
@@ -55072,7 +55109,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_try_invoke_method(shard_MethodCallState_t self, const void* p0, const void* p1, shard_InvokeResult_t* out_value)
+	SHARD_API shard_status_t shard_FuncCallState_try_invoke_method(shard_FuncCallState_t self, const void* p0, const void* p1, shard_InvokeResult_t* out_value)
 	{
 		if (!self)
 		{
@@ -55120,7 +55157,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_MethodCallState_wrap_delegate(shard_MethodCallState_t self, shard_ObjectInstance_t p0, shard_DelegateRef_t* out_value)
+	SHARD_API shard_status_t shard_FuncCallState_wrap_delegate(shard_FuncCallState_t self, shard_ObjectInstance_t p0, shard_DelegateRef_t* out_value)
 	{
 		if (!self)
 		{

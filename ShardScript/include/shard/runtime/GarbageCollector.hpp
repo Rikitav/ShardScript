@@ -44,10 +44,7 @@ namespace shard
 			std::byte* storage;
 		};
 
-		// Open-addressed live-object table. The previous std::unordered_set
-		// allocated a list node for every GC object, doubling the allocator
-		// traffic of allocate_block; slots make insert/erase allocation-free
-		// between rehashes.
+		// Open-addressed live-object table
 		class HeapTable
 		{
 			static std::byte* const Tombstone;
