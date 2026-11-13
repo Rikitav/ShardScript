@@ -295,7 +295,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 		if (!model.is_assignable_to(leftType, rightType))
 		{
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in assignment: expected '", model.get_type_display_name(leftType), L"' but got '", model.get_type_display_name(rightType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in assignment: expected '", model.get_type_display_name(leftType), L"' but got '", model.get_type_display_name(rightType), L"'"));
 			return leftType;
 		}
 
@@ -378,14 +378,14 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		{
 			StructSymbol* rightUnderlaying = gmt::as<NullableTypeSymbol>(rightType)->get_underlaying_type();
 			if (!SemanticModel::are_types_equal(underlaying, rightUnderlaying))
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in ??: expected '", model.get_type_display_name(leftType), L"' but got '", model.get_type_display_name(rightType), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in ??: expected '", model.get_type_display_name(leftType), L"' but got '", model.get_type_display_name(rightType), L"'"));
 
 			return leftType;
 		}
 
 		if (!model.is_assignable_to(underlaying, rightType))
 		{
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in ??: expected '", model.get_type_display_name(underlaying), L"' but got '", model.get_type_display_name(rightType), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in ??: expected '", model.get_type_display_name(underlaying), L"' but got '", model.get_type_display_name(rightType), L"'"));
 			return leftType;
 		}
 
@@ -449,7 +449,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		if ((!isRightPrimitive || !isLeftPrimitive) && !operatorIsEquality && !enumBitwise)
 		{
 			StructSymbol* errorType = !isLeftPrimitive ? leftType : rightType;
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", errorType->get_name(), L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", errorType->get_name(), L"'"));
 			return nullptr;
 		}
 	}
@@ -469,7 +469,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 			if (!comparable)
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in comparison: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in comparison: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
 			}
 
 			return table.get_boolean_primitive();
@@ -490,14 +490,14 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 			{
 				if (!leftIsEnum || !rightIsEnum || !SemanticModel::are_types_equal(leftType, rightType))
 				{
-					get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' cannot be applied to operands of type '", model.get_type_display_name(leftType), L"' and '", model.get_type_display_name(rightType), L"'"));
+					get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Operator '", get_operator_method_name(op), L"' cannot be applied to operands of type '", model.get_type_display_name(leftType), L"' and '", model.get_type_display_name(rightType), L"'"));
 					return leftType;
 				}
 
 				EnumSymbol* enumSymbol = static_cast<EnumSymbol*>(leftType);
 				if (!enumSymbol->get_is_flags())
 				{
-					get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot combine values of non-flags enum '", leftType->get_name(), L"'"));
+					get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Cannot combine values of non-flags enum '", leftType->get_name(), L"'"));
 					return leftType;
 				}
 
@@ -512,7 +512,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 			if (!boolOp && !bitwiseOp)
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
 				return nullptr;
 			}
 
@@ -527,7 +527,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 			if (!is_integral_primitive(leftType, table) || !is_integral_primitive(rightType, table))
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
 				return nullptr;
 			}
 
@@ -544,7 +544,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in addition: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in addition: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
 				return nullptr;
 			}
 
@@ -565,7 +565,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in arithmetic operation: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in arithmetic operation: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
 				return nullptr;
 			}
 
@@ -582,7 +582,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in addition assignment: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in addition assignment: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
 				return nullptr;
 			}
 
@@ -600,7 +600,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		{
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in arithmetic assignment: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Type mismatch in arithmetic assignment: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
 				return nullptr;
 			}
 
@@ -655,13 +655,13 @@ StructSymbol* ExpressionBinder::analyze_unary_expression(const UnaryExpressionSy
 			return operatorMethod->get_return_type();
 		}
 
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", expressionType->get_name(), L"'"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", expressionType->get_name(), L"'"));
 		return nullptr;
 	}
 
 	if (!get_model().is_primitive_type(expressionType))
 	{
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", expressionType->get_name(), L"'"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", expressionType->get_name(), L"'"));
 		return nullptr;
 	}
 
@@ -671,7 +671,7 @@ StructSymbol* ExpressionBinder::analyze_unary_expression(const UnaryExpressionSy
 		{
 			if (expressionType != table.get_boolean_primitive())
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Logical NOT operator requires boolean type, got '", expressionType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Logical NOT operator requires boolean type, got '", expressionType->get_name(), L"'"));
 				return nullptr;
 			}
 
@@ -685,7 +685,7 @@ StructSymbol* ExpressionBinder::analyze_unary_expression(const UnaryExpressionSy
 		{
 			if (expressionType != table.get_integer_primitive() && expressionType != table.get_double_primitive())
 			{
-				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Arithmetic unary operator requires numeric type, got '", expressionType->get_name(), L"'"));
+				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Arithmetic unary operator requires numeric type, got '", expressionType->get_name(), L"'"));
 				return nullptr;
 			}
 

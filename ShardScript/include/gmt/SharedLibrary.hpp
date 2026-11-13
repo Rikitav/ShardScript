@@ -12,7 +12,6 @@ namespace gmt
 		std::filesystem::path m_path;
 
 	public:
-		SharedLibrary() = default;
 		~SharedLibrary();
 		
 		explicit SharedLibrary(const std::filesystem::path& path);
@@ -24,9 +23,11 @@ namespace gmt
 		SharedLibrary(SharedLibrary&& other) noexcept;
 		SharedLibrary& operator=(SharedLibrary&& other) noexcept;
 
-		bool is_loaded() const;
-		void load(const std::filesystem::path& path);
+		void load();
 		void unload();
+
+		bool is_loaded() const;
+		bool try_load();
 
 		LibraryHandle get_handle() const;
 		const std::filesystem::path& get_path() const;

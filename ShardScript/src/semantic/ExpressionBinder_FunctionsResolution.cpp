@@ -106,13 +106,13 @@ namespace
 				return L"no arguments";
 
 			case 1:
-				return gmt::concat(L"argument (", (argTypes[0] == nullptr) ? L"<error>" : model.get_type_display_name(argTypes[0]), L")");
+				return gmt::wconcat(L"argument (", (argTypes[0] == nullptr) ? L"<error>" : model.get_type_display_name(argTypes[0]), L")");
 
 			default:
 			{
-				gmt::wstring result = gmt::concat(L"arguments (", model.get_type_display_name(argTypes[0]));
+				gmt::wstring result = gmt::wconcat(L"arguments (", model.get_type_display_name(argTypes[0]));
 				for (std::size_t i = 1; i < argTypes.size(); i++)
-					result += gmt::concat(L", ", model.get_type_display_name(argTypes[i]));
+					result += gmt::wconcat(L", ", model.get_type_display_name(argTypes[i]));
 
 				result += L")";
 				return result;
@@ -181,12 +181,12 @@ int ExpressionBinder::conversion_score(const StructSymbol* parameter, const Stru
 
 void ExpressionBinder::report_no_matching_method(std::wstring_view methodName, SyntaxToken blameToken)
 {
-	get_diagnostics().report_error(blameToken, gmt::concat(L"No method named '", methodName, L"' exists in the current context"));
+	get_diagnostics().report_error(blameToken, gmt::wconcat(L"No method named '", methodName, L"' exists in the current context"));
 }
 
 void ExpressionBinder::report_no_matching_overload(std::wstring_view methodName, std::span<StructSymbol* const> argTypes, SyntaxToken blameToken)
 {
-	get_diagnostics().report_error(blameToken, gmt::concat(L"Method '", methodName, L"' does not have an overload that accepts the supplied arguments (", format_argument_list(argTypes, get_model()), L")"));
+	get_diagnostics().report_error(blameToken, gmt::wconcat(L"Method '", methodName, L"' does not have an overload that accepts the supplied arguments (", format_argument_list(argTypes, get_model()), L")"));
 }
 
 bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes, std::span<StructSymbol* const> expectedTypes)
@@ -304,7 +304,7 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 	std::size_t expectedArguments = parameters.size() - parameterOffset;
 	if (expectedArguments != arguments.size())
 	{
-		get_diagnostics().report_error(blameToken, gmt::concat(L"Method expects ", std::to_wstring(expectedArguments), L" arguments but got ", std::to_wstring(arguments.size())));
+		get_diagnostics().report_error(blameToken, gmt::wconcat(L"Method expects ", std::to_wstring(expectedArguments), L" arguments but got ", std::to_wstring(arguments.size())));
 		return false;
 	}
 
@@ -315,7 +315,7 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 
 		if ((parameter == nullptr) || (argument == nullptr) || (argument->get_expression() == nullptr))
 		{
-			get_diagnostics().report_error(blameToken, gmt::concat(L"Invalid argument at position ", std::to_wstring(i - parameterOffset)));
+			get_diagnostics().report_error(blameToken, gmt::wconcat(L"Invalid argument at position ", std::to_wstring(i - parameterOffset)));
 			return false;
 		}
 
@@ -329,7 +329,7 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 
 		if (conversion_score(parameterType, argumentType) < 0)
 		{
-			get_diagnostics().report_error(blameToken, gmt::concat(L"Argument type mismatch for parameter '", parameter->get_name(), L"': expected '", get_model().get_type_display_name(parameterType), L"' but got '", get_model().get_type_display_name(argumentType), L"'"));
+			get_diagnostics().report_error(blameToken, gmt::wconcat(L"Argument type mismatch for parameter '", parameter->get_name(), L"': expected '", get_model().get_type_display_name(parameterType), L"' but got '", get_model().get_type_display_name(argumentType), L"'"));
 			return false;
 		}
 	}
@@ -769,7 +769,7 @@ bool ExpressionBinder::check_method_type_constraints(MethodSymbol* method, std::
 			if (get_model().type_satisfies_constraint(argument, constraint))
 				continue;
 
-			get_diagnostics().report_error(blameToken, gmt::concat(L"Type argument '", argument->get_name(), L"' does not satisfy the constraint '", constraint->get_name(), L"' on type parameter '", typeParameter->get_name(), L"'"));
+			get_diagnostics().report_error(blameToken, gmt::wconcat(L"Type argument '", argument->get_name(), L"' does not satisfy the constraint '", constraint->get_name(), L"' on type parameter '", typeParameter->get_name(), L"'"));
 			satisfied = false;
 		}
 	}
@@ -855,7 +855,7 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 
 	if ((node->get_arguments() == nullptr))
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' invocation has no arguments list"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Method '", methodName, L"' invocation has no arguments list"));
 		return nullptr;
 	}
 
@@ -865,7 +865,7 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 	bool staticContext = get_is_static_context(node->get_previous());
 	if ((currentType == nullptr) && is_ambiguous_name(methodName))
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Ambiguous reference: '", methodName, L"' is defined in multiple imported namespaces"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Ambiguous reference: '", methodName, L"' is defined in multiple imported namespaces"));
 		return nullptr;
 	}
 
@@ -1042,7 +1042,7 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 
 		if (!arityAccepted)
 		{
-			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' does not accept ", std::to_wstring(explicitTypeArgs.get_vector().size()), L" type argument(s)"));
+			get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Method '", methodName, L"' does not accept ", std::to_wstring(explicitTypeArgs.get_vector().size()), L" type argument(s)"));
 			return nullptr;
 		}
 	}
@@ -1107,19 +1107,19 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 
 	if (ambiguous)
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"The call to '", methodName, L"' is ambiguous between multiple overloads"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"The call to '", methodName, L"' is ambiguous between multiple overloads"));
 		return nullptr;
 	}
 
 	if (staticContext && best->get_linking() == LINK_INSTANCE)
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Cannot call instance method '", methodName, L"' from type context"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Cannot call instance method '", methodName, L"' from type context"));
 		return nullptr;
 	}
 
 	if (!staticContext && best->get_linking() == LINK_STATIC && !bestExtension)
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Cannot call static method '", methodName, L"' on instance reference"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Cannot call static method '", methodName, L"' on instance reference"));
 		return nullptr;
 	}
 
@@ -1271,7 +1271,7 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 
 	if (best == nullptr)
 	{
-		get_diagnostics().report_error(node->get_new_token(), gmt::concat(L"No constructor of '", get_model().get_type_display_name(createdType), L"' accepts the supplied arguments (", format_argument_list(argTypes.get_vector(), get_model()), L")"));
+		get_diagnostics().report_error(node->get_new_token(), gmt::wconcat(L"No constructor of '", get_model().get_type_display_name(createdType), L"' accepts the supplied arguments (", format_argument_list(argTypes.get_vector(), get_model()), L")"));
 		return nullptr;
 	}
 
@@ -1380,7 +1380,7 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 
 	if ((node->get_arguments() == nullptr))
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' invocation has no arguments list"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Method '", methodName, L"' invocation has no arguments list"));
 		return nullptr;
 	}
 
@@ -1479,14 +1479,14 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 		{
 			if (member != nullptr && member->get_name() == methodName && member->is_type())
 			{
-				get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Use 'new ", methodName, L"()' instead of '", methodName, L"()' to construct a type"));
+				get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Use 'new ", methodName, L"()' instead of '", methodName, L"()' to construct a type"));
 				return nullptr;
 			}
 		}
 
 		if (!(namespaceSymbol->lookup(methodName) == nullptr))
 		{
-			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Cannot call namespace '", methodName, L"'; use '", methodName, L".Member()' to access its members"));
+			get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Cannot call namespace '", methodName, L"'; use '", methodName, L".Member()' to access its members"));
 			return nullptr;
 		}
 
@@ -1500,7 +1500,7 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 		const SyntaxNode* declaringNode = get_symbol_table().lookup_node(best);
 		if (!is_symbol_accessible(best, declaringNode, *nodeRef))
 		{
-			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' is not accessible"));
+			get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Method '", methodName, L"' is not accessible"));
 			return nullptr;
 		}
 
@@ -1515,7 +1515,7 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 
 	if ((best->get_return_type() == nullptr))
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' return type not resolved"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Method '", methodName, L"' return type not resolved"));
 		return nullptr;
 	}
 
@@ -1578,7 +1578,7 @@ StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationEx
 		const SyntaxNode* declaringNode = get_symbol_table().lookup_node(method);
 		if (!is_symbol_accessible(method, declaringNode, *nodeRef))
 		{
-			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' is not accessible"));
+			get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Method '", methodName, L"' is not accessible"));
 			return nullptr;
 		}
 
@@ -1588,7 +1588,7 @@ StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationEx
 
 	if ((method->get_return_type() == nullptr))
 	{
-		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' return type not resolved"));
+		get_diagnostics().report_error(node->get_identifier(), gmt::wconcat(L"Method '", methodName, L"' return type not resolved"));
 		return nullptr;
 	}
 
@@ -1644,7 +1644,7 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 		if (delegate == nullptr)
 		{
 			gmt::wstring calleeName = (calleeType == nullptr) ? L"<error>" : get_model().get_type_display_name(calleeType);
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot invoke expression of type '", calleeName, L"'"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Cannot invoke expression of type '", calleeName, L"'"));
 
 			if (nodeRef.has_value())
 				set_expression_type(*nodeRef, nullptr);

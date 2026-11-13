@@ -20,7 +20,7 @@ namespace
 {
 	gmt::string build_load_error(const std::filesystem::path& path, const gmt::string& systemMessage)
 	{
-		gmt::string message = gmt::wide_to_utf8(gmt::concat(L"Failed to load library \"", path.wstring(), L"\""));
+		gmt::string message = gmt::concat("Failed to load library \"", path.string(), "\"");
 		if (!systemMessage.empty())
 			message += ": " + systemMessage;
 
@@ -34,13 +34,13 @@ namespace
 		if (errorMessageID == 0)
 			return gmt::string();
 
-		LPWSTR messageBuffer = nullptr;
-		std::size_t size = ::FormatMessageW(
+		LPSTR messageBuffer = nullptr;
+		std::size_t size = ::FormatMessageA(
 			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 			nullptr, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			reinterpret_cast<LPWSTR>(&messageBuffer), 0, nullptr);
+			reinterpret_cast<LPSTR>(&messageBuffer), 0, nullptr);
 
-		gmt::string message = gmt::wide_to_utf8(std::wstring_view(messageBuffer, size));
+		gmt::string message = gmt::string(messageBuffer, size);
 		::LocalFree(messageBuffer);
 		return message;
 	}
@@ -49,7 +49,8 @@ namespace
 
 SharedLibrary::SharedLibrary(const std::filesystem::path& path)
 {
-	load(path);
+	m_path = path;
+	load();
 }
 
 SharedLibrary::SharedLibrary(LibraryHandle handle)
@@ -86,15 +87,14 @@ bool SharedLibrary::is_loaded() const
 	return m_handle != nullptr;
 }
 
-void SharedLibrary::load(const std::filesystem::path& path)
+void SharedLibrary::load()
 {
 	unload();
-	m_path = path;
 
 #if defined(_WIN32)
-	m_handle = static_cast<LibraryHandle>(::LoadLibraryW(path.c_str()));
+	m_handle = static_cast<LibraryHandle>(::LoadLibraryW(m_path.c_str()));
 	if (m_handle == nullptr)
-		throw std::runtime_error(build_load_error(path, get_last_error_message()).c_str());
+		throw std::runtime_error(build_load_error(m_path, get_last_error_message()).c_str());
 
 #elif defined(__EMSCRIPTEN__)
 	throw std::runtime_error(build_load_error(path, "native library loading is not supported in WebAssembly").c_str());
@@ -106,6 +106,25 @@ void SharedLibrary::load(const std::filesystem::path& path)
 		const char* error = ::dlerror();
 		throw std::runtime_error(build_load_error(path, error != nullptr ? error : "").c_str());
 	}
+#endif
+}
+
+bool SharedLibrary::try_load()
+{
+	unload();
+
+#if defined(_WIN32)
+	m_handle = static_cast<LibraryHandle>(::LoadLibraryW(m_path.c_str()));
+	if (m_handle == nullptr)
+		return false;
+
+#elif defined(__EMSCRIPTEN__)
+	return false;
+
+#else
+	m_handle = ::dlopen(m_path.c_str(), RTLD_NOW);
+	if (m_handle == nullptr)
+		return false;
 #endif
 }
 

@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/Definitions.hpp>
+
 #include <cstddef>
 
 namespace gmt

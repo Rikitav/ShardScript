@@ -560,13 +560,13 @@ gmt::wstring SemanticModel::get_type_display_name(const StructSymbol* type) cons
 	if (type->get_kind() == SyntaxKind::ArrayType)
 	{
 		const ArrayTypeSymbol* array = gmt::as<ArrayTypeSymbol>(type);
-		return gmt::concat(get_type_display_name(array->get_underlaying_type()), L"[]");
+		return gmt::wconcat(get_type_display_name(array->get_underlaying_type()), L"[]");
 	}
 
 	if (type->get_kind() == SyntaxKind::NullableType)
 	{
 		const NullableTypeSymbol* nullable = gmt::as<NullableTypeSymbol>(type);
-		return gmt::concat(get_type_display_name(nullable->get_underlaying_type()), L"?");
+		return gmt::wconcat(get_type_display_name(nullable->get_underlaying_type()), L"?");
 	}
 
 	return gmt::wstring(type->get_name());

@@ -123,7 +123,7 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 
 	if (!currentType->is_type())
 	{
-		diagnostics.report_error(location, gmt::concat(L"Cannot access member on non-type '", currentType->get_name(), L"'"));
+		diagnostics.report_error(location, gmt::wconcat(L"Cannot access member on non-type '", currentType->get_name(), L"'"));
 		return nullptr;
 	}
 
@@ -171,7 +171,7 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 				return accessOperator->get_return_type();
 			}
 
-			diagnostics.report_error(location, gmt::concat(L"Member '", memberName, L"' not found in type '", currentType->get_name(), L"'"));
+			diagnostics.report_error(location, gmt::wconcat(L"Member '", memberName, L"' not found in type '", currentType->get_name(), L"'"));
 			return nullptr;
 		}
 	}
@@ -224,7 +224,7 @@ StructSymbol* ExpressionBinder::resolve_symbol_type(SyntaxSymbol* symbol, Syntax
 
 			if (fieldType == nullptr)
 			{
-				diagnostics.report_error(location, gmt::concat(L"Field '", memberName, L"' type not resolved"));
+				diagnostics.report_error(location, gmt::wconcat(L"Field '", memberName, L"' type not resolved"));
 				return nullptr;
 			}
 
@@ -236,10 +236,10 @@ StructSymbol* ExpressionBinder::resolve_symbol_type(SyntaxSymbol* symbol, Syntax
 
 			bool staticContext = get_is_static_context(previous);
 			if (staticContext && field->get_linking() == LINK_INSTANCE)
-				diagnostics.report_error(location, gmt::concat(L"Cannot access instance field '", field->get_full_name(), L"' from type context"));
+				diagnostics.report_error(location, gmt::wconcat(L"Cannot access instance field '", field->get_full_name(), L"' from type context"));
 
 			if (!staticContext && field->get_linking() == LINK_STATIC && !field->get_is_enum_value())
-				diagnostics.report_error(location, gmt::concat(L"Cannot access static field '", field->get_full_name(), L"' from instance reference"));
+				diagnostics.report_error(location, gmt::wconcat(L"Cannot access static field '", field->get_full_name(), L"' from instance reference"));
 
 			return fieldType;
 		}
@@ -266,7 +266,7 @@ StructSymbol* ExpressionBinder::resolve_symbol_type(SyntaxSymbol* symbol, Syntax
 
 		default:
 		{
-			diagnostics.report_error(location, gmt::concat(L"Symbol '", memberName, L"' is not a variable, parameter or field"));
+			diagnostics.report_error(location, gmt::wconcat(L"Symbol '", memberName, L"' is not a variable, parameter or field"));
 			return nullptr;
 		}
 	}
@@ -340,7 +340,7 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 	{
 		if (is_ambiguous_name(memberName))
 		{
-			diagnostics.report_error(location, gmt::concat(L"Ambiguous reference: '", memberName, L"' is defined in multiple imported namespaces"));
+			diagnostics.report_error(location, gmt::wconcat(L"Ambiguous reference: '", memberName, L"' is defined in multiple imported namespaces"));
 			return nullptr;
 		}
 
@@ -365,7 +365,7 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 
 		if (symbol == nullptr)
 		{
-			diagnostics.report_error(location, gmt::concat(L"Symbol '", memberName, L"' not found in current scope"));
+			diagnostics.report_error(location, gmt::wconcat(L"Symbol '", memberName, L"' not found in current scope"));
 			return nullptr;
 		}
 	}
@@ -446,7 +446,7 @@ StructSymbol* ExpressionBinder::analyze_property_access_expression(SyntaxToken i
 
 	if ((property->get_return_type() == nullptr))
 	{
-		diagnostics.report_error(location, gmt::concat(L"Property '", memberName, L"' type not resolved"));
+		diagnostics.report_error(location, gmt::wconcat(L"Property '", memberName, L"' type not resolved"));
 		return nullptr;
 	}
 
@@ -455,7 +455,7 @@ StructSymbol* ExpressionBinder::analyze_property_access_expression(SyntaxToken i
 
 	if (accessor == nullptr)
 	{
-		diagnostics.report_error(location, gmt::concat(L"Property '", memberName, L"' does not have a ", requiresSetter ? L"set" : L"get", L" accessor"));
+		diagnostics.report_error(location, gmt::wconcat(L"Property '", memberName, L"' does not have a ", requiresSetter ? L"set" : L"get", L" accessor"));
 		return nullptr;
 	}
 
@@ -465,13 +465,13 @@ StructSymbol* ExpressionBinder::analyze_property_access_expression(SyntaxToken i
 	bool staticContext = get_is_static_context(previous);
 	if (staticContext && accessor->get_linking() == LINK_INSTANCE)
 	{
-		diagnostics.report_error(location, gmt::concat(L"Cannot access instance property '", memberName, L"' from type context"));
+		diagnostics.report_error(location, gmt::wconcat(L"Cannot access instance property '", memberName, L"' from type context"));
 		return nullptr;
 	}
 
 	if (!staticContext && accessor->get_linking() == LINK_STATIC)
 	{
-		diagnostics.report_error(location, gmt::concat(L"Cannot access static property '", memberName, L"' from instance reference"));
+		diagnostics.report_error(location, gmt::wconcat(L"Cannot access static property '", memberName, L"' from instance reference"));
 		return nullptr;
 	}
 
@@ -519,7 +519,7 @@ StructSymbol* ExpressionBinder::analyze_field_keyword_expression(const SyntaxNod
 	FieldSymbol* backingField = propertySymbol->get_backing_field();
 	if ((backingField->get_return_type() == nullptr))
 	{
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Backing field type not resolved for property '", propertySymbol->get_name(), L"'"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Backing field type not resolved for property '", propertySymbol->get_name(), L"'"));
 		return nullptr;
 	}
 
@@ -663,7 +663,7 @@ IndexatorSymbol* ExpressionBinder::resolve_indexator(const IndexatorExpressionSy
 
 	if (selected == nullptr)
 	{
-		diagnostics.report_error(location, gmt::concat(L"No indexators for type '", currentType->get_name(), L"' found that accept the supplied arguments"));
+		diagnostics.report_error(location, gmt::wconcat(L"No indexators for type '", currentType->get_name(), L"' found that accept the supplied arguments"));
 		return nullptr;
 	}
 

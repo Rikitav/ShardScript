@@ -9,7 +9,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 
@@ -19,7 +19,7 @@ using namespace shard;
 
 namespace
 {
-	ObjectInstance task_state_of(MethodCallState& state, ObjectInstance source, StandardTypes stateFieldSlot)
+	ObjectInstance task_state_of(FuncCallState& state, ObjectInstance source, StandardTypes stateFieldSlot)
 	{
 		SymbolTable& table = state.get_vm().get_model().get_table();
 		FieldSymbol* stateField = static_cast<FieldSymbol*>(table.get_standard_type(stateFieldSlot));
@@ -29,7 +29,7 @@ namespace
 		return ObjectInstance(slot.get_shape(), slot.as_pointer());
 	}
 
-	void task_completion_source_ctor(MethodCallState& state)
+	void task_completion_source_ctor(FuncCallState& state)
 	{
 		ObjectInstance self = state.get_argument(0);
 		SymbolTable& table = state.get_vm().get_model().get_table();
@@ -40,33 +40,33 @@ namespace
 		self.set_field(stateField, taskState);
 	}
 
-	void task_completion_source_set_result(MethodCallState& state)
+	void task_completion_source_set_result(FuncCallState& state)
 	{
 		ObjectInstance self = state.get_argument(0);
 		ObjectInstance value = state.get_argument(1);
 		state.get_vm().complete_task_state(task_state_of(state, self, StandardTypes::TaskCompletionSource_StateField), value);
 	}
 
-	void task_completion_source_set_exception(MethodCallState& state)
+	void task_completion_source_set_exception(FuncCallState& state)
 	{
 		ObjectInstance self = state.get_argument(0);
 		ObjectInstance exception = state.get_argument(1);
 		state.get_vm().fail_task_state(task_state_of(state, self, StandardTypes::TaskCompletionSource_StateField), exception);
 	}
 
-	void task_completion_source_task_get(MethodCallState& state)
+	void task_completion_source_task_get(FuncCallState& state)
 	{
 		ObjectInstance self = state.get_argument(0);
 		ObjectInstance taskState = task_state_of(state, self, StandardTypes::TaskCompletionSource_StateField);
 		state.set_return(state.get_vm().create_task_wrapper(taskState));
 	}
 
-	void task_delay(MethodCallState& state)
+	void task_delay(FuncCallState& state)
 	{
 		state.set_return(state.get_vm().delay_task(state.get_integer_argument(0)));
 	}
 
-	void task_continue_with(MethodCallState& state)
+	void task_continue_with(FuncCallState& state)
 	{
 		ObjectInstance self = state.get_argument(0);
 		ObjectInstance continuation = state.get_argument(1);

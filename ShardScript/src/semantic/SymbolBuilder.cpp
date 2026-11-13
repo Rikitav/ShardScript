@@ -273,7 +273,7 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::add_parameter(std::wst
 	return *this;
 }
 
-SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_callback(MethodSymbolDelegate callback)
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_callback(FuncHandler callback)
 {
 	if (callback == nullptr)
 		throw std::invalid_argument("method callback cannot be null");
@@ -382,7 +382,7 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::add_paramete
 	return *this;
 }
 
-SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_callback(MethodSymbolDelegate callback)
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_callback(FuncHandler callback)
 {
 	if (callback == nullptr)
 		throw std::invalid_argument("constructor callback cannot be null");
@@ -461,7 +461,7 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::add_parameter(std:
 	return *this;
 }
 
-SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_callback(MethodSymbolDelegate callback)
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_callback(FuncHandler callback)
 {
 	if (callback == nullptr)
 		throw std::invalid_argument("operator callback cannot be null");
@@ -648,7 +648,7 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::add_parameter(std:
 	return *this;
 }
 
-SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_callback(MethodSymbolDelegate callback)
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_callback(FuncHandler callback)
 {
 	if (callback == nullptr)
 		throw std::invalid_argument("accessor callback cannot be null");

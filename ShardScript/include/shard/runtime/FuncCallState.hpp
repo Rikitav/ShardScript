@@ -4,6 +4,7 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/NativeHandlers.hpp>
 
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -61,7 +62,7 @@ namespace shard
 		ObjectInstance operator()(std::initializer_list<ObjectInstance> args = {}) const;
 	};
 
-	class SHARD_API MethodCallState
+	class SHARD_API FuncCallState
 	{
 		VirtualMachine& m_vm;
 		CallStackFrame* m_frame;
@@ -74,7 +75,7 @@ namespace shard
 		void write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes);
 
 	public:
-		MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments, MethodSymbol* method = nullptr);
+		FuncCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments, MethodSymbol* method = nullptr);
 
 		VirtualMachine& get_vm() const;
 		CallStackFrame* get_frame() const;
@@ -149,4 +150,4 @@ namespace shard
 	};
 }
 
-#include <shard/runtime/MethodCallState.impl.hpp>
+#include <shard/runtime/FuncCallState.impl.hpp>

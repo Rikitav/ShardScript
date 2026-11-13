@@ -1,7 +1,7 @@
 #include <shard/LibraryMetadata.hpp>
 
 #include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 #include <shard/runtime/AsyncRuntime.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>
@@ -47,12 +47,12 @@ namespace
 		return count;
 	}
 
-	void native_array_length(MethodCallState& state)
+	void native_array_length(FuncCallState& state)
 	{
 		state.set_return_integer(state.get_argument(0).as_integer());
 	}
 
-	void native_range_move_next(MethodCallState& state)
+	void native_range_move_next(FuncCallState& state)
 	{
 		ObjectInstance self = state.get_argument(0);
 		SymbolTable& table = state.get_vm().get_model().get_table();
@@ -67,7 +67,7 @@ namespace
 		state.set_return_boolean(value < self.get_field(toField).as_integer());
 	}
 
-	void native_range_current_get(MethodCallState& state)
+	void native_range_current_get(FuncCallState& state)
 	{
 		SymbolTable& table = state.get_vm().get_model().get_table();
 		FieldSymbol* currentField = static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField));
@@ -117,12 +117,7 @@ VirtualMachine::~VirtualMachine()
 	// before the collector and the frame pool die
 	if (m_async)
 	{
-		auto cleanupHooks = m_async->cleanupHooks;
-		for (VirtualMachine::NativeCleanupHook hook : cleanupHooks)
-		{
-			if (hook != nullptr)
-				hook(*this);
-		}
+		m_async->nativeResources.clear();
 
 		for (auto& [key, record] : m_async->tasks)
 		{
@@ -426,17 +421,16 @@ ObjectInstance VirtualMachine::create_string(std::wstring_view value)
 void VirtualMachine::execute_frame(CallStackFrame* frame)
 {
 	MethodSymbol* method = frame->get_method();
-	std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
-
-	// a resumed frame continues after its suspension point; the first run of
-	// a frame starts at the method entry
-	if (frame->get_instruction_pointer() != 0)
-		start = frame->get_instruction_pointer();
+	std::size_t entry = reinterpret_cast<std::size_t>(method->get_function_pointer());
+	std::size_t resume = frame->get_instruction_pointer();
 
 	if (frame->get_interruption() == InterruptionReason::Awaiting)
 		frame->set_interruption(InterruptionReason::None);
 
-	ByteCodeDecoder decoder(m_program.get_text_section(), start);
+	// Resume within the method's original bounds so backward jumps remain valid.
+	ByteCodeDecoder decoder(m_program.get_text_section(), entry);
+	if (resume != 0)
+		decoder.set_cursor(resume);
 
 	while (true)
 	{
@@ -594,7 +588,7 @@ ObjectInstance VirtualMachine::invoke_native_callback(FuncHandler callback, Meth
 	for (const ObjectInstance& argument : arguments)
 		m_collector.pin(argument);
 
-	MethodCallState state(*this, m_currentFrame, arguments, method);
+	FuncCallState state(*this, m_currentFrame, arguments, method);
 
 	try
 	{
@@ -650,14 +644,14 @@ ObjectInstance VirtualMachine::invoke_method(MethodSymbol* method, std::span<con
 			break;
 	}
 
-	throw std::runtime_error(("Method calling convention was 'None': " + gmt::string(method->get_name().begin(), method->get_name().end())).c_str());
+	throw std::runtime_error(("Method calling convention was 'None': " + std::string(method->get_name().begin(), method->get_name().end())).c_str());
 }
 
 ObjectInstance VirtualMachine::invoke_virtual(MethodSymbol* interfaceMethod, std::span<const ObjectInstance> arguments, std::uint32_t interfaceSlot)
 {
 	if (arguments.empty())
 	{
-		raise_runtime_exception(gmt::concat(L"virtual member '", interfaceMethod->get_name(), L"' was invoked without a receiver"));
+		raise_runtime_exception(gmt::wconcat(L"virtual member '", interfaceMethod->get_name(), L"' was invoked without a receiver"));
 		return ObjectInstance::null();
 	}
 
@@ -669,7 +663,7 @@ ObjectInstance VirtualMachine::invoke_virtual(MethodSymbol* interfaceMethod, std
 		std::optional<std::uint32_t> slot = m_pragmatic.get_interface_slot(interfaceMethod);
 		if (!slot.has_value())
 		{
-			raise_runtime_exception(gmt::concat(L"virtual member '", interfaceMethod->get_name(), L"' has no vtable slot"));
+			raise_runtime_exception(gmt::wconcat(L"virtual member '", interfaceMethod->get_name(), L"' has no vtable slot"));
 			return ObjectInstance::null();
 		}
 
@@ -719,9 +713,9 @@ MethodSymbol* VirtualMachine::resolve_interface_target(std::span<const ObjectIns
 
 	// a miss is a compiler bug, not a dispatch failure
 	if (heapBacked)
-		raise_runtime_exception(gmt::concat(L"interface method '", interfaceMethod->get_name(), L"' has no vtable entry"));
+		raise_runtime_exception(gmt::wconcat(L"interface method '", interfaceMethod->get_name(), L"' has no vtable entry"));
 	else
-		raise_runtime_exception(gmt::concat(L"interface method '", interfaceMethod->get_name(), L"' was called on a value that is not heap-allocated"));
+		raise_runtime_exception(gmt::wconcat(L"interface method '", interfaceMethod->get_name(), L"' was called on a value that is not heap-allocated"));
 
 	return nullptr;
 }
@@ -1208,7 +1202,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 				if (opcode == OpCode::MATH_ADDITION && (leftString || rightString))
 				{
-					gmt::wstring text = gmt::concat(PrimitiveMath::to_display_string(m_primitiveShapes, left), PrimitiveMath::to_display_string(m_primitiveShapes, right));
+					gmt::wstring text = gmt::wconcat(PrimitiveMath::to_display_string(m_primitiveShapes, left), PrimitiveMath::to_display_string(m_primitiveShapes, right));
 					ObjectInstance combined = create_string(text);
 					push_instance(frame, combined);
 					break;
@@ -1917,7 +1911,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 		default:
 		{
-			throw std::runtime_error(gmt::wide_to_utf8(gmt::concat(L"unsupported opcode ", std::to_wstring(static_cast<std::uint16_t>(opcode)))).c_str());
+			throw std::runtime_error(gmt::wide_to_utf8(gmt::wconcat(L"unsupported opcode ", std::to_wstring(static_cast<std::uint16_t>(opcode)))).c_str());
 		}
 	}
 }

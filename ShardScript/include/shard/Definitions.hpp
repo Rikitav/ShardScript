@@ -18,7 +18,7 @@
 	// GCC / Clang
 	#elif defined(__GNUC__)
 		#define SHARD_API __attribute__((visibility("default")))
-		#define FORCE_INLINE __attribute__((always_inline)) inline
+		#define SHARD_FORCE_INLINE __attribute__((always_inline)) inline
 		#define SHARD_NOINLINE __attribute__((noinline))
 
 	// do nothing and hope for the best?
@@ -27,6 +27,23 @@
 		#pragma warning Unknown dynamic link import/export semantics.
 
 	#endif
+#endif
+
+// Microsoft
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__WIN32)
+	#define SHARD_FORCE_INLINE __forceinline inline
+	#define SHARD_NOINLINE __declspec(noinline)
+
+// GCC / Clang
+#elif defined(__GNUC__)
+	#define SHARD_FORCE_INLINE __attribute__((always_inline)) inline
+	#define SHARD_NOINLINE __attribute__((noinline))
+
+// do nothing and hope for the best?
+#else
+	#define SHARD_FORCE_INLINE
+	#define SHARD_NOINLINE
+
 #endif
 
 // Microsoft

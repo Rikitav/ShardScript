@@ -430,7 +430,7 @@ void TypeBinder::validate_interface_conformance(StructSymbol* symbol, const Stru
 
 	auto report_missing = [&](StructSymbol* interfaceType, std::wstring_view memberName)
 	{
-		get_diagnostics().report_error(location, gmt::concat(L"Type '", symbol->get_name(), L"' does not implement member '", memberName, L"' of interface '", interfaceType->get_name(), L"'"));
+		get_diagnostics().report_error(location, gmt::wconcat(L"Type '", symbol->get_name(), L"' does not implement member '", memberName, L"' of interface '", interfaceType->get_name(), L"'"));
 	};
 
 	for (StructSymbol* interfaceType : symbol->interfaces)
@@ -948,7 +948,7 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 		StructSymbol* ownerType = get_owner_type();
 		if ((ownerType == nullptr) || ownerType->get_kind() != SyntaxKind::StructDeclaration)
 		{
-			get_diagnostics().report_error(node->get_location(), gmt::concat(L"'", gmt::wstring(name), L"' can only be used inside a struct declaration"));
+			get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"'", gmt::wstring(name), L"' can only be used inside a struct declaration"));
 			return;
 		}
 

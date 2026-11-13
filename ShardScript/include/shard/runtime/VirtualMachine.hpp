@@ -10,9 +10,9 @@
 
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/NativeHandlers.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/PrimitiveMath.hpp>
+#include <shard/runtime/NativeHandlers.hpp>
 
 #include <shard/compilation/OperationCode.hpp>
 #include <shard/compilation/ByteCodeDecoder.hpp>
@@ -23,6 +23,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <string>
 #include <vector>
@@ -32,6 +33,12 @@ namespace shard
 	struct AsyncRuntime;
 	class EventLoop;
 	struct TaskRuntime;
+
+	class SHARD_API NativeAsyncResource
+	{
+	public:
+		virtual ~NativeAsyncResource() = default;
+	};
 
 	class SHARD_API VirtualMachine
 	{
@@ -122,7 +129,7 @@ namespace shard
 		MethodSymbol* resolve_interface_target(std::span<const ObjectInstance> arguments, MethodSymbol* interfaceMethod, std::uint32_t interfaceSlot, ObjectInstance& outReceiver);
 		ObjectInstance invoke_virtual(MethodSymbol* interfaceMethod, std::span<const ObjectInstance> arguments, std::uint32_t interfaceSlot);
 
-		// async surface used by native libraries through MethodCallState
+		// async surface used by native libraries through FuncCallState
 		ObjectInstance launch_async_method(MethodSymbol* method, std::span<const ObjectInstance> arguments);
 		ObjectInstance await_task(ObjectInstance task);
 		bool is_task_completed(ObjectInstance task);
@@ -135,13 +142,7 @@ namespace shard
 		ObjectInstance delay_task(std::int64_t milliseconds);
 		ObjectInstance continue_task(ObjectInstance task, ObjectInstance continuation);
 
-		using AsyncPollHook = bool(*)(VirtualMachine& vm, bool block);
-		using NativeTaskCallback = void(*)(VirtualMachine& vm, int status, ObjectInstance result, ObjectInstance exception, void* context);
-		using NativeCleanupHook = void(*)(VirtualMachine& vm);
-		void on_task_completed(ObjectInstance task, NativeTaskCallback callback, void* context);
-		void register_native_cleanup_hook(NativeCleanupHook hook);
-		void register_async_poll_hook(AsyncPollHook hook);
-		void unregister_async_poll_hook(AsyncPollHook hook);
+		NativeAsyncResource* add_native_resource(std::unique_ptr<NativeAsyncResource> resource);
 
 		VirtualProgramImage& get_program() const;
 		SemanticModel& get_model() const;

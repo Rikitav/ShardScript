@@ -3,7 +3,7 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 
 #include <shard/LibraryMetadata.hpp>
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 
 #include <gmt/Containers.hpp>
 
@@ -13,42 +13,42 @@ using namespace shard;
 
 namespace
 {
-	static void primitive_boolean_to_string(MethodCallState& context)
+	static void primitive_boolean_to_string(FuncCallState& context)
 	{
 		context.set_return_string(context.get_boolean_argument(0) ? L"true" : L"false");
 	}
 
-	static void primitive_integer_to_string(MethodCallState& context)
+	static void primitive_integer_to_string(FuncCallState& context)
 	{
 		context.set_return_string(std::to_wstring(context.get_integer_argument(0)));
 	}
 
-	static void primitive_double_to_string(MethodCallState& context)
+	static void primitive_double_to_string(FuncCallState& context)
 	{
 		context.set_return_string(std::to_wstring(context.get_double_argument(0)));
 	}
 
-	static void primitive_char_to_string(MethodCallState& context)
+	static void primitive_char_to_string(FuncCallState& context)
 	{
 		context.set_return_string(gmt::wstring(1, context.get_char_argument(0)));
 	}
 
-	static void primitive_byte_to_string(MethodCallState& context)
+	static void primitive_byte_to_string(FuncCallState& context)
 	{
 		context.set_return_string(std::to_wstring(context.get_integer_argument(0)));
 	}
 
-	static void primitive_nint_to_string(MethodCallState& context)
+	static void primitive_nint_to_string(FuncCallState& context)
 	{
 		context.set_return_string(std::to_wstring(context.get_integer_argument(0)));
 	}
 
-	static void primitive_string_to_string(MethodCallState& context)
+	static void primitive_string_to_string(FuncCallState& context)
 	{
 		context.set_return(context.get_argument(0));
 	}
 
-	static void make_printable(SymbolTable& table, StructSymbol* symbol, StructSymbol* printable, MethodSymbolDelegate callback)
+	static void make_printable(SymbolTable& table, StructSymbol* symbol, StructSymbol* printable, FuncHandler callback)
 	{
 		MethodSymbol* toString = table.emplace<MethodSymbol>(L"ToString", symbol);
 		toString->set_return_type(table.get_string_primitive());

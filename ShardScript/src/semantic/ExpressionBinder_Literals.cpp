@@ -346,7 +346,7 @@ StructSymbol* ExpressionBinder::analyze_default_expression(const DefaultExpressi
 
 	if (!is_default_constructible_type(get_symbol_table(), type))
 	{
-		get_diagnostics().report_error(node->get_location(), gmt::concat(L"'default' cannot produce type '", get_model().get_type_display_name(type), L"'"));
+		get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"'default' cannot produce type '", get_model().get_type_display_name(type), L"'"));
 		return type;
 	}
 

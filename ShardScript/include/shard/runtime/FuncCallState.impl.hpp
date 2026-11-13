@@ -1,5 +1,5 @@
 #pragma once
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 
 #include <gmt/Containers.hpp>
 #include <gmt/Strings.hpp>
@@ -79,7 +79,7 @@ namespace shard::detail
 	}
 
 	template<typename T>
-	inline T unwrap_argument_at(const MethodCallState& state, std::size_t index)
+	inline T unwrap_argument_at(const FuncCallState& state, std::size_t index)
 	{
 		ObjectInstance value = state.get_argument(index);
 		T* tag = nullptr;
@@ -87,7 +87,7 @@ namespace shard::detail
 	}
 
 	template<typename... TArgs, std::size_t... Indices>
-	inline std::tuple<TArgs...> get_arguments_impl(const MethodCallState& state, std::index_sequence<Indices...>)
+	inline std::tuple<TArgs...> get_arguments_impl(const FuncCallState& state, std::index_sequence<Indices...>)
 	{
 		return std::make_tuple(unwrap_argument_at<TArgs>(state, Indices)...);
 	}
@@ -95,11 +95,12 @@ namespace shard::detail
 
 namespace shard
 {
-	// Extracts the method arguments into a typed tuple. Supported types: bool,
-	// std::int64_t, double, wchar_t, std::uint8_t, std::wstring_view,
-	// gmt::wstring, ObjectInstance, and any native pointer T*.
+	// Extracts the method arguments into a typed tuple.
+	// Supported types:
+	//	bool, std::int64_t, double, wchar_t, std::uint8_t, std::wstring_view,
+	//	gmt::wstring, ObjectInstance, and any native pointer T*.
 	template<typename... TArgs>
-	inline std::tuple<TArgs...> MethodCallState::get_arguments() const
+	inline std::tuple<TArgs...> FuncCallState::get_arguments() const
 	{
 		constexpr std::size_t expectedCount = sizeof...(TArgs);
 		if (get_argument_count() != expectedCount)

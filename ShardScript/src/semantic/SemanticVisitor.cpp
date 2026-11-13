@@ -91,7 +91,8 @@ void SemanticVisitor::declare(SyntaxSymbol* symbol)
 	SyntaxSymbol* owner = scope->get_owner();
 	if (owner == nullptr) // Top-level scopes carry a nullref owner (the compilation unit is not a symbol)
 		owner = scope->get_namespace();
-
+	
+	// NOTE: Symbols without a namespace, does not escape local scope, by design
 	if (owner != nullptr)
 		owner->on_symbol_declared(symbol);
 }

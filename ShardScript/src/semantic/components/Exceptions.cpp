@@ -7,14 +7,14 @@
 
 #include <shard/LibraryMetadata.hpp>
 #include <shard/semantic/SemanticModel.hpp>
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/FuncCallState.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 
 using namespace shard;
 
 namespace
 {
-	static void read_reference_field(MethodCallState& context, StandardTypes fieldSlot)
+	static void read_reference_field(FuncCallState& context, StandardTypes fieldSlot)
 	{
 		SymbolTable& table = context.get_vm().get_model().get_table();
 		FieldSymbol* field = static_cast<FieldSymbol*>(table.get_standard_type(fieldSlot));
@@ -25,39 +25,39 @@ namespace
 		context.set_return(ObjectInstance(slot.get_shape(), slot.as_pointer()));
 	}
 
-	static void write_reference_field(MethodCallState& context, StandardTypes fieldSlot)
+	static void write_reference_field(FuncCallState& context, StandardTypes fieldSlot)
 	{
 		SymbolTable& table = context.get_vm().get_model().get_table();
 		FieldSymbol* field = static_cast<FieldSymbol*>(table.get_standard_type(fieldSlot));
 		context.get_argument(0).set_field(field, context.get_argument(1));
 	}
 
-	static void runtime_exception_message_get(MethodCallState& context)
+	static void runtime_exception_message_get(FuncCallState& context)
 	{
 		read_reference_field(context, StandardTypes::RuntimeException_MessageField);
 	}
 
-	static void runtime_exception_stack_trace_get(MethodCallState& context)
+	static void runtime_exception_stack_trace_get(FuncCallState& context)
 	{
 		read_reference_field(context, StandardTypes::RuntimeException_StackTraceField);
 	}
 
-	static void runtime_exception_stack_trace_set(MethodCallState& context)
+	static void runtime_exception_stack_trace_set(FuncCallState& context)
 	{
 		write_reference_field(context, StandardTypes::RuntimeException_StackTraceField);
 	}
 
-	static void undefined_behaviour_message_get(MethodCallState& context)
+	static void undefined_behaviour_message_get(FuncCallState& context)
 	{
 		read_reference_field(context, StandardTypes::UndefinedBehaviour_MessageField);
 	}
 
-	static void undefined_behaviour_stack_trace_get(MethodCallState& context)
+	static void undefined_behaviour_stack_trace_get(FuncCallState& context)
 	{
 		read_reference_field(context, StandardTypes::UndefinedBehaviour_StackTraceField);
 	}
 
-	static void undefined_behaviour_stack_trace_set(MethodCallState& context)
+	static void undefined_behaviour_stack_trace_set(FuncCallState& context)
 	{
 		write_reference_field(context, StandardTypes::UndefinedBehaviour_StackTraceField);
 	}
@@ -73,7 +73,7 @@ namespace
 		return field;
 	}
 
-	static void make_throwable_property(SymbolTable& table, StructSymbol* owner, const wchar_t* name, MethodSymbolDelegate getterCallback, MethodSymbolDelegate setterCallback = nullptr)
+	static void make_throwable_property(SymbolTable& table, StructSymbol* owner, const wchar_t* name, FuncHandler getterCallback, FuncHandler setterCallback = nullptr)
 	{
 		PropertySymbol* property = table.emplace<PropertySymbol>(name, SyntaxKind::PropertyDeclaration, owner);
 		property->set_return_type(table.get_string_primitive());

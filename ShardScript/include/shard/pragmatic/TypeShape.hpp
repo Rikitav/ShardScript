@@ -27,9 +27,10 @@ namespace shard
 
 	private:
 		StructSymbol* m_baseType = nullptr;
-		gmt::vector<StructSymbol*> m_genericArguments;
+		bool m_isReference = false;
 		std::size_t m_size = 0;
-		bool m_isReference = false; // reference storage is the baseline (spec 1.7)
+
+		gmt::vector<StructSymbol*> m_genericArguments;
 		gmt::vector<SlotInfo> m_slots;
 		gmt::vector<MethodSymbol*> m_vtable; // interface member slot -> implementation
 

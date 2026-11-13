@@ -150,7 +150,7 @@ namespace shard
 		SymbolBuilder(SymbolTable& table, std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 
 		SymbolBuilder<MethodSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
-		SymbolBuilder<MethodSymbol>& set_callback(MethodSymbolDelegate callback);
+		SymbolBuilder<MethodSymbol>& set_callback(FuncHandler callback);
 		SymbolBuilder<MethodSymbol>& set_callback(AsyncFuncHandler callback);
 		SymbolBuilder<MethodSymbol>& set_handler(FuncHandler handler);
 		SymbolBuilder<MethodSymbol>& set_async_handler(AsyncFuncHandler handler);
@@ -173,7 +173,7 @@ namespace shard
 		SymbolBuilder(SymbolTable& table, SymbolAccesibility access, SyntaxSymbol* parent);
 
 		SymbolBuilder<ConstructorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
-		SymbolBuilder<ConstructorSymbol>& set_callback(MethodSymbolDelegate callback);
+		SymbolBuilder<ConstructorSymbol>& set_callback(FuncHandler callback);
 
 		SymbolBuilder<ConstructorSymbol>& set_may_throw(bool value = true);
 		SymbolBuilder<ConstructorSymbol>& set_throws_type(StructSymbol* type);
@@ -191,7 +191,7 @@ namespace shard
 		SymbolBuilder(SymbolTable& table, TokenType operatorToken, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 
 		SymbolBuilder<OperatorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
-		SymbolBuilder<OperatorSymbol>& set_callback(MethodSymbolDelegate callback);
+		SymbolBuilder<OperatorSymbol>& set_callback(FuncHandler callback);
 
 		SymbolBuilder<OperatorSymbol>& set_may_throw(bool value = true);
 		SymbolBuilder<OperatorSymbol>& set_throws_type(StructSymbol* type);
@@ -237,7 +237,7 @@ namespace shard
 		SymbolBuilder(SymbolTable& table, bool isGetter, SymbolAccesibility access, PropertySymbol* property);
 
 		SymbolBuilder<AccessorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
-		SymbolBuilder<AccessorSymbol>& set_callback(MethodSymbolDelegate callback);
+		SymbolBuilder<AccessorSymbol>& set_callback(FuncHandler callback);
 
 		SymbolBuilder<AccessorSymbol>& set_may_throw(bool value = true);
 		SymbolBuilder<AccessorSymbol>& set_throws_type(StructSymbol* type);
