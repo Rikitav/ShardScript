@@ -69,6 +69,11 @@ std::uint32_t ObjectInstance::resolve_field_slot(FieldSymbol* field)
 
 ObjectInstance ObjectInstance::get_field(std::uint32_t slot) const
 {
+	if (m_shape == nullptr)
+		throw std::runtime_error("field access has no type shape");
+	if (m_memory == nullptr)
+		throw std::runtime_error("field access has no object storage");
+
 	const TypeShape::SlotInfo& info = m_shape->get_slot(slot);
 	std::byte* fieldPointer = nullptr;
 	std::memcpy(&fieldPointer, m_memory + info.offset, sizeof(std::byte*));

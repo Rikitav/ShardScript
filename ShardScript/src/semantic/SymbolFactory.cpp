@@ -134,6 +134,7 @@ EnumSymbol* SymbolFactory::create_enum(std::wstring_view name, SyntaxSymbol* par
 FieldSymbol* SymbolFactory::create_field(const FieldDeclarationSyntax* node, SyntaxSymbol* parent)
 {
 	FieldSymbol* symbol = m_table->emplace<FieldSymbol>(node->get_identifier().get_lexeme(), parent);
+	symbol->set_accesibility(ACS_PRIVATE);
 	apply_modifiers(node->get_modifiers(), *symbol);
 	return m_table->bind_symbol<FieldSymbol>(node, symbol);
 }

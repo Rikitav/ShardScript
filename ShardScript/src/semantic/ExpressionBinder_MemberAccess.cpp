@@ -165,6 +165,12 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 			OperatorSymbol* accessOperator = resolve_operator_method(currentType, TokenType::Delimeter, accessParameters);
 			if (accessOperator != nullptr)
 			{
+				if (currentType == get_owner_type())
+				{
+					diagnostics.report_error(location, L"Type members cannot invoke their own access operator ('.')");
+					return nullptr;
+				}
+
 				if (nodeRef.has_value())
 					table.bind_symbol<OperatorSymbol>(*nodeRef, accessOperator);
 
@@ -411,9 +417,15 @@ void ExpressionBinder::visit_qualified_name_type(const QualifiedNameTypeSyntax* 
 	if (!nodeRef.has_value())
 		return;
 
-	// value-position qualified names resolve at their use site; only
-	// type-position names carry a binding from the type binder
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
+	if (bound != nullptr && bound->get_kind() == SyntaxKind::OperatorDeclaration)
+	{
+		OperatorSymbol* accessOperator = static_cast<OperatorSymbol*>(bound);
+		m_staticContextExpressions.insert(*nodeRef);
+		set_expression_type(*nodeRef, accessOperator->get_return_type());
+		return;
+	}
+
 	if ((bound == nullptr) || !bound->is_type())
 		return;
 
