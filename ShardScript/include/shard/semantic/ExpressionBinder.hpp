@@ -128,6 +128,7 @@ namespace shard
 		ConstructorSymbol* resolve_constructor(const ObjectExpressionSyntax* node);
 		MethodSymbol* resolve_method(const InvokationExpressionSyntax* node, StructSymbol* currentType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs, GenericTypeSymbol*& outGenericType);
 		NamespaceSymbol* resolve_namespace_qualifier(const ExpressionSyntax* expression);
+	NamespaceSymbol* resolve_namespace_name(const TypeSyntax* type);
 		IndexatorSymbol* resolve_indexator(const IndexatorExpressionSyntax* node, StructSymbol* currentType);
 		DelegateTypeSymbol* try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, SyntaxSymbol* lookup, GenericTypeSymbol*& outInstantiation);
 

@@ -23,6 +23,8 @@
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <shard/parsing/nodes/expressions/CollectionExpressionSyntax.hpp>
+#include <shard/parsing/nodes/types/GenericTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/QualifiedNameTypeSyntax.hpp>
 
 #include <gmt/Concat.hpp>
 
@@ -1349,10 +1351,44 @@ void ExpressionBinder::visit_object_creation_expression(const ObjectExpressionSy
 	set_expression_type(*nodeRef, type);
 }
 
+NamespaceSymbol* ExpressionBinder::resolve_namespace_name(const TypeSyntax* type)
+{
+	if (type == nullptr)
+		return nullptr;
+
+	if (type->get_kind() == SyntaxKind::IdentifierNameType)
+	{
+		const IdentifierNameTypeSyntax* identifier = static_cast<const IdentifierNameTypeSyntax*>(type);
+		SyntaxSymbol* scoped = get_current_scope()->lookup(identifier->get_identifier().get_lexeme());
+		if (scoped != nullptr && scoped->get_kind() == SyntaxKind::NamespaceDirective)
+			return static_cast<NamespaceSymbol*>(scoped);
+
+		return get_symbol_table().get_root_namespace()->lookup(identifier->get_identifier().get_lexeme());
+	}
+
+	if (type->get_kind() == SyntaxKind::QualifiedNameType)
+	{
+		const QualifiedNameTypeSyntax* qualified = static_cast<const QualifiedNameTypeSyntax*>(type);
+		NamespaceSymbol* parent = resolve_namespace_name(qualified->get_left());
+		if (parent == nullptr)
+			return nullptr;
+
+		return parent->lookup(qualified->get_identifier().get_lexeme());
+	}
+
+	return nullptr;
+}
+
 NamespaceSymbol* ExpressionBinder::resolve_namespace_qualifier(const ExpressionSyntax* expression)
 {
 	if (expression == nullptr)
 		return nullptr;
+
+	if (expression->get_kind() == SyntaxKind::GenericType)
+		expression = static_cast<const GenericTypeSyntax*>(expression)->get_underlaying_type();
+
+	if (expression->get_kind() == SyntaxKind::QualifiedNameType)
+		return resolve_namespace_name(static_cast<const QualifiedNameTypeSyntax*>(expression)->get_left());
 
 	if (expression->get_kind() != SyntaxKind::MemberAccessExpression)
 		return nullptr;

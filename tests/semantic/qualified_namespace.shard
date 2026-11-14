@@ -1,0 +1,16 @@
+using stdio;
+
+func Main() -> void
+{
+    stdio::println("qualified call");
+    stdio::println(my::GetValue());
+
+    foo: my::Foo = new my::Foo();
+    foo.Value = my::GetValue();
+    stdio::println(foo.Value);
+
+    boxed: my::nested::Box<int> = new my::nested::Box<int>();
+    boxed.Value = my::nested::Echo<int>(7);
+    stdio::println(boxed.Value);
+    stdio::println(my::nested::Echo(8));
+}
