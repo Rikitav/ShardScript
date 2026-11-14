@@ -125,9 +125,12 @@ void ByteCodeEmitter::visit_expression_statement(const ExpressionStatementSyntax
 	if (node == nullptr || (node->get_expression() == nullptr))
 		return;
 
+	std::optional<const ExpressionSyntax*> expressionRef = ref_from(node->get_expression());
+	if (expressionRef.has_value() && (*expressionRef)->get_kind() == SyntaxKind::InvokationExpression)
+		m_discardedCalls.insert(*expressionRef);
+
 	node->get_expression()->accept(*this);
 
-	std::optional<const ExpressionSyntax*> expressionRef = ref_from(node->get_expression());
 	StructSymbol* type = expressionRef.has_value() ? get_model().get_expression_type(*expressionRef) : nullptr;
 
 	bool discardable = type != nullptr && type != get_symbol_table().get_void_primitive();
@@ -167,13 +170,7 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	PlacementVerdict verdict = local_verdict(symbol);
 	const ExpressionSyntax* initializer = node->get_expression();
 
-	if (verdict == PlacementVerdict::Scalar)
-	{
-		unsupported(*nodeRef, L"constructor calls on dematerialized locals");
-		return;
-	}
-
-	bool stackPlaced = verdict == PlacementVerdict::Stack || verdict == PlacementVerdict::StackReturn;
+	bool stackPlaced = verdict == PlacementVerdict::Stack;
 	bool hasConversion = get_model().get_nullable_conversion(initializer).kind != NullableConversionKind::NONE;
 	bool specialPlacement = !hasConversion && stackPlaced;
 

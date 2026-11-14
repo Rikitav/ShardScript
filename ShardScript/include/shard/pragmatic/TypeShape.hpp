@@ -23,10 +23,12 @@ namespace shard
 		{
 			std::size_t offset;
 			TypeShape* fieldShape; // non-owning, owned by the creating TypeShapeCache
+			bool isNullable = false;
 		};
 
 	private:
 		StructSymbol* m_baseType = nullptr;
+		TypeShape* m_elementShape = nullptr;
 		bool m_isReference = false;
 		std::size_t m_size = 0;
 
@@ -44,6 +46,7 @@ namespace shard
 		const gmt::vector<StructSymbol*>& get_generic_arguments() const;
 
 		std::size_t get_size() const;
+		const TypeShape* get_element_shape() const;
 		bool is_reference() const;
 		std::size_t get_slot_count() const;
 		const SlotInfo& get_slot(std::uint32_t slotIndex) const;

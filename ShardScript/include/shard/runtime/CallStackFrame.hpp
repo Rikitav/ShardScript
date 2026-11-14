@@ -16,6 +16,7 @@ namespace shard
 	class FrameLayout;
 	class SemanticModel;
 	class PragmaticModel;
+	class GarbageCollector;
 
 	enum class InterruptionReason
 	{
@@ -39,10 +40,6 @@ namespace shard
 		std::byte* payloadAddress;
 	};
 
-	// Recycles frame blocks by power-of-two size class. Frames are the only
-	// per-call heap traffic left in the interpreter, and their sizes repeat
-	// per frame layout, so a one-block free list per class removes essentially
-	// all of it once the first call of each layout has run.
 	class SHARD_API FrameBlockPool
 	{
 		static constexpr std::size_t MaxClasses = 32;
@@ -70,12 +67,9 @@ namespace shard
 		static constexpr std::uintptr_t ReferenceTag = 1;
 
 	private:
-		// Per-opcode state. FrameBlockPool returns 64-byte-aligned blocks, so
-		// everything up to m_localCount stays inside the first cache line:
-		// push/pop_entry and execute_frame touch only this line, not the tail
-		// of the 184-byte object.
 		MethodSymbol* m_method = nullptr;
 		CallStackFrame* m_previous = nullptr;
+		GarbageCollector* m_collector = nullptr;
 
 		std::byte* m_evalRegion = nullptr;
 		std::size_t m_evalStride = 0;
@@ -85,29 +79,26 @@ namespace shard
 		std::uint16_t m_argumentCount = 0;
 		std::uint16_t m_variableCount = 0;
 
-		// Flat local metadata carved out of the frame block; the old vectors
-		// each performed a heap allocation on every call. Address and payload
-		// are consumed together by push_local/set_local, so one array of
-		// 16-byte entries beats two parallel arrays (one line instead of two).
 		struct LocalSlot
 		{
-			std::byte* address = nullptr;
-			std::size_t payload = 0;
+			const TypeShape* shape = nullptr;
+			std::byte* dataAddress = nullptr;
+			bool isNullable = false;
 		};
 
 		LocalSlot* m_localSlots = nullptr;
+		std::byte** m_variableSlots = nullptr;
 		std::uint16_t m_localCount = 0;
-
 		std::byte* m_localsRegion = nullptr;
-		std::byte* m_returnSlot = nullptr;
-		std::size_t m_returnPayloadBytes = 0;
+
+		const TypeShape* m_returnShape = nullptr;
+		std::byte* m_returnDestination = nullptr;
+		ObjectInstance m_returnResult;
 		std::size_t m_blockBytes = 0;
 		const FrameLayout* m_layout = nullptr;
 		std::size_t m_instructionPointer = 0;
-		bool m_hasExternalReturnSlot = false;
 		ObjectInstance m_currentException;
 
-		// async suspension state; zero for synchronous frames
 		std::uint32_t m_pendingChildren = 0;
 		std::byte* m_asyncState = nullptr;
 		std::byte* m_awaitedState = nullptr;
@@ -122,13 +113,11 @@ namespace shard
 		static std::uintptr_t pack_header(const TypeShape* shape, bool isReferenceStorage);
 		static const TypeShape* unpack_shape(std::uintptr_t header);
 		static bool unpack_is_reference(std::uintptr_t header);
-
-		std::byte* local_entry(std::uint16_t slot) const;
 		FrameEntryView entry_view(std::byte* entry) const;
 
 	public:
 		static FrameEntryView peek_entry(std::byte* entry);
-		static CallStackFrame* create(MethodSymbol* method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0, FrameBlockPool* pool = nullptr);
+		static CallStackFrame* create(MethodSymbol* method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, GarbageCollector* collector = nullptr, std::byte* externalReturnDestination = nullptr, std::size_t externalReturnPayload = 0, FrameBlockPool* pool = nullptr);
 		static void destroy(CallStackFrame* frame, FrameBlockPool* pool = nullptr);
 
 		CallStackFrame(const CallStackFrame&) = delete;
@@ -179,12 +168,15 @@ namespace shard
 		void set_local(std::uint16_t slot, ObjectInstance value);
 		void push_local(std::uint16_t slot);
 		ObjectInstance get_local_address(std::uint16_t slot) const;
+		ObjectInstance ensure_local_storage(std::uint16_t slot);
 		FrameEntryView get_local_view(std::uint16_t slot) const;
 		std::byte* get_local_entry(std::uint16_t slot) const;
 
-		void place_returned(ObjectInstance value);
-		ObjectInstance get_return_slot() const;
+		void complete_return(ObjectInstance value);
+		void set_return_result(ObjectInstance value);
 		FrameEntryView get_return_view() const;
+		ObjectInstance get_return_slot() const;
+		ObjectInstance get_return_destination() const;
 		std::byte* get_return_entry() const;
 		std::size_t get_return_payload_bytes() const;
 		bool has_external_return_slot() const;
@@ -192,23 +184,19 @@ namespace shard
 		template<typename F>
 		void for_each_live_entry(F&& visitor)
 		{
-			FrameEntryView returnView = entry_view(m_returnSlot);
-			if (returnView.shape != nullptr)
-				visitor(returnView);
-
-			for (std::size_t i = 0; i < m_localCount; ++i)
-			{
-				FrameEntryView view = entry_view(m_localSlots[i].address);
-				if (view.shape != nullptr)
-					visitor(view);
-			}
-
 			for (std::uint32_t i = 0; i < m_evalDepth; ++i)
 			{
 				FrameEntryView view = entry_view(m_evalRegion + m_evalStride * i);
 				if (view.shape != nullptr)
 					visitor(view);
 			}
+		}
+
+		template<typename F>
+		void for_each_local(F&& visitor) const
+		{
+			for (std::size_t i = 0; i < m_localCount; ++i)
+				visitor(get_local(static_cast<std::uint16_t>(i)));
 		}
 	};
 }

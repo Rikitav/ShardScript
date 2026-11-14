@@ -61,7 +61,6 @@ namespace shard
 
 		CallStackFrame* m_currentFrame = nullptr;
 		FrameBlockPool m_framePool;
-		alignas(8) std::byte m_returnScratch[16] = {};
 
 		// async task table, runnable queue and the libuv loop; declared after
 		// the collector so it is torn down before the collector disappears
@@ -86,8 +85,8 @@ namespace shard
 		ObjectInstance invoke_native(MethodSymbol* method, std::span<const ObjectInstance> arguments);
 		ObjectInstance invoke_native_callback(FuncHandler callback, MethodSymbol* method, std::span<const ObjectInstance> arguments);
 		ObjectInstance invoke_native_async(MethodSymbol* method, std::span<const ObjectInstance> arguments);
-		void invoke_into(MethodSymbol* method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry, const FrameLayout* layout = nullptr);
-		void write_entry_value(const FrameEntryView& view, std::size_t payloadBytes, ObjectInstance value);
+		ObjectInstance invoke_into(MethodSymbol* method, std::span<const ObjectInstance> arguments, std::byte* destination, const FrameLayout* layout = nullptr);
+		ObjectInstance write_return_value(const TypeShape* returnShape, std::byte* destination, ObjectInstance value);
 
 		void throw_value(CallStackFrame* frame, ObjectInstance value);
 		void propagate_exception(CallStackFrame* into, ObjectInstance exception);

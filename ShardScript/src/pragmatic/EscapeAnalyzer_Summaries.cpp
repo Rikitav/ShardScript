@@ -334,27 +334,6 @@ ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, c
 	return ReturnDisposition::Unknown;
 }
 
-bool EscapeAnalyzer::is_caller_placeable(MethodSymbol* owner) const
-{
-	if (owner == nullptr)
-		return false;
-
-	StructSymbol* returnType = owner->get_return_type();
-	if (returnType == nullptr)
-		return false;
-
-	// concrete types only: interfaces (unknown size + vtable identity),
-	// nullables, arrays and type parameters stay heap; a generic closed over
-	// concrete arguments has a fixed shape and chains like any struct
-	if (returnType->get_kind() == SyntaxKind::StructDeclaration)
-		return true;
-
-	if (returnType->get_kind() != SyntaxKind::GenericType)
-		return false;
-
-	return static_cast<GenericTypeSymbol*>(returnType)->get_underlaying_type()->get_kind() == SyntaxKind::StructDeclaration;
-}
-
 bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries) const
 {
 	for (const Graph::CallExposure& exposure : m_graph.callExposures)
@@ -374,68 +353,6 @@ bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<MethodSymbol*,
 	return true;
 }
 
-bool EscapeAnalyzer::participates_in_reference_cycle(StructSymbol* type)
-{
-	gmt::unordered_set<StructSymbol*> visited;
-	gmt::inline_vector<StructSymbol*, 8> stack;
-	stack.push_back(type);
-
-	while (!stack.get_vector().empty())
-	{
-		StructSymbol* current = stack.get_vector().back();
-		stack.get_vector().pop_back();
-
-		for (FieldSymbol* field : current->fields)
-		{
-			StructSymbol* fieldType = field->get_return_type();
-			if ((fieldType == nullptr) || fieldType->get_kind() != SyntaxKind::StructDeclaration)
-				continue;
-
-			if (fieldType == type)
-				return true;
-
-			if (visited.insert(fieldType).second)
-				stack.push_back(fieldType);
-		}
-	}
-
-	return false;
-}
-
-bool EscapeAnalyzer::is_scalar_eligible(StructSymbol* type)
-{
-	if (type == nullptr)
-		return false;
-
-	if (type->get_kind() != SyntaxKind::StructDeclaration)
-		return false;
-
-	auto cached = m_scalarCache.find(type);
-	if (cached != m_scalarCache.end())
-		return cached->second;
-
-	bool eligible = true;
-
-	for (FieldSymbol* field : type->fields)
-	{
-		StructSymbol* fieldType = field->get_return_type();
-		bool nullableField = fieldType != nullptr;
-		nullableField = nullableField && fieldType->get_kind() == SyntaxKind::NullableType;
-
-		if (nullableField)
-		{
-			eligible = false;
-			break;
-		}
-	}
-
-	if (eligible)
-		eligible = !participates_in_reference_cycle(type);
-
-	m_scalarCache[type] = eligible;
-	return eligible;
-}
-
 AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, StructSymbol* nodeType, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	AllocationSiteVerdict verdict;
@@ -448,38 +365,13 @@ AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, StructSymbol* nodeTy
 		return verdict;
 	}
 
-	if (verdict.level == EscapeLevel::GlobalEscape)
+	if (verdict.level == EscapeLevel::GlobalEscape || m_graph.coldChannels[id] != EscapeChannel::None)
 	{
-		bool returnOnly = verdict.channels == EscapeChannel::Return;
-		verdict.verdict = returnOnly && is_caller_placeable(m_graph.idOwners[id]) ? PlacementVerdict::StackReturn : PlacementVerdict::Heap;
+		verdict.verdict = PlacementVerdict::Heap;
 	}
 	else if (verdict.level == EscapeLevel::ArgEscape)
 	{
-		bool closed = cone_closed(id, summaries);
-		bool hasCold = m_graph.coldChannels[id] != EscapeChannel::None;
-
-		// cone-closed ArgEscape with cold channels: the cone adds no hot
-		// escape, so the site is born on the stack and migrates on the
-		// cold path like any other Promote
-		if (closed && hasCold)
-			verdict.verdict = PlacementVerdict::Promote;
-		else
-			verdict.verdict = closed ? PlacementVerdict::Stack : PlacementVerdict::Heap;
-	}
-	else if (m_graph.coldChannels[id] != EscapeChannel::None)
-	{
-		// hot NoEscape with cold-only upward flows: born on the stack,
-		// migrated at the cold escape point (materialization-on-merge
-		// would be needed for Scalar, so Promote is the stand-in)
-		verdict.verdict = PlacementVerdict::Promote;
-	}
-	else if (m_graph.identityExposed[id])
-	{
-		verdict.verdict = PlacementVerdict::Stack;
-	}
-	else if (is_scalar_eligible(nodeType))
-	{
-		verdict.verdict = PlacementVerdict::Scalar;
+		verdict.verdict = cone_closed(id, summaries) ? PlacementVerdict::Stack : PlacementVerdict::Heap;
 	}
 	else
 	{
@@ -493,44 +385,9 @@ AllocationSiteVerdict EscapeAnalyzer::classify_local(int id, SyntaxSymbol* local
 {
 	StructSymbol* type = local_type(local);
 	AllocationSiteVerdict verdict = classify_node(id, type, summaries);
-	if (local->get_kind() == SyntaxKind::Parameter || type == nullptr)
-		return verdict;
-
-	if (type->get_kind() == SyntaxKind::ArrayType)
-	{
+	if (local->get_kind() != SyntaxKind::Parameter && type != nullptr && type->get_kind() == SyntaxKind::ArrayType)
 		verdict.verdict = PlacementVerdict::Heap;
-		return verdict;
-	}
 
-	if (verdict.verdict != PlacementVerdict::Scalar)
-		return verdict;
-
-	if (get_model().is_primitive_type(type))
-	{
-		verdict.verdict = PlacementVerdict::Stack;
-		return verdict;
-	}
-
-	const SyntaxNode* declaration = get_symbol_table().lookup_node(local);
-	if (declaration != nullptr && declaration->get_kind() == SyntaxKind::VariableStatement)
-	{
-		const ExpressionSyntax* initializer = static_cast<const VariableStatementSyntax*>(declaration)->get_expression();
-		if (initializer == nullptr)
-			return verdict;
-
-		switch (initializer->get_kind())
-		{
-		case SyntaxKind::ObjectExpression:
-		case SyntaxKind::RangeExpression:
-		case SyntaxKind::InvokationExpression:
-			verdict.verdict = PlacementVerdict::Stack;
-			return verdict;
-		default:
-			break;
-		}
-	}
-
-	verdict.verdict = PlacementVerdict::Heap;
 	return verdict;
 }
 

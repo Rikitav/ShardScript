@@ -8,9 +8,6 @@ namespace shard
 	enum class PlacementVerdict
 	{
 		Stack,
-		StackReturn, // STACK* : fresh concrete value returned to a caller frame slot
-		Scalar,      // NoEscape + identity-free, dematerialized into locals
-		Promote,     // born on stack; migration inserted at the cold escape point (spec 4.5)
 		Heap
 	};
 

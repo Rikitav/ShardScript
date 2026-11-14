@@ -26,6 +26,12 @@ namespace
 		if (baseType == nullptr)
 			return nullptr;
 
+		if (baseType->get_kind() == SyntaxKind::NullableType)
+			baseType = static_cast<NullableTypeSymbol*>(baseType)->get_underlaying_type();
+
+		if (baseType == nullptr)
+			return nullptr;
+
 		if (genericArgs.empty() || baseType->get_kind() == SyntaxKind::GenericType)
 			return baseType;
 
@@ -100,8 +106,6 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 
 	SymbolTable& table = model.get_table();
 
-	// everything that is not a sized primitive or an enum is reference-stored;
-	// FrameLayout and the future GC maps consume this flag
 	std::optional<std::size_t> baseTypePrimitiveSize = primitive_size(table, baseType);
 	bool isEnum = baseType->get_kind() == SyntaxKind::EnumDeclaration;
 	shape->m_isReference = !baseTypePrimitiveSize.has_value() && !isEnum;
@@ -111,7 +115,8 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		TypeShape* elementShape = find_or_create_type_shape(model, arrayType->get_underlaying_type());
 
-		shape->m_size = sizeof(std::int64_t) + elementShape->get_size() * arrayType->get_length();
+		shape->m_elementShape = elementShape;
+		shape->m_size = sizeof(std::int64_t) + sizeof(void*) * arrayType->get_length();
 		return;
 	}
 
@@ -121,35 +126,6 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		return;
 	}
 
-	if (baseType->get_kind() == SyntaxKind::NullableType)
-	{
-		NullableTypeSymbol* nullable = static_cast<NullableTypeSymbol*>(baseType);
-		StructSymbol* underlaying = nullable->get_underlaying_type();
-		if (underlaying == nullptr)
-			throw std::runtime_error("cannot build a type shape for a nullable without an underlying type");
-
-		TypeShape* underlayingShape = find_or_create_type_shape(model, underlaying);
-		TypeShape* booleanShape = find_or_create_type_shape(model, table.get_boolean_primitive());
-
-		shape->m_isReference = false;
-
-		TypeShape::SlotInfo flagSlot{};
-		flagSlot.offset = 0;
-		flagSlot.fieldShape = booleanShape;
-		shape->m_slots.push_back(flagSlot);
-
-		TypeShape::SlotInfo valueSlot{};
-		valueSlot.offset = sizeof(bool);
-		valueSlot.fieldShape = underlayingShape;
-		shape->m_slots.push_back(valueSlot);
-
-		std::size_t underlayingSize = underlayingShape->is_reference() ? sizeof(void*) : underlayingShape->get_size();
-		shape->m_size = sizeof(bool) + underlayingSize;
-		return;
-	}
-
-	// the substitution context for fields: a queried generic instance uses
-	// itself, a generic definition with provided arguments gets one created
 	GenericTypeSymbol* within = nullptr;
 	StructSymbol* fieldOwner = baseType;
 
@@ -172,8 +148,6 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		if (field->get_linking() == LINK_STATIC)
 			continue;
 
-		// full recursive substitution matters for nested constructions such
-		// as '__TaskState<T>' fields quoted by 'Task<T>'
 		StructSymbol* fieldType = field->get_return_type();
 		if (within != nullptr)
 			fieldType = model.substitute_type(fieldType, within);
@@ -183,15 +157,13 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 
 		TypeShape::SlotInfo slot{};
 		slot.offset = offset;
+		slot.isNullable = fieldType->get_kind() == SyntaxKind::NullableType;
 		slot.fieldShape = find_or_create_type_shape(model, fieldType);
 
-		std::size_t fieldSize = slot.fieldShape->is_reference() ? sizeof(void*) : slot.fieldShape->get_size();
-		offset += fieldSize;
-
+		offset += sizeof(void*);
 		shape->m_slots.push_back(slot);
 	}
 
-	// a fieldless primitive keeps its intrinsic size; composites take the laid-out size
 	if (offset == 0)
 		shape->m_size = baseTypePrimitiveSize.has_value() ? baseTypePrimitiveSize.value() : offset;
 	else

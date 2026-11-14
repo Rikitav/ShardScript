@@ -11,17 +11,19 @@ namespace shard
 {
 	class TypeShape;
 	class FieldSymbol;
+	class GarbageCollector;
 
 	class SHARD_API ObjectInstance
 	{
 		const TypeShape* m_shape;
 		std::byte* m_memory;
+		GarbageCollector* m_collector = nullptr;
 
 		static std::uint32_t resolve_field_slot(FieldSymbol* field);
 
 	public:
 		ObjectInstance();
-		ObjectInstance(const TypeShape* shape, std::byte* memory);
+		ObjectInstance(const TypeShape* shape, std::byte* memory, GarbageCollector* collector = nullptr);
 
 		static ObjectInstance null();
 
@@ -33,6 +35,7 @@ namespace shard
 		friend bool operator!=(std::nullptr_t, const ObjectInstance& value) noexcept { return !value.is_null(); }
 		const TypeShape* get_shape() const;
 		std::byte* get_memory() const;
+		GarbageCollector* get_collector() const { return m_collector; }
 
 		ObjectInstance get_field(std::uint32_t slot) const;
 		ObjectInstance get_field(FieldSymbol* field) const;

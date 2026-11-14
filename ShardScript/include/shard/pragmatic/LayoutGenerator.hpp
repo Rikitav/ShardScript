@@ -24,7 +24,6 @@ namespace shard
 		PragmaticModel& m_pragmatic;
 
 		void build_frame(MethodSymbol* method);
-		void expand_scalar_local(FrameLayout& layout, StructSymbol* type, std::pmr::vector<const TypeShape*>& variableShapes);
 
 	public:
 		LayoutGenerator(SemanticModel& model, PragmaticModel& pragmatic, DiagnosticsContext& diagnostics);

@@ -46000,23 +46000,6 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_PragmaticModel_get_promotion_points(shard_PragmaticModel_t self, const void* p0)
-	{
-		if (!self)
-		{
-			return nullptr;
-		}
-		try
-		{
-			auto result = self->get_promotion_points(*static_cast<const shard::ExpressionSyntax* const*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result));
-		}
-		catch (...)
-		{
-			return nullptr;
-		}
-	}
-
 	SHARD_API void* shard_PragmaticModel_get_summaries(shard_PragmaticModel_t self)
 	{
 		if (!self)
@@ -46243,43 +46226,6 @@ extern "C"
 		try
 		{
 			self->set_local_verdict(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1), *p2);
-			return SHARD_STATUS_OK;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
-
-	SHARD_API shard_status_t shard_PragmaticModel_set_promotion_points(shard_PragmaticModel_t self, const void* p0, const void* p1)
-	{
-		if (!self)
-		{
-			return SHARD_STATUS_ERROR_NULL_POINTER;
-		}
-		try
-		{
-			self->set_promotion_points(*static_cast<const shard::ExpressionSyntax* const*>(p0), *static_cast<const gmt::vector<const shard::ExpressionSyntax*>*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -52131,7 +52077,7 @@ extern "C"
 	{
 		try
 		{
-			auto result = shard::CallStackFrame::create(*static_cast<shard::MethodSymbol* const*>(p0), p1, *p2, *p3, p4, reinterpret_cast<std::byte*>(p5), static_cast<std::size_t>(p6));
+			auto result = shard::CallStackFrame::create(*static_cast<shard::MethodSymbol* const*>(p0), p1, *p2, *p3, p4, nullptr, reinterpret_cast<std::byte*>(p5), static_cast<std::size_t>(p6));
 			return result;
 		}
 		catch (...)

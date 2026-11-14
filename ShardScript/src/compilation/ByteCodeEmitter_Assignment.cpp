@@ -167,24 +167,6 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			return;
 		}
 
-		if (previous != nullptr && is_identifier_target(previous))
-		{
-			SyntaxSymbol* previousBound = get_symbol_table().lookup_symbol(previous);
-			if (previousBound != nullptr && local_verdict(previousBound) == PlacementVerdict::Scalar)
-			{
-				std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
-				if (scalarSlot.has_value())
-				{
-					emit_converted(node->get_right());
-					m_encoder.emit_duplicate();
-					eval_push(sizeof(void*));
-					m_encoder.emit_store_local(*scalarSlot);
-					eval_pop();
-					return;
-				}
-			}
-		}
-
 		if (previous != nullptr)
 			emit_receiver(previous);
 		else

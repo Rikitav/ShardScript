@@ -469,33 +469,14 @@ void ByteCodeEncoder::emit_store_static_field(FieldSymbol* field)
 	append_symbol_operand(m_image.get_text_section(), field);
 }
 
-void ByteCodeEncoder::emit_nullable_default(StructSymbol* type)
+void ByteCodeEncoder::emit_is_not_null()
 {
-	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_DEFAULT);
-	append_symbol_operand(m_image.get_text_section(), type);
+	append_data_value(m_image.get_text_section(), OpCode::IS_NOT_NULL);
 }
 
-void ByteCodeEncoder::emit_nullable_wrap(StructSymbol* type)
+void ByteCodeEncoder::emit_assert_nonnull()
 {
-	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_WRAP);
-	append_symbol_operand(m_image.get_text_section(), type);
-}
-
-void ByteCodeEncoder::emit_nullable_has_value()
-{
-	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_HAS_VALUE);
-}
-
-void ByteCodeEncoder::emit_nullable_unwrap(StructSymbol* type)
-{
-	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_UNWRAP);
-	append_symbol_operand(m_image.get_text_section(), type);
-}
-
-void ByteCodeEncoder::emit_nullable_equal(StructSymbol* type)
-{
-	append_data_value(m_image.get_text_section(), OpCode::NULLABLE_EQUAL);
-	append_symbol_operand(m_image.get_text_section(), type);
+	append_data_value(m_image.get_text_section(), OpCode::ASSERT_NONNULL);
 }
 
 void ByteCodeEncoder::emit_load_enum_field(FieldSymbol* field)
@@ -511,11 +492,12 @@ void ByteCodeEncoder::emit_load_type_argument(std::uint16_t index, StructSymbol*
 	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_call_method_symbol(MethodSymbol* method, std::uint32_t interfaceSlot)
+void ByteCodeEncoder::emit_call_method_symbol(MethodSymbol* method, std::uint32_t interfaceSlot, std::uint16_t returnSlot)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLMETHODSYMBOL);
 	append_symbol_operand(m_image.get_text_section(), method);
 	append_data_value(m_image.get_text_section(), interfaceSlot);
+	append_data_value(m_image.get_text_section(), returnSlot);
 }
 
 void ByteCodeEncoder::emit_call_method_into(MethodSymbol* method, std::uint16_t slot)
