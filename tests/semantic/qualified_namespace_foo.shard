@@ -1,0 +1,11 @@
+namespace my;
+
+public struct Foo
+{
+    public Value: int;
+}
+
+public func GetValue() -> int
+{
+    return 42;
+}

@@ -1,0 +1,11 @@
+namespace my.nested;
+
+public struct Box<T>
+{
+    public Value: T;
+}
+
+public func Echo<T>(value: T) -> T
+{
+    return value;
+}
