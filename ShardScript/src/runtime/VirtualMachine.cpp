@@ -186,7 +186,7 @@ CallStackFrame* VirtualMachine::push_frame(MethodSymbol* method, const FrameLayo
 	if (layout == nullptr)
 		layout = m_pragmatic.find_frame_layout(method);
 
-	CallStackFrame* frame = CallStackFrame::create(method, layout, m_model, m_pragmatic, m_currentFrame, externalReturnEntry, externalReturnPayload, &m_framePool);
+	CallStackFrame* frame = CallStackFrame::create(method, layout, m_model, m_pragmatic, m_currentFrame, &m_collector, externalReturnEntry, externalReturnPayload, &m_framePool);
 	m_collector.register_frame(frame);
 	m_currentFrame = frame;
 	return frame;
@@ -457,57 +457,52 @@ void VirtualMachine::execute_frame(CallStackFrame* frame)
 	}
 }
 
-void VirtualMachine::write_entry_value(const FrameEntryView& view, std::size_t payloadBytes, ObjectInstance value)
+ObjectInstance VirtualMachine::write_return_value(const TypeShape* returnShape, std::byte* destination, ObjectInstance value)
 {
-	if (view.payloadAddress == value.get_memory())
-		return;
+	if (value == nullptr)
+		return ObjectInstance(returnShape, nullptr, &m_collector);
 
-	if (!view.isReferenceStorage)
+	if (returnShape != nullptr && !returnShape->is_reference())
 	{
-		std::memcpy(view.payloadAddress, value.get_memory(), payloadBytes);
-		return;
+		m_collector.pin(value);
+		if (destination == nullptr || (m_collector.is_heap_backed(destination)
+			&& GarbageCollector::get_header(destination)->payloadBytes < returnShape->get_size()))
+		{
+			ObjectInstance storage = m_collector.allocate_instance(returnShape);
+			destination = storage.get_memory();
+		}
+
+		if (destination != value.get_memory())
+			std::memcpy(destination, value.get_memory(), returnShape->get_size());
+
+		m_collector.unpin(1);
+		return ObjectInstance(returnShape, destination, &m_collector);
 	}
 
-	// reference-storage entries pass heap instances through by pointer, but a
-	// frame-local payload would dangle once its frame dies: box it first
-	bool valueIsComposite = value.get_shape() != nullptr && value.get_shape()->is_reference();
-	if (valueIsComposite && !m_collector.is_heap_backed(value.get_memory()))
-	{
-		ObjectInstance boxed = m_collector.allocate_instance(value.get_shape());
-		std::memcpy(boxed.get_memory(), value.get_memory(), value.get_shape()->get_size());
-		value = boxed;
-	}
-
-	std::byte* pointer = value.get_memory();
-	std::memcpy(view.payloadAddress, &pointer, sizeof(std::byte*));
+	return ObjectInstance(returnShape, value.get_memory(), &m_collector);
 }
 
-void VirtualMachine::invoke_into(MethodSymbol* method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry, const FrameLayout* layout)
+ObjectInstance VirtualMachine::invoke_into(MethodSymbol* method, std::span<const ObjectInstance> arguments, std::byte* destination, const FrameLayout* layout)
 {
 	const CallingConvention convention = method->get_calling_convention();
 	StructSymbol* returnType = method->get_return_type();
-
-	// native methods overwhelmingly return primitives; the canonical shapes
-	// are already cached, so skip the shape-cache lookup for them
 	const TypeShape* returnShape = convention == CallingConvention::NativeSync
 		? primitive_shape(returnType)
 		: nullptr;
 	if (returnShape == nullptr)
 		returnShape = resolve_shape(returnType);
 
-	std::size_t returnPayload = returnShape != nullptr ? returnShape->get_size() : 0;
-
 	if (convention == CallingConvention::NativeSync || convention == CallingConvention::NativeAsync)
 	{
 		ObjectInstance result = convention == CallingConvention::NativeAsync
 			? invoke_native_async(method, arguments)
 			: invoke_native(method, arguments);
-		FrameEntryView view = CallStackFrame::peek_entry(destinationEntry);
-		write_entry_value(view, returnPayload, result);
-		return;
+		if (result.get_shape() != nullptr)
+			returnShape = result.get_shape();
+		return write_return_value(returnShape, destination, result);
 	}
 
-	CallStackFrame* frame = push_frame(method, layout, destinationEntry, returnPayload);
+	CallStackFrame* frame = push_frame(method, layout, destination, returnShape != nullptr ? returnShape->get_size() : 0);
 	for (std::size_t i = 0; i < arguments.size(); ++i)
 		frame->set_local(static_cast<std::uint16_t>(i), arguments[i]);
 
@@ -515,24 +510,33 @@ void VirtualMachine::invoke_into(MethodSymbol* method, std::span<const ObjectIns
 
 	bool raised = frame->get_interruption() == InterruptionReason::ExceptionRaised;
 	ObjectInstance exception = frame->get_current_exception();
+	ObjectInstance result = raised ? ObjectInstance::null() : frame->get_return_slot();
 	pop_frame();
 
 	if (!raised)
-		return;
+		return result;
 
 	if (m_currentFrame == nullptr)
 	{
 		m_hasUnhandledException = true;
 		m_unhandledException = exception;
-		return;
+		return ObjectInstance::null();
 	}
 
 	propagate_exception(m_currentFrame, exception);
+	return ObjectInstance::null();
 }
 
 ObjectInstance VirtualMachine::invoke_managed(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout)
 {
-	CallStackFrame* frame = push_frame(method, layout);
+	const TypeShape* returnShape = is_void_method(method) ? nullptr : resolve_shape(method->get_return_type());
+	ObjectInstance destination = returnShape != nullptr && returnShape->get_size() > 0
+		? m_collector.allocate_instance(returnShape)
+		: ObjectInstance::null();
+	if (destination != nullptr)
+		m_collector.pin(destination);
+
+	CallStackFrame* frame = push_frame(method, layout, destination.get_memory(), returnShape != nullptr ? returnShape->get_size() : 0);
 	for (std::size_t i = 0; i < arguments.size(); ++i)
 		frame->set_local(static_cast<std::uint16_t>(i), arguments[i]);
 
@@ -540,26 +544,11 @@ ObjectInstance VirtualMachine::invoke_managed(MethodSymbol* method, std::span<co
 
 	bool raised = frame->get_interruption() == InterruptionReason::ExceptionRaised;
 	ObjectInstance exception = frame->get_current_exception();
-
-	ObjectInstance result = ObjectInstance::null();
-	if (!raised && !is_void_method(method))
-	{
-		ObjectInstance view = frame->get_return_slot();
-		const TypeShape* returnShape = view.get_shape();
-
-		bool inlineValue = returnShape != nullptr && !returnShape->is_reference();
-		if (inlineValue)
-		{
-			std::memcpy(m_returnScratch, view.get_memory(), returnShape->get_size());
-			result = ObjectInstance(returnShape, m_returnScratch);
-		}
-		else
-		{
-			result = view;
-		}
-	}
+	ObjectInstance result = raised || is_void_method(method) ? ObjectInstance::null() : frame->get_return_slot();
 
 	pop_frame();
+	if (destination != nullptr)
+		m_collector.unpin(1);
 
 	if (raised)
 	{
@@ -607,8 +596,9 @@ ObjectInstance VirtualMachine::invoke_native_callback(FuncHandler callback, Meth
 	const TypeShape* returnShape = result.get_shape();
 	if (returnShape != nullptr && !returnShape->is_reference() && result != nullptr)
 	{
-		std::memcpy(m_returnScratch, result.get_memory(), returnShape->get_size());
-		result = ObjectInstance(returnShape, m_returnScratch);
+		ObjectInstance copy = m_collector.allocate_instance(returnShape);
+		std::memcpy(copy.get_memory(), result.get_memory(), returnShape->get_size());
+		result = copy;
 	}
 
 	return result;
@@ -893,10 +883,10 @@ namespace
 	void push_instance(CallStackFrame* frame, ObjectInstance instance)
 	{
 		const TypeShape* shape = instance.get_shape();
-		if (shape == nullptr)
+		if (shape == nullptr || instance == nullptr)
 		{
 			std::byte* pointer = nullptr;
-			frame->push_entry(nullptr, true, &pointer, sizeof(std::byte*));
+			frame->push_entry(shape, true, &pointer, sizeof(std::byte*));
 			return;
 		}
 
@@ -908,6 +898,34 @@ namespace
 		}
 
 		frame->push_entry(shape, false, instance.get_memory(), shape->get_size());
+	}
+
+	ObjectInstance read_pointer_slot(GarbageCollector& collector, const TypeShape* shape, std::byte* address)
+	{
+		std::byte* pointer = nullptr;
+		std::memcpy(&pointer, address, sizeof(std::byte*));
+		return ObjectInstance(shape, pointer, &collector);
+	}
+
+	void write_pointer_slot(GarbageCollector& collector, const TypeShape* shape, std::byte* address, ObjectInstance value)
+	{
+		if (shape->is_reference() || value == nullptr)
+		{
+			std::byte* pointer = value.get_memory();
+			std::memcpy(address, &pointer, sizeof(std::byte*));
+			return;
+		}
+
+		std::byte* pointer = nullptr;
+		std::memcpy(&pointer, address, sizeof(std::byte*));
+		if (pointer == nullptr)
+		{
+			ObjectInstance cell = collector.allocate_instance(shape);
+			pointer = cell.get_memory();
+			std::memcpy(address, &pointer, sizeof(std::byte*));
+		}
+
+		std::memcpy(pointer, value.get_memory(), shape->get_size());
 	}
 }
 
@@ -1084,7 +1102,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 					if (!is_void_method(frame->get_method()))
 					{
 						ObjectInstance value = frame->pop_entry();
-						write_entry_value(frame->get_return_view(), frame->get_return_payload_bytes(), value);
+						frame->complete_return(value);
 					}
 
 					frame->set_instruction_pointer(decoder.get_cursor());
@@ -1112,7 +1130,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			if (!is_void_method(frame->get_method()))
 			{
 				ObjectInstance value = frame->pop_entry();
-				write_entry_value(frame->get_return_view(), frame->get_return_payload_bytes(), value);
+				frame->complete_return(value);
 			}
 
 			frame->set_interruption(InterruptionReason::ValueReturned);
@@ -1248,6 +1266,23 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			ObjectInstance right = frame->pop_entry();
 			ObjectInstance left = frame->pop_entry();
 
+			if (opcode == OpCode::COMPARE_EQUAL || opcode == OpCode::COMPARE_NOTEQUAL)
+			{
+				bool stringValues = left.get_shape() == m_primitiveShapes.string && right.get_shape() == m_primitiveShapes.string;
+				bool referenceValues = !stringValues && ((left.get_shape() != nullptr && left.get_shape()->is_reference())
+					|| (right.get_shape() != nullptr && right.get_shape()->is_reference()));
+				if (left == nullptr || right == nullptr || referenceValues)
+				{
+					bool equal = left == nullptr || right == nullptr
+						? (left == nullptr) == (right == nullptr)
+						: left.get_memory() == right.get_memory();
+					if (opcode == OpCode::COMPARE_NOTEQUAL)
+						equal = !equal;
+					frame->push_entry(m_primitiveShapes.boolean, false, &equal, sizeof(bool));
+					break;
+				}
+			}
+
 			ScalarResult result;
 			PrimitiveStatus status = PrimitiveMath::compare(opcode, m_primitiveShapes, left, right, result);
 			if (status != PrimitiveStatus::Success)
@@ -1295,125 +1330,24 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			break;
 		}
 
-		case OpCode::NULLABLE_DEFAULT:
+		case OpCode::IS_NOT_NULL:
 		{
-			StructSymbol* type = decoder.absorb_type_symbol();
-			const TypeShape* shape = resolve_shape(type);
-			std::byte buffer[16] = {};
-			frame->push_entry(shape, false, buffer, shape->get_size());
-			break;
-		}
-
-		case OpCode::NULLABLE_WRAP:
-		{
-			StructSymbol* type = decoder.absorb_type_symbol();
-			const TypeShape* shape = resolve_shape(type);
-			const TypeShape* valueShape = shape->get_slot(1).fieldShape;
 			ObjectInstance value = frame->pop_entry();
-
-			std::byte buffer[16] = {};
-			bool hasValue = true;
-
-			if (valueShape->is_reference())
-			{
-				std::byte* pointer = value.get_memory();
-				std::memcpy(buffer + 1, &pointer, sizeof(std::byte*));
-				hasValue = pointer != nullptr;
-			}
-			else
-			{
-				std::memcpy(buffer + 1, value.get_memory(), valueShape->get_size());
-			}
-
-			buffer[0] = hasValue ? std::byte{ 1 } : std::byte{ 0 };
-			frame->push_entry(shape, false, buffer, shape->get_size());
-			break;
-		}
-
-		case OpCode::NULLABLE_HAS_VALUE:
-		{
-			ObjectInstance wrapper = frame->pop_entry();
-			unsigned char flag = 0;
-			std::memcpy(&flag, wrapper.get_memory(), sizeof(flag));
-
-			bool hasValue = flag != 0;
+			bool hasValue = value != nullptr;
 			frame->push_entry(m_primitiveShapes.boolean, false, &hasValue, sizeof(bool));
 			break;
 		}
 
-		case OpCode::NULLABLE_UNWRAP:
+		case OpCode::ASSERT_NONNULL:
 		{
-			StructSymbol* type = decoder.absorb_type_symbol();
-			const TypeShape* shape = resolve_shape(type);
-			const TypeShape* valueShape = shape->get_slot(1).fieldShape;
-			ObjectInstance wrapper = frame->pop_entry();
-
-			unsigned char flag = 0;
-			std::memcpy(&flag, wrapper.get_memory(), sizeof(flag));
-			if (flag == 0)
+			ObjectInstance value = frame->pop_entry();
+			if (value == nullptr)
 			{
 				raise_runtime_exception(L"InvalidOperationException: nullable value is null");
 				break;
 			}
 
-			if (valueShape->is_reference())
-			{
-				std::byte* pointer = nullptr;
-				std::memcpy(&pointer, wrapper.get_memory() + 1, sizeof(std::byte*));
-				frame->push_entry(valueShape, true, &pointer, sizeof(std::byte*));
-				break;
-			}
-
-			std::byte buffer[16] = {};
-			std::memcpy(buffer, wrapper.get_memory() + 1, valueShape->get_size());
-			frame->push_entry(valueShape, false, buffer, valueShape->get_size());
-			break;
-		}
-
-		case OpCode::NULLABLE_EQUAL:
-		{
-			StructSymbol* type = decoder.absorb_type_symbol();
-			const TypeShape* shape = resolve_shape(type);
-			const TypeShape* valueShape = shape->get_slot(1).fieldShape;
-
-			ObjectInstance right = frame->pop_entry();
-			ObjectInstance left = frame->pop_entry();
-
-			unsigned char leftFlag = 0;
-			unsigned char rightFlag = 0;
-			std::memcpy(&leftFlag, left.get_memory(), sizeof(leftFlag));
-			std::memcpy(&rightFlag, right.get_memory(), sizeof(rightFlag));
-
-			bool equal = false;
-			if (leftFlag == rightFlag)
-			{
-				if (leftFlag == 0)
-				{
-					equal = true;
-				}
-				else if (valueShape->is_reference())
-				{
-					std::byte* leftPointer = nullptr;
-					std::byte* rightPointer = nullptr;
-					std::memcpy(&leftPointer, left.get_memory() + 1, sizeof(std::byte*));
-					std::memcpy(&rightPointer, right.get_memory() + 1, sizeof(std::byte*));
-					equal = leftPointer == rightPointer;
-				}
-				else if (valueShape->get_base_type() == m_model.get_table().get_double_primitive())
-				{
-					double leftValue = 0.0;
-					double rightValue = 0.0;
-					std::memcpy(&leftValue, left.get_memory() + 1, sizeof(double));
-					std::memcpy(&rightValue, right.get_memory() + 1, sizeof(double));
-					equal = leftValue == rightValue;
-				}
-				else
-				{
-					equal = std::memcmp(left.get_memory() + 1, right.get_memory() + 1, valueShape->get_size()) == 0;
-				}
-			}
-
-			frame->push_entry(m_primitiveShapes.boolean, false, &equal, sizeof(bool));
+			push_instance(frame, value);
 			break;
 		}
 
@@ -1428,17 +1362,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			ObjectInstance field = instance.get_field(slot);
-			const TypeShape* fieldShape = field.get_shape();
-
-			if (fieldShape->is_reference())
-			{
-				std::byte* pointer = field.as_pointer();
-				frame->push_entry(fieldShape, true, &pointer, sizeof(std::byte*));
-				break;
-			}
-
-			frame->push_entry(fieldShape, false, field.get_memory(), fieldShape->get_size());
+			push_instance(frame, instance.get_field(slot));
 			break;
 		}
 
@@ -1467,22 +1391,13 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			std::int64_t count = static_cast<std::int64_t>(arrayType->get_length());
 			ObjectInstance instance = m_collector.allocate_array(arrayShape, elementShape, count);
 
-			std::size_t elementStride = elementShape->is_reference() ? sizeof(void*) : elementShape->get_size();
 			std::byte* elements = instance.get_memory() + sizeof(std::int64_t);
 
 			for (std::int64_t i = count - 1; i >= 0; --i)
 			{
 				ObjectInstance element = frame->pop_entry();
-				std::byte* target = elements + static_cast<std::size_t>(i) * elementStride;
-
-				if (elementShape->is_reference())
-				{
-					std::byte* pointer = element.get_memory();
-					std::memcpy(target, &pointer, sizeof(std::byte*));
-					continue;
-				}
-
-				std::memcpy(target, element.get_memory(), elementStride);
+				std::byte* target = elements + static_cast<std::size_t>(i) * sizeof(void*);
+				write_pointer_slot(m_collector, elementShape, target, element);
 			}
 
 			push_instance(frame, instance);
@@ -1522,18 +1437,8 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			StructSymbol* baseType = instance.get_shape()->get_base_type();
 			const TypeShape* elementShape = resolve_shape(static_cast<ArrayTypeSymbol*>(baseType)->get_underlaying_type());
 
-			std::size_t elementStride = elementShape->is_reference() ? sizeof(void*) : elementShape->get_size();
-			std::byte* elementAddress = instance.get_memory() + sizeof(std::int64_t) + static_cast<std::size_t>(index) * elementStride;
-
-			if (elementShape->is_reference())
-			{
-				std::byte* pointer;
-				std::memcpy(&pointer, elementAddress, sizeof(std::byte*));
-				frame->push_entry(elementShape, true, &pointer, sizeof(std::byte*));
-				break;
-			}
-
-			frame->push_entry(elementShape, false, elementAddress, elementShape->get_size());
+			std::byte* elementAddress = instance.get_memory() + sizeof(std::int64_t) + static_cast<std::size_t>(index) * sizeof(void*);
+			push_instance(frame, read_pointer_slot(m_collector, elementShape, elementAddress));
 			break;
 		}
 
@@ -1559,17 +1464,8 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			StructSymbol* baseType = instance.get_shape()->get_base_type();
 			const TypeShape* elementShape = resolve_shape(static_cast<ArrayTypeSymbol*>(baseType)->get_underlaying_type());
 
-			std::size_t elementStride = elementShape->is_reference() ? sizeof(void*) : elementShape->get_size();
-			std::byte* elementAddress = instance.get_memory() + sizeof(std::int64_t) + static_cast<std::size_t>(index) * elementStride;
-
-			if (elementShape->is_reference())
-			{
-				std::byte* pointer = value.get_memory();
-				std::memcpy(elementAddress, &pointer, sizeof(std::byte*));
-				break;
-			}
-
-			std::memcpy(elementAddress, value.get_memory(), elementStride);
+			std::byte* elementAddress = instance.get_memory() + sizeof(std::int64_t) + static_cast<std::size_t>(index) * sizeof(void*);
+			write_pointer_slot(m_collector, elementShape, elementAddress, value);
 			break;
 		}
 
@@ -1616,14 +1512,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			ObjectInstance storage = m_collector.get_static_storage(field);
 
 			const TypeShape* shape = storage.get_shape();
-			if (shape->is_reference())
-			{
-				std::byte* pointer = storage.as_pointer();
-				frame->push_entry(shape, true, &pointer, sizeof(std::byte*));
-				break;
-			}
-
-			frame->push_entry(shape, false, storage.get_memory(), shape->get_size());
+			push_instance(frame, read_pointer_slot(m_collector, shape, storage.get_memory()));
 			break;
 		}
 
@@ -1634,13 +1523,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			ObjectInstance storage = m_collector.get_static_storage(field);
 
 			const TypeShape* shape = storage.get_shape();
-			if (shape->is_reference())
-			{
-				storage.write_pointer(value.get_memory());
-				break;
-			}
-
-			std::memcpy(storage.get_memory(), value.get_memory(), shape->get_size());
+			write_pointer_slot(m_collector, shape, storage.get_memory(), value);
 			break;
 		}
 
@@ -1658,6 +1541,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		{
 			MethodSymbol* method = decoder.absorb_method_symbol();
 			std::uint32_t interfaceSlot = decoder.absorb_uint32();
+			std::uint16_t returnSlot = decoder.absorb_uint16();
 
 			std::size_t argumentCount;
 			FrameLayout* layout = m_pragmatic.find_frame_layout(method);
@@ -1684,13 +1568,26 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				layout = m_pragmatic.find_frame_layout(target);
 			}
 
-			ObjectInstance result = invoke_method(target, span, layout, interfaceSlot);
+			bool hasResult = method->get_is_async() || !is_void_method(method);
+			ObjectInstance destination = hasResult ? frame->ensure_local_storage(returnSlot) : ObjectInstance::null();
+			if (destination != nullptr)
+				m_collector.pin(destination);
+
+			ObjectInstance result = method->get_is_async()
+				? invoke_method(target, span, layout, interfaceSlot)
+				: invoke_into(target, span, destination.get_memory(), layout);
+
+			if (destination != nullptr)
+				m_collector.unpin(1);
+
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
 				break;
 
-			// async calls always yield a Task wrapper, even for void results
-			if (method->get_is_async() || !is_void_method(method))
-				push_instance(frame, result);
+			if (hasResult)
+			{
+				frame->set_local(returnSlot, result);
+				frame->push_local(returnSlot);
+			}
 
 			break;
 		}
@@ -1712,14 +1609,20 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				arguments.push_back(frame->pop_entry());
 
 			std::span<const ObjectInstance> span(arguments.get_vector().data(), arguments.get_vector().size());
+			ObjectInstance destination = slot == ReturnSlotSentinel
+				? frame->get_return_destination()
+				: frame->ensure_local_storage(slot);
 
-			// a real caller slot, or the caller's own return slot when a tail
-			// call forwards its result into the chained return storage
-			std::byte* destinationEntry = slot == ReturnSlotSentinel
-				? frame->get_return_entry()
-				: frame->get_local_entry(slot);
+			if (destination != nullptr)
+				m_collector.pin(destination);
+			ObjectInstance result = invoke_into(method, span, destination.get_memory(), layout);
+			if (destination != nullptr)
+				m_collector.unpin(1);
 
-			invoke_into(method, span, destinationEntry, layout);
+			if (slot == ReturnSlotSentinel)
+				frame->set_return_result(result);
+			else
+				frame->set_local(slot, result);
 			break;
 		}
 

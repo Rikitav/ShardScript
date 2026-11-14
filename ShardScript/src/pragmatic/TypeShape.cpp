@@ -29,6 +29,11 @@ std::size_t TypeShape::get_size() const
 	return m_size;
 }
 
+const TypeShape* TypeShape::get_element_shape() const
+{
+	return m_elementShape;
+}
+
 bool TypeShape::is_reference() const
 {
 	return m_isReference;

@@ -337,10 +337,11 @@ ObjectInstance VirtualMachine::await_task(ObjectInstance task)
 
 	ObjectInstance result = read_task_result(state);
 	const TypeShape* shape = result.get_shape();
-	if ((shape != nullptr) && !shape->is_reference())
+	if ((shape != nullptr) && !shape->is_reference() && result != nullptr)
 	{
-		std::memcpy(m_returnScratch, result.get_memory(), shape->get_size());
-		result = ObjectInstance(shape, m_returnScratch);
+		ObjectInstance copy = m_collector.allocate_instance(shape);
+		std::memcpy(copy.get_memory(), result.get_memory(), shape->get_size());
+		result = copy;
 	}
 
 	return result;
@@ -497,8 +498,16 @@ ObjectInstance VirtualMachine::invoke_async_method(MethodSymbol* method, std::sp
 		layout = &m_pragmatic.get_or_create_frame_layout(m_model, method);
 
 	CallStackFrame* parent = m_currentFrame;
-	CallStackFrame* child = CallStackFrame::create(method, layout, m_model, m_pragmatic, parent, nullptr, 0, &m_framePool);
+	const TypeShape* returnShape = returnsVoid ? nullptr : resolve_shape(method->get_return_type());
+	ObjectInstance returnDestination = returnShape != nullptr
+		? m_collector.allocate_instance(returnShape)
+		: ObjectInstance::null();
+	if (returnDestination != nullptr)
+		m_collector.pin(returnDestination);
+	CallStackFrame* child = CallStackFrame::create(method, layout, m_model, m_pragmatic, parent, &m_collector, returnDestination.get_memory(), 0, &m_framePool);
 	m_collector.register_frame(child);
+	if (returnDestination != nullptr)
+		m_collector.unpin(1);
 
 	for (std::size_t i = 0; i < arguments.size(); ++i)
 		child->set_local(static_cast<std::uint16_t>(i), arguments[i]);
@@ -546,20 +555,7 @@ void VirtualMachine::finish_async_frame(CallStackFrame* frame)
 	ObjectInstance value = ObjectInstance::null();
 
 	if (!raised && !is_void_method(frame->get_method()))
-	{
-		ObjectInstance view = frame->get_return_slot();
-		const TypeShape* shape = view.get_shape();
-
-		if ((shape != nullptr) && !shape->is_reference())
-		{
-			std::memcpy(m_returnScratch, view.get_memory(), shape->get_size());
-			value = ObjectInstance(shape, m_returnScratch);
-		}
-		else
-		{
-			value = view;
-		}
-	}
+		value = frame->get_return_slot();
 
 	bool faulted = raised;
 	ObjectInstance fault = raised ? exception : take_unobserved_fault(frame);

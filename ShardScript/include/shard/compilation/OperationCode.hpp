@@ -392,9 +392,10 @@ namespace shard
 		/// <para>When the slot is DirectCallSlot the method is invoked as is; otherwise it
 		/// names an interface member and the implementation is taken from the receiver
 		/// object's vtable at that slot.</para>
-		/// <para>Includes 2 parameters :</para>
+		/// <para>Includes 3 parameters :</para>
 		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
 		/// <para>> std::uint32_t InterfaceSlot - vtable slot, or DirectCallSlot for static binding.</para>
+		/// <para>> std::uint16_t ReturnSlot - caller variable slot providing return storage, or ReturnSlotSentinel for void.</para>
 		/// </summary>
 		CALLMETHODSYMBOL,
 
@@ -542,40 +543,14 @@ namespace shard
 		AWAIT,
 
 		/// <summary>
-		/// Pushes an empty nullable wrapper of the given type.
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> TypeSymbol* pType - the nullable type to produce.</para>
+		/// Pops a pointer and pushes whether it is not null.
 		/// </summary>
-		NULLABLE_DEFAULT,
+		IS_NOT_NULL,
 
 		/// <summary>
-		/// Pops a value and pushes it wrapped into a nullable of the given type. A null
-		/// reference produces an empty wrapper.
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> TypeSymbol* pType - the nullable type to produce.</para>
+		/// Pops a pointer, raises InvalidOperationException if it is null, and pushes
+		/// the same pointer otherwise.
 		/// </summary>
-		NULLABLE_WRAP,
-
-		/// <summary>
-		/// Pops a nullable wrapper and pushes the wrapper's has-value flag.
-		/// <para>Includes no additional parameters.</para>
-		/// </summary>
-		NULLABLE_HAS_VALUE,
-
-		/// <summary>
-		/// Pops a nullable wrapper and pushes the value it holds. Raises
-		/// InvalidOperationException when the wrapper is empty.
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> TypeSymbol* pType - the nullable type being unwrapped.</para>
-		/// </summary>
-		NULLABLE_UNWRAP,
-
-		/// <summary>
-		/// Pops two nullable wrappers of the given type and pushes whether they are
-		/// equal: two empty wrappers are equal, an empty and a filled one are not.
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> TypeSymbol* pType - the nullable type being compared.</para>
-		/// </summary>
-		NULLABLE_EQUAL
+		ASSERT_NONNULL
 	};
 }

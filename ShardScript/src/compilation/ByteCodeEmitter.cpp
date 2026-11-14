@@ -56,7 +56,7 @@ const TypeShape* ByteCodeEmitter::shape_of(StructSymbol* type)
 	return m_pragmatic.find_or_create_type_shape(get_model(), type);
 }
 
-void ByteCodeEmitter::emit_call_method(MethodSymbol* method)
+void ByteCodeEmitter::emit_call_method(MethodSymbol* method, std::uint16_t returnSlot)
 {
 	std::uint32_t interfaceSlot = DirectCallSlot;
 
@@ -69,7 +69,21 @@ void ByteCodeEmitter::emit_call_method(MethodSymbol* method)
 			interfaceSlot = *slot;
 	}
 
-	m_encoder.emit_call_method_symbol(method, interfaceSlot);
+	StructSymbol* resultType = method->get_return_type();
+	if (method->get_is_async())
+		resultType = get_model().get_async_call_type(resultType);
+
+	bool hasResult = method->get_is_async() || (resultType != nullptr && resultType != get_symbol_table().get_void_primitive());
+	if (returnSlot == ReturnSlotSentinel && hasResult)
+	{
+		const TypeShape* resultShape = shape_of(resultType);
+		PlacementVerdict verdict = resultShape != nullptr && !resultShape->is_reference()
+			? PlacementVerdict::Stack
+			: PlacementVerdict::Heap;
+		returnSlot = allocate_temporary(resultType, verdict);
+	}
+
+	m_encoder.emit_call_method_symbol(method, interfaceSlot, returnSlot);
 }
 
 std::size_t ByteCodeEmitter::payload_of(StructSymbol* type)
@@ -89,51 +103,9 @@ void ByteCodeEmitter::eval_push(std::size_t payload)
 	if (m_evalPoisoned)
 		return;
 
-	if (payload < m_minEvalPayload)
-		payload = m_minEvalPayload;
-
 	++m_evalDepth;
 	m_maxEvalDepth = (std::max)(m_maxEvalDepth, static_cast<std::uint32_t>(m_evalDepth));
 	m_maxEvalPayload = (std::max)(m_maxEvalPayload, payload);
-}
-
-void ByteCodeEmitter::update_min_eval_payload()
-{
-	m_minEvalPayload = 0;
-	if (m_layout == nullptr)
-		return;
-
-	std::size_t nullablePayload = sizeof(bool) + sizeof(void*);
-
-	auto isNullable = [](const TypeShape* shape)
-	{
-		if (shape == nullptr)
-			return false;
-
-		StructSymbol* baseType = shape->get_base_type();
-		if (baseType == nullptr)
-			return false;
-
-		return baseType->get_kind() == SyntaxKind::NullableType;
-	};
-
-	for (std::size_t i = 0; i < m_layout->get_argument_shape_count(); ++i)
-	{
-		if (isNullable(m_layout->get_argument_shape(i)))
-		{
-			m_minEvalPayload = nullablePayload;
-			return;
-		}
-	}
-
-	for (std::size_t i = 0; i < m_layout->get_variable_shape_count(); ++i)
-	{
-		if (isNullable(m_layout->get_variable_shape(i)))
-		{
-			m_minEvalPayload = nullablePayload;
-			return;
-		}
-	}
 }
 
 void ByteCodeEmitter::eval_push_type(StructSymbol* type)
@@ -204,34 +176,6 @@ std::optional<std::uint16_t> ByteCodeEmitter::slot_of(SyntaxSymbol* symbol) cons
 	return std::nullopt;
 }
 
-std::optional<std::uint16_t> ByteCodeEmitter::scalar_field_slot(SyntaxSymbol* variable, FieldSymbol* field) const
-{
-	std::optional<std::uint16_t> base = m_pragmatic.get_local_slot(m_generatingFor, variable);
-	if (!base.has_value())
-		return std::nullopt;
-
-	StructSymbol* ownerType = gmt::as<StructSymbol>(field->get_parent());
-	if (ownerType == nullptr)
-		return std::nullopt;
-
-	std::uint16_t ordinal = 0;
-	for (FieldSymbol* candidate : ownerType->fields)
-	{
-		if ((candidate == nullptr) || (candidate->get_return_type() == nullptr))
-			continue;
-
-		if (candidate->get_linking() == LINK_STATIC)
-			continue;
-
-		if (candidate == field)
-			return static_cast<std::uint16_t>(*base + ordinal);
-
-		++ordinal;
-	}
-
-	return std::nullopt;
-}
-
 std::uint16_t ByteCodeEmitter::allocate_temporary(StructSymbol* type, PlacementVerdict verdict)
 {
 	type = substitute_type(type);
@@ -282,31 +226,13 @@ PlacementVerdict ByteCodeEmitter::local_verdict(SyntaxSymbol* symbol) const
 		}
 	}
 
-	AllocationSiteVerdict verdict = m_pragmatic.get_local_verdict(m_generatingFor, symbol);
-	if (verdict.verdict == PlacementVerdict::Promote || verdict.verdict == PlacementVerdict::StackReturn)
-		return PlacementVerdict::Heap;
-
-	return verdict.verdict;
+	return m_pragmatic.get_local_verdict(m_generatingFor, symbol).verdict;
 }
 
 PlacementVerdict ByteCodeEmitter::site_verdict(const ExpressionSyntax* site) const
 {
 	std::optional<AllocationSiteVerdict> verdict = m_pragmatic.get_allocation_site_verdict(site);
-	if (!verdict.has_value())
-		return PlacementVerdict::Heap;
-
-	if (verdict->verdict == PlacementVerdict::Promote)
-		return PlacementVerdict::Heap;
-
-	// return-chained sites construct into the caller-provided return storage
-	if (verdict->verdict == PlacementVerdict::StackReturn)
-		return PlacementVerdict::Stack;
-
-	// scalar sites are identity-free and escape-free: plain stack placement
-	if (verdict->verdict == PlacementVerdict::Scalar)
-		return PlacementVerdict::Stack;
-
-	return verdict->verdict;
+	return verdict.has_value() ? verdict->verdict : PlacementVerdict::Heap;
 }
 
 void ByteCodeEmitter::begin_method(MethodSymbol* method)
@@ -323,7 +249,6 @@ void ByteCodeEmitter::begin_method(MethodSymbol* method)
 	m_maxEvalDepth = 0;
 	m_maxEvalPayload = 0;
 	m_evalPoisoned = false;
-	update_min_eval_payload();
 }
 
 void ByteCodeEmitter::end_method()
@@ -539,7 +464,6 @@ void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation
 	// substitution context come from the instantiation
 	begin_method(open);
 	m_layout = &m_pragmatic.get_or_create_frame_layout(get_model(), instantiation);
-	update_min_eval_payload();
 	m_currentInstantiation = instantiation;
 
 	switch (declarationKind)

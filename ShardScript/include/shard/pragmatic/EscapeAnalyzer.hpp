@@ -101,7 +101,6 @@ namespace shard
 		Graph m_graph;
 		gmt::vector<Frame> m_frameStack;
 		gmt::vector<WalkedMethod> m_walked;
-		gmt::unordered_map<StructSymbol*, bool> m_scalarCache;
 		gmt::unordered_map<const ExpressionSyntax*, CachedExpressionRefs> m_expressionRefs[2];
 		gmt::vector<std::pair<int, const ExpressionSyntax*>> m_coldPoints;
 		int m_nextLoopId = 0;
@@ -157,17 +156,13 @@ namespace shard
 		int classify_return_expression(MethodSymbol* method, const ExpressionSyntax* expression, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
 		int classify_local_roots(MethodSymbol* method, SyntaxSymbol* local);
 
-		bool is_caller_placeable(MethodSymbol* owner) const;
 		bool cone_closed(int id, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries) const;
-		bool is_scalar_eligible(StructSymbol* type);
-		bool participates_in_reference_cycle(StructSymbol* type);
 
 		AllocationSiteVerdict classify_node(int id, StructSymbol* nodeType, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
 		AllocationSiteVerdict classify_local(int id, SyntaxSymbol* local, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
 
 		void record_cold_point(int id, const ExpressionSyntax* expression);
-		bool reaches_site(int from, int to) const;
-		void commit_promotion_points();
+
 
 	public:
 		EscapeAnalyzer(SemanticModel& model, PragmaticModel& pragmatic, DiagnosticsContext& diagnostics);

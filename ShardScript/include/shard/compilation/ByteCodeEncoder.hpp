@@ -109,15 +109,12 @@ namespace shard
 		void emit_load_static_field(FieldSymbol* field);
 		void emit_store_static_field(FieldSymbol* field);
 
-		void emit_nullable_default(StructSymbol* type);
-		void emit_nullable_wrap(StructSymbol* type);
-		void emit_nullable_has_value();
-		void emit_nullable_unwrap(StructSymbol* type);
-		void emit_nullable_equal(StructSymbol* type);
+		void emit_is_not_null();
+		void emit_assert_nonnull();
 		void emit_load_enum_field(FieldSymbol* field);
 
 		void emit_load_type_argument(std::uint16_t index, StructSymbol* type);
-		void emit_call_method_symbol(MethodSymbol* method, std::uint32_t interfaceSlot = DirectCallSlot);
+		void emit_call_method_symbol(MethodSymbol* method, std::uint32_t interfaceSlot, std::uint16_t returnSlot = ReturnSlotSentinel);
 		void emit_call_method_into(MethodSymbol* method, std::uint16_t slot);
 		void emit_call_delegate(DelegateTypeSymbol* type);
 		void emit_return_placed();

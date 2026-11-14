@@ -10,8 +10,10 @@
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/GenericMethodSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
@@ -26,9 +28,6 @@ using namespace shard;
 
 namespace
 {
-	constexpr std::uint32_t NullableFlagSlot = 0;
-	constexpr std::uint32_t NullableValueSlot = 1;
-
 	StructSymbol* constructed_definition(StructSymbol* type)
 	{
 		if (type != nullptr && type->get_kind() == SyntaxKind::GenericType)
@@ -219,12 +218,20 @@ std::wstring_view FuncCallState::get_string_argument(std::size_t index) const
 
 bool FuncCallState::is_nullable_argument(std::size_t index) const
 {
-	ObjectInstance instance = get_argument(index);
-	const TypeShape* shape = instance.get_shape();
-	if ((shape == nullptr) || (shape->get_base_type() == nullptr))
+	if (m_method == nullptr)
 		return false;
 
-	return shape->get_base_type()->get_kind() == SyntaxKind::NullableType;
+	const std::size_t receiverCount = m_method->get_linking() == LINK_INSTANCE ? 1 : 0;
+	if (index < receiverCount)
+		return false;
+
+	const std::size_t parameterIndex = index - receiverCount;
+	const gmt::vector<ParameterSymbol*>& parameters = m_method->get_parameters();
+	if (parameterIndex >= parameters.size() || parameters[parameterIndex] == nullptr)
+		return false;
+
+	StructSymbol* type = parameters[parameterIndex]->get_type();
+	return type != nullptr && type->get_kind() == SyntaxKind::NullableType;
 }
 
 bool FuncCallState::get_nullable_has_value(std::size_t index) const
@@ -232,7 +239,7 @@ bool FuncCallState::get_nullable_has_value(std::size_t index) const
 	if (!is_nullable_argument(index))
 		throw std::invalid_argument("argument is not nullable");
 
-	return get_argument(index).get_field(static_cast<std::uint32_t>(NullableFlagSlot)).as_boolean();
+	return get_argument(index) != nullptr;
 }
 
 ObjectInstance FuncCallState::get_nullable_argument(std::size_t index) const
@@ -240,15 +247,7 @@ ObjectInstance FuncCallState::get_nullable_argument(std::size_t index) const
 	if (!is_nullable_argument(index))
 		throw std::invalid_argument("argument is not nullable");
 
-	ObjectInstance wrapper = get_argument(index);
-	ObjectInstance slot = wrapper.get_field(static_cast<std::uint32_t>(NullableValueSlot));
-	const TypeShape* valueShape = slot.get_shape();
-
-	if (!valueShape->is_reference())
-		return slot;
-
-	// a reference underlying is stored as a pointer inside the wrapper
-	return ObjectInstance(valueShape, slot.as_pointer());
+	return get_argument(index);
 }
 
 void FuncCallState::set_return(ObjectInstance value)
@@ -311,23 +310,49 @@ const TypeShape* FuncCallState::nullable_return_shape() const
 	else if ((m_frame != nullptr) && (m_frame->get_method() != nullptr))
 		returnType = m_frame->get_method()->get_return_type();
 
+	if (m_method != nullptr && m_method->get_is_generic_instantiation())
+	{
+		GenericMethodSymbol* generic = static_cast<GenericMethodSymbol*>(m_method);
+		returnType = m_vm.get_model().substitute_type(returnType, generic->get_type_arguments());
+	}
+	else if (!m_arguments.empty() && m_arguments.front().get_shape() != nullptr)
+	{
+		StructSymbol* receiverType = m_arguments.front().get_shape()->get_base_type();
+		if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::GenericType)
+			returnType = m_vm.get_model().substitute_type(returnType, static_cast<GenericTypeSymbol*>(receiverType));
+	}
+
 	if ((returnType == nullptr) || (returnType->get_kind() != SyntaxKind::NullableType))
 		throw std::invalid_argument("method does not return a nullable");
 
 	return m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), returnType);
 }
 
-void FuncCallState::write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes)
+void FuncCallState::write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes, const TypeShape* valueShape)
 {
-	const TypeShape* shape = nullable_return_shape();
+	const TypeShape* shape = valueShape != nullptr ? valueShape : nullable_return_shape();
+	if (!hasValue)
+	{
+		m_returnValue = ObjectInstance(shape, nullptr, &m_vm.get_collector());
+		return;
+	}
+
+	if (shape->is_reference())
+	{
+		std::byte* pointer = nullptr;
+		if (payload != nullptr && payloadBytes == sizeof(std::byte*))
+			std::memcpy(&pointer, payload, sizeof(std::byte*));
+		if (pointer != nullptr && !m_vm.get_collector().is_heap_backed(pointer))
+			throw std::runtime_error("native nullable return has an unresolved value representation");
+		m_returnValue = ObjectInstance(shape, pointer, &m_vm.get_collector());
+		return;
+	}
 
 	std::memset(m_returnBuffer, 0, sizeof(m_returnBuffer));
-	m_returnBuffer[0] = hasValue ? std::byte{ 1 } : std::byte{ 0 };
+	if (payload != nullptr && payloadBytes > 0)
+		std::memcpy(m_returnBuffer, payload, payloadBytes);
 
-	if (hasValue && (payload != nullptr) && (payloadBytes > 0))
-		std::memcpy(m_returnBuffer + 1, payload, payloadBytes);
-
-	m_returnValue = ObjectInstance(shape, m_returnBuffer);
+	m_returnValue = ObjectInstance(shape, m_returnBuffer, &m_vm.get_collector());
 }
 
 void FuncCallState::set_return_empty_nullable()
@@ -337,32 +362,32 @@ void FuncCallState::set_return_empty_nullable()
 
 void FuncCallState::set_return_nullable_boolean(bool hasValue, bool value)
 {
-	write_nullable_return(hasValue, &value, sizeof(bool));
+	write_nullable_return(hasValue, &value, sizeof(bool), m_vm.get_primitive_shapes().boolean);
 }
 
 void FuncCallState::set_return_nullable_integer(bool hasValue, std::int64_t value)
 {
-	write_nullable_return(hasValue, &value, sizeof(std::int64_t));
+	write_nullable_return(hasValue, &value, sizeof(std::int64_t), m_vm.get_primitive_shapes().integer);
 }
 
 void FuncCallState::set_return_nullable_nint(bool hasValue, std::uintptr_t value)
 {
-	write_nullable_return(hasValue, &value, sizeof(std::uintptr_t));
+	write_nullable_return(hasValue, &value, sizeof(std::uintptr_t), m_vm.get_primitive_shapes().nint);
 }
 
 void FuncCallState::set_return_nullable_double(bool hasValue, double value)
 {
-	write_nullable_return(hasValue, &value, sizeof(double));
+	write_nullable_return(hasValue, &value, sizeof(double), m_vm.get_primitive_shapes().doubleReal);
 }
 
 void FuncCallState::set_return_nullable_char(bool hasValue, wchar_t value)
 {
-	write_nullable_return(hasValue, &value, sizeof(wchar_t));
+	write_nullable_return(hasValue, &value, sizeof(wchar_t), m_vm.get_primitive_shapes().character);
 }
 
 void FuncCallState::set_return_nullable_byte(bool hasValue, std::uint8_t value)
 {
-	write_nullable_return(hasValue, &value, sizeof(std::uint8_t));
+	write_nullable_return(hasValue, &value, sizeof(std::uint8_t), m_vm.get_primitive_shapes().byte);
 }
 
 void FuncCallState::set_return_nullable_string(bool hasValue, std::wstring_view value)
@@ -375,7 +400,7 @@ void FuncCallState::set_return_nullable_string(bool hasValue, std::wstring_view 
 
 	ObjectInstance text = m_vm.create_string(value);
 	std::byte* pointer = text.get_memory();
-	write_nullable_return(true, &pointer, sizeof(std::byte*));
+	write_nullable_return(true, &pointer, sizeof(std::byte*), m_vm.get_primitive_shapes().string);
 }
 
 void FuncCallState::set_return_nullable_reference(bool hasValue, ObjectInstance value)
@@ -383,7 +408,7 @@ void FuncCallState::set_return_nullable_reference(bool hasValue, ObjectInstance 
 	std::byte* pointer = value.get_memory();
 	bool present = hasValue && (pointer != nullptr);
 
-	write_nullable_return(present, &pointer, sizeof(std::byte*));
+	write_nullable_return(present, &pointer, sizeof(std::byte*), value.get_shape());
 }
 
 ObjectInstance FuncCallState::get_return_value() const

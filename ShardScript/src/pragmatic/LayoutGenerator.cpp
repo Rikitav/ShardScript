@@ -37,27 +37,6 @@ void LayoutGenerator::analyze(SyntaxTree& tree)
 	visit_syntax_tree(tree);
 }
 
-void LayoutGenerator::expand_scalar_local(FrameLayout& layout, StructSymbol* type, std::pmr::vector<const TypeShape*>& variableShapes)
-{
-	SemanticModel& model = get_model();
-
-	for (FieldSymbol* field : type->fields)
-	{
-		if ((field == nullptr) || (field->get_return_type() == nullptr))
-			continue;
-
-		if (field->get_linking() == LINK_STATIC)
-			continue;
-
-		StructSymbol* fieldType = field->get_return_type();
-		TypeShape* fieldShape = m_pragmatic.find_or_create_type_shape(model, fieldType);
-
-		PlacementVerdict fieldVerdict = fieldShape->is_reference() ? PlacementVerdict::Heap : PlacementVerdict::Stack;
-		layout.add_variable(fieldType, fieldVerdict);
-		variableShapes.push_back(fieldShape);
-	}
-}
-
 void LayoutGenerator::build_frame(MethodSymbol* method)
 {
 	if (method == nullptr)
@@ -139,13 +118,6 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 
 		AllocationSiteVerdict verdict = m_pragmatic.get_local_verdict(method, local);
 		StructSymbol* localType = local_type(local);
-
-		if (verdict.verdict == PlacementVerdict::Scalar)
-		{
-			m_pragmatic.set_local_slot(method, local, argumentCount + layout.get_variable_count());
-			expand_scalar_local(layout, localType, variableShapes.get_vector());
-			continue;
-		}
 
 		std::uint16_t variableIndex = layout.add_variable(localType, verdict.verdict);
 		m_pragmatic.set_local_slot(method, local, argumentCount + variableIndex);

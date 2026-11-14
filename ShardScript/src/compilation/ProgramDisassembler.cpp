@@ -355,6 +355,7 @@ namespace
 				if (interfaceSlot != DirectCallSlot)
 					args << L" [slot " << interfaceSlot << L"]";
 
+				args << L" [ret " << decoder.absorb_uint16() << L"]";
 				break;
 			}
 
@@ -378,37 +379,15 @@ namespace
 				break;
 			}
 
-			case OpCode::NULLABLE_DEFAULT:
+			case OpCode::IS_NOT_NULL:
 			{
-				opcode = L"nullable_default";
-				write_symbol_name(args, decoder.absorb_type_symbol());
+				opcode = L"is_not_null";
 				break;
 			}
 
-			case OpCode::NULLABLE_WRAP:
+			case OpCode::ASSERT_NONNULL:
 			{
-				opcode = L"nullable_wrap";
-				write_symbol_name(args, decoder.absorb_type_symbol());
-				break;
-			}
-
-			case OpCode::NULLABLE_HAS_VALUE:
-			{
-				opcode = L"nullable_has_value";
-				break;
-			}
-
-			case OpCode::NULLABLE_UNWRAP:
-			{
-				opcode = L"nullable_unwrap";
-				write_symbol_name(args, decoder.absorb_type_symbol());
-				break;
-			}
-
-			case OpCode::NULLABLE_EQUAL:
-			{
-				opcode = L"nullable_equal";
-				write_symbol_name(args, decoder.absorb_type_symbol());
+				opcode = L"assert_nonnull";
 				break;
 			}
 

@@ -1,11 +1,14 @@
 #include <shard/runtime/ObjectInstance.hpp>
 
 #include <shard/pragmatic/TypeShape.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Allocator.hpp>
+
+#include <stdexcept>
 
 using namespace shard;
 
@@ -14,9 +17,10 @@ ObjectInstance::ObjectInstance()
 	, m_memory(nullptr)
 { }
 
-ObjectInstance::ObjectInstance(const TypeShape* shape, std::byte* memory)
+ObjectInstance::ObjectInstance(const TypeShape* shape, std::byte* memory, GarbageCollector* collector)
 	: m_shape(shape)
 	, m_memory(memory)
+	, m_collector(collector)
 { }
 
 ObjectInstance ObjectInstance::null()
@@ -66,7 +70,9 @@ std::uint32_t ObjectInstance::resolve_field_slot(FieldSymbol* field)
 ObjectInstance ObjectInstance::get_field(std::uint32_t slot) const
 {
 	const TypeShape::SlotInfo& info = m_shape->get_slot(slot);
-	return ObjectInstance(info.fieldShape, m_memory + info.offset);
+	std::byte* fieldPointer = nullptr;
+	std::memcpy(&fieldPointer, m_memory + info.offset, sizeof(std::byte*));
+	return ObjectInstance(info.fieldShape, fieldPointer, m_collector);
 }
 
 ObjectInstance ObjectInstance::get_field(FieldSymbol* field) const
@@ -86,7 +92,26 @@ void ObjectInstance::set_field(std::uint32_t slot, const ObjectInstance& value)
 		return;
 	}
 
-	std::memcpy(fieldAddress, value.get_memory(), info.fieldShape->get_size());
+	if (value == nullptr)
+	{
+		std::byte* pointer = nullptr;
+		std::memcpy(fieldAddress, &pointer, sizeof(std::byte*));
+		return;
+	}
+
+	std::byte* fieldPointer = nullptr;
+	std::memcpy(&fieldPointer, fieldAddress, sizeof(std::byte*));
+	if (fieldPointer == nullptr)
+	{
+		if (m_collector == nullptr)
+			throw std::runtime_error("cannot allocate a value cell without a garbage collector");
+
+		ObjectInstance cell = m_collector->allocate_instance(info.fieldShape);
+		fieldPointer = cell.get_memory();
+		std::memcpy(fieldAddress, &fieldPointer, sizeof(std::byte*));
+	}
+
+	std::memcpy(fieldPointer, value.get_memory(), info.fieldShape->get_size());
 }
 
 void ObjectInstance::set_field(FieldSymbol* field, const ObjectInstance& value)
@@ -134,6 +159,9 @@ std::uintptr_t ObjectInstance::as_nint() const
 
 std::byte* ObjectInstance::as_pointer() const
 {
+	if (m_shape != nullptr && m_shape->is_reference())
+		return m_memory;
+
 	std::byte* value;
 	std::memcpy(&value, m_memory, sizeof(std::byte*));
 	return value;

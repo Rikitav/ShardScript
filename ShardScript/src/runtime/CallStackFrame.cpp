@@ -3,7 +3,9 @@
 #include <shard/pragmatic/FrameLayout.hpp>
 #include <shard/pragmatic/PragmaticModel.hpp>
 #include <shard/pragmatic/TypeShape.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
 
+#include <shard/parsing/SyntaxKind.hpp>
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
@@ -37,7 +39,6 @@ std::byte* FrameBlockPool::acquire(std::size_t bytes)
 		return block;
 	}
 
-	// the frame header's hot fields are laid out to fit one cache line
 	return static_cast<std::byte*>(gmt::mem_alloc_aligned(std::size_t{ 1 } << cls, 64));
 }
 
@@ -91,11 +92,6 @@ bool CallStackFrame::unpack_is_reference(std::uintptr_t header)
 	return (header & ReferenceTag) != 0;
 }
 
-std::byte* CallStackFrame::local_entry(std::uint16_t slot) const
-{
-	return m_localSlots[slot].address;
-}
-
 FrameEntryView CallStackFrame::entry_view(std::byte* entry) const
 {
 	return peek_entry(entry);
@@ -113,8 +109,9 @@ FrameEntryView CallStackFrame::peek_entry(std::byte* entry)
 	return view;
 }
 
-CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry, std::size_t externalReturnPayload, FrameBlockPool* pool)
+CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, GarbageCollector* collector, std::byte* externalReturnDestination, std::size_t externalReturnPayload, FrameBlockPool* pool)
 {
+	(void)externalReturnPayload;
 	const TypeShape* returnShape = nullptr;
 	if (layout != nullptr && layout->has_return_shape())
 	{
@@ -122,26 +119,17 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	}
 	else
 	{
-		if (method != nullptr && !(method->get_return_type() == nullptr))
+		if (method != nullptr && method->get_return_type() != nullptr)
 			returnShape = pragmatic.find_or_create_type_shape(model, method->get_return_type());
 
 		if (layout != nullptr)
 			layout->set_return_shape(returnShape);
 	}
 
-	bool returnReference = returnShape != nullptr && returnShape->is_reference();
-	std::size_t returnPayload = 0;
-	if (returnShape != nullptr)
-		returnPayload = returnReference ? sizeof(void*) : returnShape->get_size();
-
-	const std::size_t returnEntryBytes = EntryHeaderSize + gmt::align_up(returnPayload, sizeof(void*));
-
 	const std::uint16_t argumentCount = layout != nullptr ? layout->get_argument_count() : 0;
 	const std::uint16_t variableCount = layout != nullptr ? layout->get_variable_count() : 0;
 	const std::uint16_t localCount = static_cast<std::uint16_t>(argumentCount + variableCount);
 
-	// the layout pass resolved these once; fall back to the pragmatic cache
-	// when a layout predates the cached lists
 	const bool cachedShapes = layout != nullptr
 		&& layout->get_argument_shape_count() == argumentCount
 		&& layout->get_variable_shape_count() == variableCount;
@@ -169,132 +157,164 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 		return pragmatic.find_or_create_type_shape(model, type);
 	};
 
-	auto local_reference = [&](std::size_t index, const TypeShape* shape) -> bool
+	auto local_type = [&](std::size_t index) -> StructSymbol*
 	{
-		if (index < argumentCount)
-			return shape == nullptr || shape->is_reference();
+		if (layout == nullptr)
+			return nullptr;
 
-		// Primitives are always stored inline, whatever the escape verdict;
-		// Reference storage is meaningful for composites only.
-		// A zero-size reference shape (string, delegates, interfaces) names a variable-size heap object that can never be inlined: it is pointer-stored whatever the verdict
-		const FrameSlotRecipe& recipe = layout->get_variable_slots()[index - argumentCount];
-		bool reference = recipe.typeParameterIndex >= 0 || recipe.verdict == PlacementVerdict::Heap;
-		if (shape != nullptr && !shape->is_reference())
-			reference = false;
-
-		if (shape != nullptr && shape->is_reference() && shape->get_size() == 0)
-			reference = true;
-
-		return reference;
+		return index < argumentCount
+			? layout->get_argument_types()[index]
+			: layout->get_variable_slots()[index - argumentCount].concreteType;
 	};
 
-	auto local_payload = [&](const TypeShape* shape, bool reference) -> std::size_t
+	auto owns_local_data = [&](std::size_t index, const TypeShape* shape) -> bool
 	{
-		return !reference && shape != nullptr ? shape->get_size() : sizeof(void*);
+		if (shape == nullptr)
+			return false;
+
+		if (index < argumentCount)
+			return !shape->is_reference();
+
+		const FrameSlotRecipe& recipe = layout->get_variable_slots()[index - argumentCount];
+		if (recipe.verdict != PlacementVerdict::Stack)
+			return false;
+
+		return !shape->is_reference() || shape->get_size() > 0;
+	};
+
+	auto data_bytes = [&](const TypeShape* shape) -> std::size_t
+	{
+		if (shape == nullptr)
+			return 0;
+
+		std::size_t bytes = gmt::align_up(shape->get_size(), sizeof(void*));
+		if (!shape->is_reference())
+			return bytes;
+
+		for (std::size_t i = 0; i < shape->get_slot_count(); ++i)
+		{
+			const TypeShape::SlotInfo& field = shape->get_slot(static_cast<std::uint32_t>(i));
+			if (field.fieldShape != nullptr && !field.fieldShape->is_reference() && !field.isNullable)
+				bytes += gmt::align_up(field.fieldShape->get_size(), sizeof(void*));
+		}
+
+		return bytes;
 	};
 
 	std::size_t localsBytes = 0;
 	for (std::size_t i = 0; i < localCount; ++i)
 	{
 		const TypeShape* shape = local_shape(i);
-		const bool reference = local_reference(i, shape);
-		localsBytes += EntryHeaderSize + gmt::align_up(local_payload(shape, reference), sizeof(void*));
+		if (owns_local_data(i, shape))
+			localsBytes += data_bytes(shape);
 	}
 
 	std::size_t evalSlotPayload = layout != nullptr ? layout->get_eval_slot_payload() : 0;
 	if (layout == nullptr || !layout->is_complete())
-		evalSlotPayload = (std::max)(evalSlotPayload, sizeof(bool) + sizeof(void*));
-	
-	std::size_t evalStride = EntryHeaderSize + gmt::align_up((std::max)(evalSlotPayload, sizeof(void*)), sizeof(void*));
+		evalSlotPayload = (std::max)(evalSlotPayload, sizeof(void*));
 
+	std::size_t evalStride = EntryHeaderSize + gmt::align_up((std::max)(evalSlotPayload, sizeof(void*)), sizeof(void*));
 	std::size_t evalCapacity = 64;
 	if (layout != nullptr && layout->is_complete())
 		evalCapacity = (std::max)(static_cast<std::size_t>(layout->get_max_eval_depth()), static_cast<std::size_t>(8));
 
 	const std::size_t objectBytes = gmt::align_up(sizeof(CallStackFrame), sizeof(void*));
 	const std::size_t metadataBytes = static_cast<std::size_t>(localCount) * sizeof(CallStackFrame::LocalSlot);
-	const std::size_t totalBytes = objectBytes + returnEntryBytes + metadataBytes + localsBytes + evalStride * evalCapacity;
+	const std::size_t slotBytes = static_cast<std::size_t>(localCount) * sizeof(void*);
+	const std::size_t totalBytes = objectBytes + metadataBytes + slotBytes + localsBytes + evalStride * evalCapacity;
 
 	std::byte* block = pool != nullptr
 		? pool->acquire(totalBytes)
 		: static_cast<std::byte*>(gmt::mem_alloc(totalBytes));
-	
-	CallStackFrame* frame = new (block) CallStackFrame();
 
+	CallStackFrame* frame = new (block) CallStackFrame();
 	frame->m_blockBytes = totalBytes;
 	frame->m_layout = layout;
 	frame->m_method = method;
 	frame->m_previous = previous;
+	frame->m_collector = collector;
 	frame->m_argumentCount = argumentCount;
 	frame->m_variableCount = variableCount;
 	frame->m_localCount = localCount;
+	frame->m_returnShape = returnShape;
+	frame->m_returnResult = ObjectInstance(returnShape, nullptr, collector);
 
-	// payload and address tables live inside the frame block: on the old
-	// design every call allocated two more vectors just to describe locals
-	frame->m_localSlots = reinterpret_cast<LocalSlot*>(block + objectBytes + returnEntryBytes);
-	frame->m_localsRegion = reinterpret_cast<std::byte*>(frame->m_localSlots + localCount);
-
+	frame->m_localSlots = reinterpret_cast<LocalSlot*>(block + objectBytes);
+	frame->m_variableSlots = reinterpret_cast<std::byte**>(reinterpret_cast<std::byte*>(frame->m_localSlots) + metadataBytes);
+	frame->m_localsRegion = reinterpret_cast<std::byte*>(frame->m_variableSlots) + slotBytes;
 	frame->m_evalRegion = frame->m_localsRegion + localsBytes;
 	frame->m_evalStride = evalStride;
 	frame->m_evalCapacity = static_cast<std::uint32_t>(evalCapacity);
 
-	// when the caller chains its return storage in, StackReturn-verdict locals
-	// map straight into it: the callee constructs the return value directly
-	// in the caller's frame with no copy at all
-	bool chained = externalReturnEntry != nullptr;
-	if (chained)
+	std::memset(frame->m_variableSlots, 0, slotBytes);
+	if (localsBytes > 0)
+		std::memset(frame->m_localsRegion, 0, localsBytes);
+
+	std::size_t initializationPins = 0;
+	if (externalReturnDestination != nullptr)
 	{
-		frame->m_returnSlot = externalReturnEntry;
-		frame->m_returnPayloadBytes = externalReturnPayload;
-		frame->m_hasExternalReturnSlot = true;
+		frame->m_returnDestination = externalReturnDestination;
 	}
-	else
+	else if (returnShape != nullptr && returnShape->get_size() > 0)
 	{
-		frame->m_returnSlot = block + objectBytes;
-		frame->m_returnPayloadBytes = returnPayload;
+		if (collector == nullptr)
+			throw std::runtime_error("a return destination requires a garbage collector");
+
+		ObjectInstance destination = collector->allocate_instance(returnShape);
+		collector->pin(destination);
+		++initializationPins;
+		frame->m_returnDestination = destination.get_memory();
 	}
 
 	std::size_t cursor = 0;
 	for (std::size_t i = 0; i < localCount; ++i)
 	{
-		const TypeShape* shape = local_shape(i);
-		const bool reference = local_reference(i, shape);
-		const std::size_t payload = local_payload(shape, reference);
+		LocalSlot& local = frame->m_localSlots[i];
+		local.shape = local_shape(i);
+		local.dataAddress = nullptr;
+		StructSymbol* type = local_type(i);
+		local.isNullable = type != nullptr && type->get_kind() == SyntaxKind::NullableType;
 
-		LocalSlot& localSlot = frame->m_localSlots[i];
-		localSlot.payload = payload;
-
-		bool mappable = chained && i >= argumentCount;
-		if (mappable)
+		if (owns_local_data(i, local.shape))
 		{
-			const FrameSlotRecipe& recipe = layout->get_variable_slots()[i - argumentCount];
-			mappable = recipe.verdict == PlacementVerdict::StackReturn && shape != nullptr && shape->is_reference();
+			local.dataAddress = frame->m_localsRegion + cursor;
+			cursor += data_bytes(local.shape);
+
+			if (!local.isNullable)
+				frame->m_variableSlots[i] = local.dataAddress;
+
+			if (local.shape->is_reference())
+			{
+				std::size_t fieldCursor = cursor - data_bytes(local.shape) + gmt::align_up(local.shape->get_size(), sizeof(void*));
+				for (std::size_t j = 0; j < local.shape->get_slot_count(); ++j)
+				{
+					const TypeShape::SlotInfo& field = local.shape->get_slot(static_cast<std::uint32_t>(j));
+					if (field.fieldShape == nullptr || field.fieldShape->is_reference() || field.isNullable)
+						continue;
+
+					std::byte* cell = frame->m_localsRegion + fieldCursor;
+					fieldCursor += gmt::align_up(field.fieldShape->get_size(), sizeof(void*));
+					std::memcpy(local.dataAddress + field.offset, &cell, sizeof(std::byte*));
+				}
+			}
+
+			continue;
 		}
 
-		std::byte* address = mappable ? frame->m_returnSlot : frame->m_localsRegion + cursor;
-		localSlot.address = address;
+		if (i >= argumentCount && local.shape != nullptr && !local.shape->is_reference() && !local.isNullable)
+		{
+			if (collector == nullptr)
+				throw std::runtime_error("a heap local requires a garbage collector");
 
-		cursor += EntryHeaderSize + gmt::align_up(payload, sizeof(void*));
-
-		std::size_t zeroBytes = mappable ? (std::min)(payload, returnPayload) : payload;
-		if (zeroBytes > 0)
-			std::memset(address + EntryHeaderSize, 0, zeroBytes);
-
-		if (mappable)
-			continue;
-
-		std::uintptr_t header = pack_header(shape, reference);
-		std::memcpy(address, &header, EntryHeaderSize);
+			ObjectInstance cell = collector->allocate_instance(local.shape);
+			collector->pin(cell);
+			++initializationPins;
+			frame->m_variableSlots[i] = cell.get_memory();
+		}
 	}
 
-	if (!chained)
-	{
-		std::uintptr_t returnHeader = pack_header(returnShape, returnReference);
-		std::memcpy(frame->m_returnSlot, &returnHeader, EntryHeaderSize);
-
-		if (returnPayload > 0)
-			std::memset(frame->m_returnSlot + EntryHeaderSize, 0, returnPayload);
-	}
+	if (initializationPins > 0)
+		collector->unpin(initializationPins);
 
 	return frame;
 }
@@ -313,121 +333,29 @@ void CallStackFrame::destroy(CallStackFrame* frame, FrameBlockPool* pool)
 		gmt::mem_free(frame);
 }
 
-MethodSymbol* CallStackFrame::get_method() const
-{
-	return m_method;
-}
-
-CallStackFrame* CallStackFrame::get_previous() const
-{
-	return m_previous;
-}
-
-std::size_t CallStackFrame::get_instruction_pointer() const
-{
-	return m_instructionPointer;
-}
-
-void CallStackFrame::set_instruction_pointer(std::size_t offset)
-{
-	m_instructionPointer = offset;
-}
-
-InterruptionReason CallStackFrame::get_interruption() const
-{
-	return m_interruption;
-}
-
-void CallStackFrame::set_interruption(InterruptionReason reason)
-{
-	m_interruption = reason;
-}
-
-ObjectInstance CallStackFrame::get_current_exception() const
-{
-	return m_currentException;
-}
-
-void CallStackFrame::set_current_exception(ObjectInstance value)
-{
-	m_currentException = value;
-}
-
-gmt::vector<std::size_t>& CallStackFrame::get_defer_stack()
-{
-	return m_deferStack;
-}
-
-gmt::vector<ExceptionHandlerRecord>& CallStackFrame::get_exception_handlers()
-{
-	return m_exceptionHandlers;
-}
-
-std::uint16_t CallStackFrame::get_argument_count() const
-{
-	return m_argumentCount;
-}
-
-std::uint16_t CallStackFrame::get_variable_count() const
-{
-	return m_variableCount;
-}
-
-std::uint32_t CallStackFrame::get_pending_children() const
-{
-	return m_pendingChildren;
-}
-
-void CallStackFrame::increment_pending_children()
-{
-	++m_pendingChildren;
-}
-
-void CallStackFrame::decrement_pending_children()
-{
-	if (m_pendingChildren > 0)
-		--m_pendingChildren;
-}
-
-std::byte* CallStackFrame::get_async_state() const
-{
-	return m_asyncState;
-}
-
-void CallStackFrame::set_async_state(std::byte* state)
-{
-	m_asyncState = state;
-}
-
-std::byte* CallStackFrame::get_awaited_state() const
-{
-	return m_awaitedState;
-}
-
-void CallStackFrame::set_awaited_state(std::byte* state)
-{
-	m_awaitedState = state;
-}
-
-bool CallStackFrame::get_suspended_at_return() const
-{
-	return m_suspendedAtReturn;
-}
-
-void CallStackFrame::set_suspended_at_return(bool value)
-{
-	m_suspendedAtReturn = value;
-}
-
-bool CallStackFrame::get_is_runnable() const
-{
-	return m_runnable;
-}
-
-void CallStackFrame::set_is_runnable(bool value)
-{
-	m_runnable = value;
-}
+MethodSymbol* CallStackFrame::get_method() const { return m_method; }
+CallStackFrame* CallStackFrame::get_previous() const { return m_previous; }
+std::size_t CallStackFrame::get_instruction_pointer() const { return m_instructionPointer; }
+void CallStackFrame::set_instruction_pointer(std::size_t offset) { m_instructionPointer = offset; }
+InterruptionReason CallStackFrame::get_interruption() const { return m_interruption; }
+void CallStackFrame::set_interruption(InterruptionReason reason) { m_interruption = reason; }
+ObjectInstance CallStackFrame::get_current_exception() const { return m_currentException; }
+void CallStackFrame::set_current_exception(ObjectInstance value) { m_currentException = value; }
+gmt::vector<std::size_t>& CallStackFrame::get_defer_stack() { return m_deferStack; }
+gmt::vector<ExceptionHandlerRecord>& CallStackFrame::get_exception_handlers() { return m_exceptionHandlers; }
+std::uint16_t CallStackFrame::get_argument_count() const { return m_argumentCount; }
+std::uint16_t CallStackFrame::get_variable_count() const { return m_variableCount; }
+std::uint32_t CallStackFrame::get_pending_children() const { return m_pendingChildren; }
+void CallStackFrame::increment_pending_children() { ++m_pendingChildren; }
+void CallStackFrame::decrement_pending_children() { if (m_pendingChildren > 0) --m_pendingChildren; }
+std::byte* CallStackFrame::get_async_state() const { return m_asyncState; }
+void CallStackFrame::set_async_state(std::byte* state) { m_asyncState = state; }
+std::byte* CallStackFrame::get_awaited_state() const { return m_awaitedState; }
+void CallStackFrame::set_awaited_state(std::byte* state) { m_awaitedState = state; }
+bool CallStackFrame::get_suspended_at_return() const { return m_suspendedAtReturn; }
+void CallStackFrame::set_suspended_at_return(bool value) { m_suspendedAtReturn = value; }
+bool CallStackFrame::get_is_runnable() const { return m_runnable; }
+void CallStackFrame::set_is_runnable(bool value) { m_runnable = value; }
 
 void CallStackFrame::push_entry(const TypeShape* shape, bool isReferenceStorage, const void* payload, std::size_t payloadBytes)
 {
@@ -450,17 +378,15 @@ ObjectInstance CallStackFrame::pop_entry()
 		throw std::underflow_error("eval stack underflow");
 
 	--m_evalDepth;
-	std::byte* entry = m_evalRegion + m_evalStride * m_evalDepth;
-
-	FrameEntryView view = entry_view(entry);
+	FrameEntryView view = entry_view(m_evalRegion + m_evalStride * m_evalDepth);
 	if (view.isReferenceStorage)
 	{
 		std::byte* pointer;
 		std::memcpy(&pointer, view.payloadAddress, sizeof(std::byte*));
-		return ObjectInstance(view.shape, pointer);
+		return ObjectInstance(view.shape, pointer, m_collector);
 	}
 
-	return ObjectInstance(view.shape, view.payloadAddress);
+	return ObjectInstance(view.shape, view.payloadAddress, m_collector);
 }
 
 ObjectInstance CallStackFrame::peek_entry() const
@@ -468,138 +394,165 @@ ObjectInstance CallStackFrame::peek_entry() const
 	if (m_evalDepth == 0)
 		throw std::underflow_error("eval stack underflow");
 
-	std::byte* entry = m_evalRegion + m_evalStride * (static_cast<std::size_t>(m_evalDepth) - 1);
-
-	FrameEntryView view = entry_view(entry);
+	FrameEntryView view = entry_view(m_evalRegion + m_evalStride * (static_cast<std::size_t>(m_evalDepth) - 1));
 	if (view.isReferenceStorage)
 	{
 		std::byte* pointer;
 		std::memcpy(&pointer, view.payloadAddress, sizeof(std::byte*));
-		return ObjectInstance(view.shape, pointer);
+		return ObjectInstance(view.shape, pointer, m_collector);
 	}
 
-	return ObjectInstance(view.shape, view.payloadAddress);
+	return ObjectInstance(view.shape, view.payloadAddress, m_collector);
 }
 
-std::size_t CallStackFrame::get_eval_depth() const
-{
-	return m_evalDepth;
-}
-
-void CallStackFrame::reset_eval_depth(std::size_t depth)
-{
-	m_evalDepth = static_cast<std::uint32_t>(depth);
-}
+std::size_t CallStackFrame::get_eval_depth() const { return m_evalDepth; }
+void CallStackFrame::reset_eval_depth(std::size_t depth) { m_evalDepth = static_cast<std::uint32_t>(depth); }
 
 ObjectInstance CallStackFrame::peek_entry_at(std::size_t depthFromTop) const
 {
 	if (depthFromTop >= m_evalDepth)
 		throw std::underflow_error("eval stack underflow");
 
-	std::byte* entry = m_evalRegion + m_evalStride * (static_cast<std::size_t>(m_evalDepth) - 1 - depthFromTop);
-
-	FrameEntryView view = entry_view(entry);
+	FrameEntryView view = entry_view(m_evalRegion + m_evalStride * (static_cast<std::size_t>(m_evalDepth) - 1 - depthFromTop));
 	if (view.isReferenceStorage)
 	{
 		std::byte* pointer;
 		std::memcpy(&pointer, view.payloadAddress, sizeof(std::byte*));
-		return ObjectInstance(view.shape, pointer);
+		return ObjectInstance(view.shape, pointer, m_collector);
 	}
 
-	return ObjectInstance(view.shape, view.payloadAddress);
+	return ObjectInstance(view.shape, view.payloadAddress, m_collector);
 }
 
 ObjectInstance CallStackFrame::get_local(std::uint16_t slot) const
 {
-	FrameEntryView view = entry_view(local_entry(slot));
-	if (view.isReferenceStorage)
-	{
-		std::byte* pointer;
-		std::memcpy(&pointer, view.payloadAddress, sizeof(std::byte*));
-		return ObjectInstance(view.shape, pointer);
-	}
-
-	return ObjectInstance(view.shape, view.payloadAddress);
+	return ObjectInstance(m_localSlots[slot].shape, m_variableSlots[slot], m_collector);
 }
 
 void CallStackFrame::set_local(std::uint16_t slot, ObjectInstance value)
 {
-	FrameEntryView view = entry_view(local_entry(slot));
-	if (view.isReferenceStorage)
+	if (slot >= m_localCount)
+		throw std::runtime_error("local slot index is out of range");
+
+	LocalSlot& local = m_localSlots[slot];
+	if (value.get_shape() != nullptr && (local.shape == nullptr || local.shape->get_base_type()->get_kind() == SyntaxKind::TypeParameter))
+		local.shape = value.get_shape();
+
+	if (local.shape == nullptr || local.shape->is_reference())
 	{
-		std::byte* pointer = value.get_memory();
-		std::memcpy(view.payloadAddress, &pointer, sizeof(std::byte*));
+		m_variableSlots[slot] = value.get_memory();
 		return;
 	}
 
-	std::memcpy(view.payloadAddress, value.get_memory(), m_localSlots[slot].payload);
+	if (value == nullptr)
+	{
+		m_variableSlots[slot] = nullptr;
+		return;
+	}
+
+	std::byte* destination = local.dataAddress;
+	if (destination == nullptr)
+		destination = m_variableSlots[slot];
+
+	if (destination == nullptr)
+	{
+		if (m_collector == nullptr)
+			throw std::runtime_error("cannot allocate a local value cell without a garbage collector");
+
+		ObjectInstance cell = m_collector->allocate_instance(local.shape);
+		destination = cell.get_memory();
+	}
+
+	m_variableSlots[slot] = destination;
+	std::memcpy(destination, value.get_memory(), local.shape->get_size());
+	m_variableSlots[slot] = destination;
 }
 
 void CallStackFrame::push_local(std::uint16_t slot)
 {
-	FrameEntryView view = entry_view(local_entry(slot));
-	if (view.isReferenceStorage)
+	const LocalSlot& local = m_localSlots[slot];
+	std::byte* pointer = m_variableSlots[slot];
+	if (pointer == nullptr || local.shape == nullptr || local.shape->is_reference())
 	{
-		push_entry(view.shape, true, view.payloadAddress, sizeof(std::byte*));
+		push_entry(local.shape, true, &pointer, sizeof(std::byte*));
 		return;
 	}
 
-	if (view.shape != nullptr && view.shape->is_reference())
-	{
-		std::byte* address = view.payloadAddress;
-		push_entry(view.shape, true, &address, sizeof(std::byte*));
-		return;
-	}
-
-	push_entry(view.shape, false, view.payloadAddress, m_localSlots[slot].payload);
+	push_entry(local.shape, false, pointer, local.shape->get_size());
 }
 
 ObjectInstance CallStackFrame::get_local_address(std::uint16_t slot) const
 {
-	FrameEntryView view = entry_view(local_entry(slot));
-	return ObjectInstance(view.shape, view.payloadAddress);
+	return get_local(slot);
+}
+
+ObjectInstance CallStackFrame::ensure_local_storage(std::uint16_t slot)
+{
+	LocalSlot& local = m_localSlots[slot];
+	if (local.dataAddress != nullptr)
+		return ObjectInstance(local.shape, local.dataAddress, m_collector);
+
+	if (m_variableSlots[slot] != nullptr)
+		return get_local(slot);
+
+	if (m_collector == nullptr || local.shape == nullptr)
+		return ObjectInstance::null();
+
+	ObjectInstance instance = m_collector->allocate_instance(local.shape);
+	m_variableSlots[slot] = instance.get_memory();
+	return instance;
 }
 
 FrameEntryView CallStackFrame::get_local_view(std::uint16_t slot) const
 {
-	return entry_view(local_entry(slot));
+	FrameEntryView view{};
+	view.shape = m_localSlots[slot].shape;
+	view.isReferenceStorage = true;
+	view.payloadAddress = reinterpret_cast<std::byte*>(m_variableSlots + slot);
+	return view;
 }
 
 std::byte* CallStackFrame::get_local_entry(std::uint16_t slot) const
 {
-	return local_entry(slot);
+	return reinterpret_cast<std::byte*>(m_variableSlots + slot);
 }
 
 FrameEntryView CallStackFrame::get_return_view() const
 {
-	return entry_view(m_returnSlot);
+	FrameEntryView view{};
+	view.shape = m_returnShape;
+	view.isReferenceStorage = true;
+	view.payloadAddress = reinterpret_cast<std::byte*>(const_cast<std::byte**>(&m_returnDestination));
+	return view;
 }
 
-ObjectInstance CallStackFrame::get_return_slot() const
+void CallStackFrame::complete_return(ObjectInstance value)
 {
-	FrameEntryView view = entry_view(m_returnSlot);
-	if (view.isReferenceStorage)
+	if (value == nullptr)
 	{
-		std::byte* pointer;
-		std::memcpy(&pointer, view.payloadAddress, sizeof(std::byte*));
-		return ObjectInstance(view.shape, pointer);
+		m_returnResult = ObjectInstance(m_returnShape, nullptr, m_collector);
+		return;
 	}
 
-	return ObjectInstance(view.shape, view.payloadAddress);
+	if (m_returnShape != nullptr && !m_returnShape->is_reference())
+	{
+		if (m_returnDestination != nullptr && value.get_memory() != m_returnDestination)
+			std::memcpy(m_returnDestination, value.get_memory(), m_returnShape->get_size());
+
+		m_returnResult = ObjectInstance(m_returnShape, m_returnDestination, m_collector);
+		return;
+	}
+
+	m_returnResult = ObjectInstance(m_returnShape, value.get_memory(), m_collector);
 }
 
-std::byte* CallStackFrame::get_return_entry() const
+void CallStackFrame::set_return_result(ObjectInstance value)
 {
-	return m_returnSlot;
+	m_returnResult = ObjectInstance(m_returnShape, value.get_memory(), m_collector);
 }
 
-std::size_t CallStackFrame::get_return_payload_bytes() const
-{
-	return m_returnPayloadBytes;
-}
-
-bool CallStackFrame::has_external_return_slot() const
-{
-	return m_hasExternalReturnSlot;
-}
-
+ObjectInstance CallStackFrame::get_return_slot() const { return m_returnResult; }
+ObjectInstance CallStackFrame::get_return_destination() const { return ObjectInstance(m_returnShape, m_returnDestination, m_collector); }
+std::byte* CallStackFrame::get_return_entry() const { return m_returnDestination; }
+std::size_t CallStackFrame::get_return_payload_bytes() const { return m_returnShape != nullptr ? m_returnShape->get_size() : 0; }
+bool CallStackFrame::has_external_return_slot() const { return true; }

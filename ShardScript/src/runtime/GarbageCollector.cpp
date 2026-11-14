@@ -215,12 +215,27 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 	++m_totalAllocations;
 	m_totalAllocatedBytes += sizeof(GcHeader) + payloadBytes;
 
-	return ObjectInstance(shape, payload);
+	return ObjectInstance(shape, payload, this);
 }
 
 ObjectInstance GarbageCollector::allocate_instance(const TypeShape* shape)
 {
-	return allocate_block(shape, shape->get_size());
+	ObjectInstance instance = allocate_block(shape, shape->get_size());
+	pin(instance);
+
+	for (std::size_t i = 0; i < shape->get_slot_count(); ++i)
+	{
+		const TypeShape::SlotInfo& slot = shape->get_slot(static_cast<std::uint32_t>(i));
+		if (slot.fieldShape == nullptr || slot.fieldShape->is_reference() || slot.isNullable)
+			continue;
+
+		ObjectInstance cell = allocate_instance(slot.fieldShape);
+		std::byte* pointer = cell.get_memory();
+		std::memcpy(instance.get_memory() + slot.offset, &pointer, sizeof(std::byte*));
+	}
+
+	unpin(1);
+	return instance;
 }
 
 ObjectInstance GarbageCollector::allocate_instance(const TypeShape* shape, std::size_t payloadBytes)
@@ -233,12 +248,28 @@ ObjectInstance GarbageCollector::allocate_array(const TypeShape* arrayShape, con
 	if (length < 0)
 		throw std::runtime_error("negative array length");
 
-	const std::size_t elementStride = elementShape->is_reference() ? sizeof(void*) : elementShape->get_size();
-	const std::size_t elementsBytes = checked_multiply(elementStride, static_cast<std::size_t>(length));
+	const std::size_t elementsBytes = checked_multiply(sizeof(void*), static_cast<std::size_t>(length));
 	const std::size_t payloadBytes = checked_add(sizeof(std::int64_t), elementsBytes);
 
 	ObjectInstance instance = allocate_block(arrayShape, payloadBytes);
 	instance.write_integer(length);
+
+	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(arrayShape->get_base_type());
+	bool nullableElements = arrayType->get_underlaying_type()->get_kind() == SyntaxKind::NullableType;
+	if (!elementShape->is_reference() && !nullableElements && length > 0)
+	{
+		pin(instance);
+		const std::size_t valueBytes = checked_multiply(elementShape->get_size(), static_cast<std::size_t>(length));
+		ObjectInstance cells = allocate_instance(elementShape, valueBytes);
+		std::byte* elements = instance.get_memory() + sizeof(std::int64_t);
+		for (std::int64_t i = 0; i < length; ++i)
+		{
+			std::byte* pointer = cells.get_memory() + i * elementShape->get_size();
+			std::memcpy(elements + i * sizeof(std::byte*), &pointer, sizeof(std::byte*));
+		}
+		unpin(1);
+	}
+
 	return instance;
 }
 
@@ -276,18 +307,24 @@ ObjectInstance GarbageCollector::get_static_storage(FieldSymbol* field)
 	const std::size_t key = reinterpret_cast<std::size_t>(field);
 	auto existing = m_statics.find(key);
 	if (existing != m_statics.end())
-		return ObjectInstance(existing->second.shape, existing->second.storage);
+		return ObjectInstance(existing->second.shape, existing->second.storage, this);
 
 	const TypeShape* shape = m_pragmatic.find_or_create_type_shape(m_model, field->get_return_type());
-	std::size_t bytes = shape->is_reference() ? sizeof(void*) : shape->get_size();
 
 	StaticStorage storage{};
 	storage.shape = shape;
-	storage.storage = static_cast<std::byte*>(gmt::mem_alloc(bytes));
-	std::memset(storage.storage, 0, bytes);
+	storage.storage = static_cast<std::byte*>(gmt::mem_alloc(sizeof(void*)));
+	std::memset(storage.storage, 0, sizeof(void*));
 	m_statics.emplace(key, storage);
 
-	return ObjectInstance(shape, storage.storage);
+	if (!shape->is_reference() && field->get_return_type()->get_kind() != SyntaxKind::NullableType)
+	{
+		ObjectInstance cell = allocate_instance(shape);
+		std::byte* pointer = cell.get_memory();
+		std::memcpy(storage.storage, &pointer, sizeof(std::byte*));
+	}
+
+	return ObjectInstance(shape, storage.storage, this);
 }
 
 void GarbageCollector::register_frame(CallStackFrame* frame)
@@ -397,26 +434,23 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 
 	if (kind == SyntaxKind::ArrayType)
 	{
-		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
-		const TypeShape* elementShape = m_pragmatic.find_or_create_type_shape(m_model, arrayType->get_underlaying_type());
-
 		std::int64_t length;
 		std::memcpy(&length, payload, sizeof(std::int64_t));
 
-		if (!elementShape->is_reference())
+		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
+		const TypeShape* elementShape = shape->get_element_shape();
+		std::byte* elements = payload + sizeof(std::int64_t);
+		if (!elementShape->is_reference() && arrayType->get_underlaying_type()->get_kind() != SyntaxKind::NullableType)
 		{
-			if (elementShape->get_slot_count() == 0)
-				return;
-
-			std::size_t elementSize = elementShape->get_size();
-			std::byte* elements = payload + sizeof(std::int64_t);
-			for (std::int64_t i = 0; i < length; ++i)
-				trace_object_fields(elementShape, elements + static_cast<std::size_t>(i) * elementSize);
-
+			if (length > 0)
+			{
+				std::byte* block;
+				std::memcpy(&block, elements, sizeof(std::byte*));
+				trace_pointer(block);
+			}
 			return;
 		}
 
-		std::byte* elements = payload + sizeof(std::int64_t);
 		for (std::int64_t i = 0; i < length; ++i)
 		{
 			std::byte* element;
@@ -430,9 +464,6 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 	for (std::size_t i = 0; i < shape->get_slot_count(); ++i)
 	{
 		const TypeShape::SlotInfo& slot = shape->get_slot(static_cast<std::uint32_t>(i));
-		if (slot.fieldShape == nullptr || !slot.fieldShape->is_reference())
-			continue;
-
 		std::byte* fieldPointer;
 		std::memcpy(&fieldPointer, payload + slot.offset, sizeof(std::byte*));
 		trace_pointer(fieldPointer);
@@ -441,6 +472,22 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 
 void GarbageCollector::trace_frame(CallStackFrame* frame)
 {
+	auto traceValue = [this](ObjectInstance value)
+	{
+		if (value == nullptr || value.get_shape() == nullptr)
+			return;
+
+		if (is_heap_backed(value.get_memory()))
+			trace_pointer(value.get_memory());
+		else
+			trace_object_fields(value.get_shape(), value.get_memory());
+	};
+
+	frame->for_each_local([&traceValue](ObjectInstance value) { traceValue(value); });
+	traceValue(frame->get_return_destination());
+	traceValue(frame->get_return_slot());
+	traceValue(frame->get_current_exception());
+
 	frame->for_each_live_entry([this](const FrameEntryView& view)
 	{
 		if (view.isReferenceStorage)
@@ -500,15 +547,9 @@ void GarbageCollector::collect()
 		if (storage.shape == nullptr)
 			continue;
 
-		if (storage.shape->is_reference())
-		{
-			std::byte* pointer;
-			std::memcpy(&pointer, storage.storage, sizeof(std::byte*));
-			trace_pointer(pointer);
-			continue;
-		}
-
-		trace_object_fields(storage.shape, storage.storage);
+		std::byte* pointer;
+		std::memcpy(&pointer, storage.storage, sizeof(std::byte*));
+		trace_pointer(pointer);
 	}
 
 	for (const auto& [key, instance] : m_internedStrings)
@@ -520,7 +561,7 @@ void GarbageCollector::collect()
 		if (shape == nullptr)
 			continue;
 
-		if (shape->is_reference())
+		if (is_heap_backed(pinned.get_memory()))
 			trace_pointer(pinned.get_memory());
 		else
 			trace_object_fields(shape, pinned.get_memory());
@@ -532,7 +573,7 @@ void GarbageCollector::collect()
 		if (shape == nullptr)
 			continue;
 
-		if (shape->is_reference())
+		if (is_heap_backed(root.get_memory()))
 			trace_pointer(root.get_memory());
 		else
 			trace_object_fields(shape, root.get_memory());

@@ -72,7 +72,7 @@ namespace shard
 		alignas(8) std::byte m_returnBuffer[16] = {};
 
 		const TypeShape* nullable_return_shape() const;
-		void write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes);
+		void write_nullable_return(bool hasValue, const void* payload, std::size_t payloadBytes, const TypeShape* valueShape = nullptr);
 
 	public:
 		FuncCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments, MethodSymbol* method = nullptr);
@@ -90,11 +90,11 @@ namespace shard
 		wchar_t get_char_argument(std::size_t index) const;
 		std::wstring_view get_string_argument(std::size_t index) const;
 
-		// nullable arguments: read the wrapper's flag, then the value it holds
+		// nullable arguments are null or point directly to the underlying value
 		bool is_nullable_argument(std::size_t index) const;
 		bool get_nullable_has_value(std::size_t index) const;
 
-		// the underlying value; the null instance when the wrapper is empty
+		// the underlying value; the null instance when the argument is null
 		ObjectInstance get_nullable_argument(std::size_t index) const;
 
 		template<typename... TArgs>
@@ -109,7 +109,7 @@ namespace shard
 		void set_return_byte(std::uint8_t value);
 		void set_return_string(std::wstring_view value);
 
-		// nullable returns: the wrapper type comes from the method's return type
+		// nullable returns use null or a pointer to the underlying value
 		void set_return_empty_nullable();
 		void set_return_nullable_boolean(bool hasValue, bool value);
 		void set_return_nullable_integer(bool hasValue, std::int64_t value);

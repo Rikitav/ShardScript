@@ -31,20 +31,6 @@ const gmt::unordered_map<const ExpressionSyntax*, AllocationSiteVerdict>& Pragma
 	return m_allocationSites;
 }
 
-void PragmaticModel::set_promotion_points(const ExpressionSyntax* site, gmt::vector<const ExpressionSyntax*> points)
-{
-	m_promotionPoints[site] = std::move(points);
-}
-
-const gmt::vector<const ExpressionSyntax*>* PragmaticModel::get_promotion_points(const ExpressionSyntax* site) const
-{
-	auto it = m_promotionPoints.find(site);
-	if (it == m_promotionPoints.end())
-		return nullptr;
-
-	return &it->second;
-}
-
 void PragmaticModel::set_local_verdict(MethodSymbol* method, SyntaxSymbol* local, const AllocationSiteVerdict& verdict)
 {
 	m_methodLocals[method][local] = verdict;

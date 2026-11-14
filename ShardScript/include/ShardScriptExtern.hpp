@@ -1711,7 +1711,6 @@ extern "C"
 	SHARD_API shard_status_t shard_PragmaticModel_get_local_slot(shard_PragmaticModel_t self, const void* p0, const void* p1, void** out_value);
 	SHARD_API shard_status_t shard_PragmaticModel_get_local_verdict(shard_PragmaticModel_t self, const void* p0, const void* p1, shard_AllocationSiteVerdict_t* out_value);
 	SHARD_API shard_FrameLayout_t shard_PragmaticModel_get_or_create_frame_layout(shard_PragmaticModel_t self, const void* p0);
-	SHARD_API void* shard_PragmaticModel_get_promotion_points(shard_PragmaticModel_t self, const void* p0);
 	SHARD_API void* shard_PragmaticModel_get_summaries(shard_PragmaticModel_t self);
 	SHARD_API shard_status_t shard_PragmaticModel_get_summary(shard_PragmaticModel_t self, const void* p0, shard_EscapeSummary_t* out_value);
 	SHARD_API shard_TypeShapeCache_t shard_PragmaticModel_get_type_shape_cache(shard_PragmaticModel_t self);
@@ -1721,7 +1720,6 @@ extern "C"
 	SHARD_API shard_status_t shard_PragmaticModel_set_local_order(shard_PragmaticModel_t self, const void* p0, const void* p1);
 	SHARD_API shard_status_t shard_PragmaticModel_set_local_slot(shard_PragmaticModel_t self, const void* p0, const void* p1, std::uint16_t p2);
 	SHARD_API shard_status_t shard_PragmaticModel_set_local_verdict(shard_PragmaticModel_t self, const void* p0, const void* p1, shard_AllocationSiteVerdict_t p2);
-	SHARD_API shard_status_t shard_PragmaticModel_set_promotion_points(shard_PragmaticModel_t self, const void* p0, const void* p1);
 	SHARD_API shard_status_t shard_PragmaticModel_set_summary(shard_PragmaticModel_t self, const void* p0, shard_EscapeSummary_t p1);
 	SHARD_API int shard_ReturnDisposition(int value);
 	SHARD_API shard_status_t shard_TypeShapeCache_TypeShapeCache_create(shard_TypeShapeCache_t* out_handle);

@@ -69,8 +69,8 @@ namespace shard
 		std::int32_t m_evalDepth = 0;
 		std::uint32_t m_maxEvalDepth = 0;
 		std::size_t m_maxEvalPayload = 0;
-		std::size_t m_minEvalPayload = 0;
 		bool m_evalPoisoned = false;
+		gmt::unordered_set<const ExpressionSyntax*> m_discardedCalls;
 
 		gmt::vector<MethodSymbol*> m_entryPointCandidates;
 
@@ -96,7 +96,6 @@ namespace shard
 		void patch_target(std::size_t at, std::size_t target);
 
 		std::optional<std::uint16_t> slot_of(SyntaxSymbol* symbol) const;
-		std::optional<std::uint16_t> scalar_field_slot(SyntaxSymbol* variable, FieldSymbol* field) const;
 		std::uint16_t allocate_temporary(StructSymbol* type, PlacementVerdict verdict);
 		std::uint32_t field_slot_index(FieldSymbol* field) const;
 		PlacementVerdict local_verdict(SyntaxSymbol* symbol) const;
@@ -131,7 +130,6 @@ namespace shard
 		bool emit_lifted_operator(const BinaryExpressionSyntax* node, TokenType op);
 		bool emit_relational_op(TokenType type);
 		void emit_empty_lifted_result(StructSymbol* resultType, bool arithmetic);
-		void update_min_eval_payload();
 		void emit_assignment(const BinaryExpressionSyntax* node);
 		void emit_store_to(const ExpressionSyntax* target);
 		void emit_compound_assignment(const BinaryExpressionSyntax* node, TokenType arithmetic);
@@ -139,9 +137,9 @@ namespace shard
 		static bool is_identifier_target(const ExpressionSyntax* expression);
 		void emit_instance_field_load(FieldSymbol* field, const ExpressionSyntax* previous);
 		FieldSymbol* capture_field_of(SyntaxSymbol* bound) const;
-		void emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
+		void emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst, const InvokationExpressionSyntax* callSite = nullptr);
 		void emit_method_call_into(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
-		void emit_call_method(MethodSymbol* method);
+		void emit_call_method(MethodSymbol* method, std::uint16_t returnSlot = ReturnSlotSentinel);
 		bool is_extension_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments);
 		MethodSymbol* into_call_method(const ExpressionSyntax* expression);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);

@@ -34,7 +34,6 @@ namespace shard
 		gmt::unordered_map<MethodSymbol*, gmt::unordered_map<SyntaxSymbol*, AllocationSiteVerdict>> m_methodLocals;
 		gmt::unordered_map<MethodSymbol*, gmt::vector<SyntaxSymbol*>> m_methodLocalOrder; // declaration order, for frame slot indexing
 		gmt::unordered_map<const ExpressionSyntax*, AllocationSiteVerdict> m_allocationSites;
-		gmt::unordered_map<const ExpressionSyntax*, gmt::vector<const ExpressionSyntax*>> m_promotionPoints;
 
 		// per-type memory shapes
 		TypeShapeCache m_typeShapeCache;
@@ -64,10 +63,6 @@ namespace shard
 		std::optional<AllocationSiteVerdict> get_allocation_site_verdict(const ExpressionSyntax* site) const;
 
 		const gmt::unordered_map<const ExpressionSyntax*, AllocationSiteVerdict>& get_allocation_sites() const;
-
-		void set_promotion_points(const ExpressionSyntax* site, gmt::vector<const ExpressionSyntax*> points);
-		// nullptr when the site is not promoted: no migration points recorded
-		const gmt::vector<const ExpressionSyntax*>* get_promotion_points(const ExpressionSyntax* site) const;
 
 		void set_local_verdict(MethodSymbol* method, SyntaxSymbol* local, const AllocationSiteVerdict& verdict);
 		AllocationSiteVerdict get_local_verdict(MethodSymbol* method, SyntaxSymbol* local) const;

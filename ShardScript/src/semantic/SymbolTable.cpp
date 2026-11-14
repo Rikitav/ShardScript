@@ -40,6 +40,10 @@ namespace
 	}
 }
 
+// TODO: Investigate release-only teardown corruption in repeated LINQ Find/Position.
+// A repro with two Find calls followed by Position prints the expected values,
+// then crashes here with a corrupted std::unordered_map node link. Debug builds
+// do not reproduce it; both LTO and non-LTO release builds are affected.
 SymbolTable::SymbolTable()
 	: m_rootNamespace(m_arena.emplace<NamespaceSymbol>(L"", nullptr))
 {
