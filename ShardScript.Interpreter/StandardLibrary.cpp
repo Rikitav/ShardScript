@@ -118,9 +118,9 @@ namespace
 			return;
 		}
 
-		ObjectInstance slot = state.get_nullable_argument(0);
+		ObjectInstance nullableValue = state.get_nullable_argument(0);
 		TValue value{};
-		std::memcpy(&value, slot.get_memory(), sizeof(TValue));
+		std::memcpy(&value, nullableValue.get_memory(), sizeof(TValue));
 		write_printed_value(value);
 
 		if (newline)
