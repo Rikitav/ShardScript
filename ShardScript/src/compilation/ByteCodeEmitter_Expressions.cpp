@@ -20,6 +20,7 @@
 #include <shard/parsing/nodes/lists/ArgumentsListSyntax.hpp>
 #include <shard/parsing/nodes/lists/ParametersListSyntax.hpp>
 #include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/QualifiedNameTypeSyntax.hpp>
 #include <shard/parsing/nodes/TypeSyntax.hpp>
 
 #include <shard/pragmatic/FrameLayout.hpp>
@@ -854,7 +855,22 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 	if (!nodeRef.has_value())
 		return;
 
+	if (lookup_symbol<OperatorSymbol>(*nodeRef) != nullptr)
+	{
+		emit_dynamic_access(*nodeRef, node->get_previous(), node->get_identifier());
+		return;
+	}
+
 	emit_identifier_load(*nodeRef, node->get_previous());
+}
+
+void ByteCodeEmitter::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (lookup_symbol<OperatorSymbol>(node) != nullptr)
+		emit_dynamic_access(node, node->get_left(), node->get_identifier());
 }
 
 void ByteCodeEmitter::visit_identifier_name_type(const IdentifierNameTypeSyntax* node)
@@ -1007,6 +1023,38 @@ void ByteCodeEmitter::emit_instance_field_load(FieldSymbol* field, const Express
 	m_encoder.emit_load_field(field_slot_index(field));
 	eval_push(payload_of(field->get_return_type()));
 	eval_pop();
+}
+
+void ByteCodeEmitter::emit_dynamic_access(const SyntaxNode* node, const ExpressionSyntax* previous, SyntaxToken memberName)
+{
+	OperatorSymbol* accessOperator = lookup_symbol<OperatorSymbol>(node);
+	if (accessOperator == nullptr)
+		return;
+
+	MethodSymbol* target = accessOperator;
+	if (target == nullptr)
+		return;
+
+	m_encoder.emit_load_const_string(gmt::wstring(memberName.get_lexeme()).c_str());
+	eval_push_type(get_symbol_table().get_string_primitive());
+
+	bool instance = target->get_linking() != LINK_STATIC;
+	if (instance)
+	{
+		if (previous != nullptr)
+			emit_receiver(previous);
+		else
+		{
+			m_encoder.emit_load_local(0);
+			eval_push(sizeof(void*));
+		}
+	}
+
+	emit_call_method(target);
+	eval_pop(instance ? 2 : 1);
+
+	StructSymbol* valueType = get_model().get_expression_type(gmt::as<const ExpressionSyntax>(node));
+	eval_push_type(valueType != nullptr ? valueType : target->get_return_type());
 }
 
 FieldSymbol* ByteCodeEmitter::capture_field_of(SyntaxSymbol* bound) const

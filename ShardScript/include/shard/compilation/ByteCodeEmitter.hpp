@@ -37,6 +37,7 @@ namespace shard
 	class StructDeclarationSyntax;
 	class MemberAccessExpressionSyntax;
 	class IdentifierNameTypeSyntax;
+	class QualifiedNameTypeSyntax;
 	class IndexatorExpressionSyntax;
 	class BinaryExpressionSyntax;
 	class ArgumentsListSyntax;
@@ -136,6 +137,7 @@ namespace shard
 		void emit_identifier_load(const SyntaxNode* node, const ExpressionSyntax* previous);
 		static bool is_identifier_target(const ExpressionSyntax* expression);
 		void emit_instance_field_load(FieldSymbol* field, const ExpressionSyntax* previous);
+		void emit_dynamic_access(const SyntaxNode* node, const ExpressionSyntax* previous, SyntaxToken memberName);
 		FieldSymbol* capture_field_of(SyntaxSymbol* bound) const;
 		void emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst, const InvokationExpressionSyntax* callSite = nullptr);
 		void emit_method_call_into(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
@@ -189,6 +191,7 @@ namespace shard
 		void visit_unary_expression(const UnaryExpressionSyntax* node) override;
 		void visit_member_access_expression(const MemberAccessExpressionSyntax* node) override;
 		void visit_identifier_name_type(const IdentifierNameTypeSyntax* node) override;
+		void visit_qualified_name_type(const QualifiedNameTypeSyntax* node) override;
 		void visit_invokation_expression(const InvokationExpressionSyntax* node) override;
 		void visit_indexator_expression(const IndexatorExpressionSyntax* node) override;
 		void visit_is_expression(const IsExpressionSyntax* node) override;

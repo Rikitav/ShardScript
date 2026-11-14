@@ -1068,6 +1068,26 @@ void TypeBinder::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
 		return;
 	}
 
+	StructSymbol* ownerType = resolve_type(node->get_left());
+	if (ownerType != nullptr)
+	{
+		for (OperatorSymbol* op : ownerType->operators)
+		{
+			if (op == nullptr || op->get_operator_token() != TokenType::Delimeter)
+				continue;
+
+			if (ownerType == get_owner_type())
+			{
+				get_diagnostics().report_error(node->get_location(), L"Type members cannot invoke their own access operator ('.')");
+				return;
+			}
+
+			get_symbol_table().bind_symbol<OperatorSymbol>(*nodeRef, op);
+			get_model().set_expression_type(*nodeRef, op->get_return_type());
+			return;
+		}
+	}
+
 	get_diagnostics().report_error(node->get_location(), L"Type '" + gmt::wstring(node->get_identifier().get_lexeme()) + L"' not found in namespace");
 }
 
