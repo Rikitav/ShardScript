@@ -233,6 +233,7 @@
 #include <shard/libframework/FuncCallState.hpp>
 #include <shard/libframework/AsyncFuncCallState.hpp>
 #include <shard/libframework/NativeWrapper.hpp>
+#include <shard/libframework/AsyncMutex.hpp>
 #include <shard/libframework/adapters/EnumerableAdapter.hpp>
 
 // --- Driving ---
