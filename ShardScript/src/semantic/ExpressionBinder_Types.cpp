@@ -31,7 +31,7 @@ namespace
 		if (type == table.get_boolean_primitive() || type == table.get_integer_primitive())
 			return true;
 
-		if (type == table.get_double_primitive() || type == table.get_char_primitive())
+		if (type == table.get_float_primitive() || type == table.get_char_primitive())
 			return true;
 
 		return type == table.get_byte_primitive() || type == table.get_nint_primitive();

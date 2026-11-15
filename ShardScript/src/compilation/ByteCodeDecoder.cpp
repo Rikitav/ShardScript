@@ -150,7 +150,7 @@ std::intptr_t ByteCodeDecoder::absorb_int_ptr()
 	return absorb_value<std::intptr_t>(m_code, m_ip, m_end);
 }
 
-double ByteCodeDecoder::absorb_double64()
+double ByteCodeDecoder::absorb_float64()
 {
 	return absorb_value<double>(m_code, m_ip, m_end);
 }

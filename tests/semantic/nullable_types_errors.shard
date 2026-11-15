@@ -4,7 +4,7 @@ func Main() -> void
     plain: int = null;
     nested: int? ? = 5;
     nothing: void? = null;
-    wide: double? = a;
-    narrow: double = a;
+    wide: float? = a;
+    narrow: float = a;
     inferred := null;
 }

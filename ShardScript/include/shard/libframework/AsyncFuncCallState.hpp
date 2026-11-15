@@ -66,7 +66,7 @@ namespace shard
 		ObjectInstance get_argument(std::size_t index) const;
 		bool get_boolean_argument(std::size_t index) const;
 		std::int64_t get_integer_argument(std::size_t index) const;
-		double get_double_argument(std::size_t index) const;
+		double get_float_argument(std::size_t index) const;
 		std::uintptr_t get_nint_argument(std::size_t index) const;
 		wchar_t get_char_argument(std::size_t index) const;
 		std::wstring_view get_string_argument(std::size_t index) const;

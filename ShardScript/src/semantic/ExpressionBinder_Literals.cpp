@@ -182,7 +182,7 @@ namespace
 		}
 	}
 
-	NumericParseResult parse_double_literal(std::wstring_view word, double& outValue)
+	NumericParseResult parse_float_literal(std::wstring_view word, double& outValue)
 	{
 		int base;
 		std::size_t prefixLength;
@@ -219,6 +219,7 @@ namespace
 	{
 		while (type != nullptr && type->get_kind() == SyntaxKind::NullableType)
 			type = static_cast<NullableTypeSymbol*>(type)->get_underlaying_type();
+
 		return type;
 	}
 }
@@ -290,9 +291,9 @@ StructSymbol* ExpressionBinder::analyze_literal_expression(const LiteralExpressi
 			return table.get_string_primitive();
 		}
 
-		case TokenType::DoubleLiteral:
+		case TokenType::FloatLiteral:
 		{
-			return analyze_double_literal(node);
+			return analyze_float_literal(node);
 		}
 
 		case TokenType::NumberLiteral:
@@ -391,21 +392,21 @@ StructSymbol* ExpressionBinder::analyze_number_literal(const LiteralExpressionSy
 	return table.get_integer_primitive();
 }
 
-StructSymbol* ExpressionBinder::analyze_double_literal(const LiteralExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_float_literal(const LiteralExpressionSyntax* node)
 {
 	std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
 	LiteralSymbol* symbol = nodeRef.has_value() ? static_cast<LiteralSymbol*>(lookup_symbol<LiteralSymbol>(*nodeRef)) : nullptr;
 	if (symbol == nullptr)
-		return get_symbol_table().get_double_primitive();
+		return get_symbol_table().get_float_primitive();
 
 	double value = 0.0;
-	NumericParseResult result = parse_double_literal(node->get_literal().get_lexeme(), value);
+	NumericParseResult result = parse_float_literal(node->get_literal().get_lexeme(), value);
 	if (!result.success)
 		get_diagnostics().report_error(node->get_location(), result.error);
 	else
-		symbol->set_double_value(value);
+		symbol->set_float_value(value);
 
-	return get_symbol_table().get_double_primitive();
+	return get_symbol_table().get_float_primitive();
 }
 
 StructSymbol* ExpressionBinder::analyze_collection_expression(const CollectionExpressionSyntax* node)

@@ -29,7 +29,7 @@ namespace shard
 			Char,
 			Integer,
 			NativeInteger,
-			Double,
+			Float,
 			String,
 			Enum,
 			Array,

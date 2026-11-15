@@ -144,7 +144,7 @@ namespace shard::detail
 		}
 		else if constexpr (std::is_floating_point_v<Storage>)
 		{
-			return static_cast<Storage>(state.get_double_argument(index));
+			return static_cast<Storage>(state.get_float_argument(index));
 		}
 		else if constexpr (std::is_enum_v<Storage>)
 		{
@@ -259,7 +259,7 @@ namespace shard::detail
 		}
 		else if constexpr (std::is_floating_point_v<D>)
 		{
-			state.set_return_double(static_cast<double>(value));
+			state.set_return_float(static_cast<double>(value));
 		}
 		else if constexpr (std::is_pointer_v<D>)
 		{

@@ -229,9 +229,9 @@ std::int64_t ObjectInstance::as_integer() const
 	return value;
 }
 
-double ObjectInstance::as_double() const
+double ObjectInstance::as_float() const
 {
-	require_kind(kind_bit(ValueKind::Double), "as_double()");
+	require_kind(kind_bit(ValueKind::Float), "as_float()");
 
 	double value;
 	std::memcpy(&value, m_memory, sizeof(double));
@@ -310,9 +310,9 @@ void ObjectInstance::write_integer(std::int64_t value)
 	std::memcpy(m_memory, &value, sizeof(std::int64_t));
 }
 
-void ObjectInstance::write_double(double value)
+void ObjectInstance::write_float(double value)
 {
-	require_kind(kind_bit(ValueKind::Double), "write_double()");
+	require_kind(kind_bit(ValueKind::Float), "write_double()");
 
 	std::memcpy(m_memory, &value, sizeof(double));
 }

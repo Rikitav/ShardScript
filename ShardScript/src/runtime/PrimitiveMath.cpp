@@ -44,9 +44,9 @@ namespace
 	}
 }
 
-bool PrimitiveMath::is_double(const PrimitiveShapes& shapes, const TypeShape* shape)
+bool PrimitiveMath::is_float(const PrimitiveShapes& shapes, const TypeShape* shape)
 {
-	return shape != nullptr && shape == shapes.doubleReal;
+	return shape != nullptr && shape == shapes.floatReal;
 }
 
 bool PrimitiveMath::is_integral(const PrimitiveShapes& shapes, const TypeShape* shape)
@@ -83,11 +83,11 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 	if (is_string(shapes, leftShape) || is_string(shapes, rightShape))
 		return PrimitiveStatus::NotPrimitive;
 
-	bool doubleMath = is_double(shapes, leftShape) || is_double(shapes, rightShape);
+	bool doubleMath = is_float(shapes, leftShape) || is_float(shapes, rightShape);
 	if (doubleMath)
 	{
-		double leftValue = is_double(shapes, leftShape) ? left.as_double() : static_cast<double>(left.as_integer());
-		double rightValue = is_double(shapes, rightShape) ? right.as_double() : static_cast<double>(right.as_integer());
+		double leftValue = is_float(shapes, leftShape) ? left.as_float() : static_cast<double>(left.as_integer());
+		double rightValue = is_float(shapes, rightShape) ? right.as_float() : static_cast<double>(right.as_integer());
 
 		double computed;
 		switch (op)
@@ -102,7 +102,7 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 				return PrimitiveStatus::NotPrimitive;
 		}
 
-		result.shape = shapes.doubleReal;
+		result.shape = shapes.floatReal;
 		std::memcpy(&result.payload, &computed, sizeof(double));
 		return PrimitiveStatus::Success;
 	}
@@ -285,10 +285,10 @@ PrimitiveStatus PrimitiveMath::compare(OpCode op, const PrimitiveShapes& shapes,
 				return PrimitiveStatus::NotPrimitive;
 		}
 	}
-	else if (is_double(shapes, leftShape) || is_double(shapes, rightShape))
+	else if (is_float(shapes, leftShape) || is_float(shapes, rightShape))
 	{
-		double leftValue = is_double(shapes, leftShape) ? left.as_double() : static_cast<double>(left.as_integer());
-		double rightValue = is_double(shapes, rightShape) ? right.as_double() : static_cast<double>(right.as_integer());
+		double leftValue = is_float(shapes, leftShape) ? left.as_float() : static_cast<double>(left.as_integer());
+		double rightValue = is_float(shapes, rightShape) ? right.as_float() : static_cast<double>(right.as_integer());
 
 		switch (op)
 		{
@@ -328,10 +328,10 @@ PrimitiveStatus PrimitiveMath::compare(OpCode op, const PrimitiveShapes& shapes,
 
 PrimitiveStatus PrimitiveMath::negate(const PrimitiveShapes& shapes, ObjectInstance value, ScalarResult& result)
 {
-	if (is_double(shapes, value.get_shape()))
+	if (is_float(shapes, value.get_shape()))
 	{
-		double computed = -value.as_double();
-		result.shape = shapes.doubleReal;
+		double computed = -value.as_float();
+		result.shape = shapes.floatReal;
 		std::memcpy(&result.payload, &computed, sizeof(double));
 		return PrimitiveStatus::Success;
 	}
@@ -355,11 +355,11 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	if (targetShape == nullptr || (targetType == nullptr))
 		return PrimitiveStatus::NotPrimitive;
 
-	if (targetShape == shapes.doubleReal)
+	if (targetShape == shapes.floatReal)
 	{
 		double converted;
-		if (is_double(shapes, value.get_shape()))
-			converted = value.as_double();
+		if (is_float(shapes, value.get_shape()))
+			converted = value.as_float();
 		else
 			converted = static_cast<double>(value.as_integer());
 
@@ -371,8 +371,8 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	if (targetShape == shapes.integer || targetShape == shapes.nint)
 	{
 		std::int64_t converted;
-		if (is_double(shapes, value.get_shape()))
-			converted = static_cast<std::int64_t>(value.as_double());
+		if (is_float(shapes, value.get_shape()))
+			converted = static_cast<std::int64_t>(value.as_float());
 		else
 			converted = value.as_integer();
 
@@ -384,8 +384,8 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	if (is_enum(targetShape))
 	{
 		std::int64_t converted;
-		if (is_double(shapes, value.get_shape()))
-			converted = static_cast<std::int64_t>(value.as_double());
+		if (is_float(shapes, value.get_shape()))
+			converted = static_cast<std::int64_t>(value.as_float());
 		else
 			converted = value.as_integer();
 
@@ -444,10 +444,10 @@ gmt::wstring PrimitiveMath::to_display_string(const PrimitiveShapes& shapes, Obj
 	if (shape == shapes.character)
 		return gmt::wstring(1, value.as_char());
 
-	if (shape == shapes.doubleReal)
+	if (shape == shapes.floatReal)
 	{
 		wchar_t buffer[32];
-		std::swprintf(buffer, 32, L"%g", value.as_double());
+		std::swprintf(buffer, 32, L"%g", value.as_float());
 		return gmt::wstring(buffer);
 	}
 
@@ -482,10 +482,10 @@ gmt::wstring PrimitiveMath::to_display_string(ObjectInstance value)
 	if (name == L"char")
 		return gmt::wstring(1, value.as_char());
 
-	if (name == L"double")
+	if (name == L"float")
 	{
 		wchar_t buffer[32];
-		std::swprintf(buffer, 32, L"%g", value.as_double());
+		std::swprintf(buffer, 32, L"%g", value.as_float());
 		return gmt::wstring(buffer);
 	}
 

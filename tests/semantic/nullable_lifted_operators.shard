@@ -26,6 +26,6 @@ func Main() -> void
     println(a > empty);
     println(a > 1);
 
-    real: double? = 1.5;
+    real: float? = 1.5;
     println(real * 2.0 ?? 0.0);
 }

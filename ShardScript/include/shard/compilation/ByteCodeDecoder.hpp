@@ -41,7 +41,7 @@ namespace shard
 		bool absorb_boolean();
 		std::int64_t absorb_int64();
 		std::intptr_t absorb_int_ptr();
-		double absorb_double64();
+		double absorb_float64();
 		wchar_t absorb_char16();
 		std::size_t absorb_string();
 

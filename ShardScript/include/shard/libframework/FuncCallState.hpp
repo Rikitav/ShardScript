@@ -85,7 +85,7 @@ namespace shard
 
 		bool get_boolean_argument(std::size_t index) const;
 		std::int64_t get_integer_argument(std::size_t index) const;
-		double get_double_argument(std::size_t index) const;
+		double get_float_argument(std::size_t index) const;
 		std::uintptr_t get_nint_argument(std::size_t index) const;
 		wchar_t get_char_argument(std::size_t index) const;
 		std::wstring_view get_string_argument(std::size_t index) const;
@@ -104,7 +104,7 @@ namespace shard
 		void set_return_boolean(bool value);
 		void set_return_integer(std::int64_t value);
 		void set_return_nint(std::uintptr_t value);
-		void set_return_double(double value);
+		void set_return_float(double value);
 		void set_return_char(wchar_t value);
 		void set_return_byte(std::uint8_t value);
 		void set_return_string(std::wstring_view value);
@@ -114,7 +114,7 @@ namespace shard
 		void set_return_nullable_boolean(bool hasValue, bool value);
 		void set_return_nullable_integer(bool hasValue, std::int64_t value);
 		void set_return_nullable_nint(bool hasValue, std::uintptr_t value);
-		void set_return_nullable_double(bool hasValue, double value);
+		void set_return_nullable_float(bool hasValue, double value);
 		void set_return_nullable_char(bool hasValue, wchar_t value);
 		void set_return_nullable_byte(bool hasValue, std::uint8_t value);
 		void set_return_nullable_string(bool hasValue, std::wstring_view value);

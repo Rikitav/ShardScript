@@ -116,7 +116,7 @@ void ByteCodeEncoder::emit_load_const_native_int(std::intptr_t value)
 	append_data_value(m_image.get_text_section(), value);
 }
 
-void ByteCodeEncoder::emit_load_const_double64(double value)
+void ByteCodeEncoder::emit_load_const_float64(double value)
 {
 	append_data_value(m_image.get_text_section(), OpCode::LOADCONST_RATIONAL64);
 	append_data_value(m_image.get_text_section(), value);
@@ -164,9 +164,9 @@ void ByteCodeEncoder::emit_default_value(StructSymbol* elementType, SymbolTable&
 	{
 		emit_load_const_bool(false);
 	}
-	else if (elementType == table.get_double_primitive())
+	else if (elementType == table.get_float_primitive())
 	{
-		emit_load_const_double64(0.0);
+		emit_load_const_float64(0.0);
 	}
 	else
 	{

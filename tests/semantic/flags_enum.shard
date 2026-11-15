@@ -1,0 +1,23 @@
+using stdio;
+
+enum FlagsEnum : flags
+{
+    First,
+    Second,
+    Third
+}
+
+func AcceptFlags(val: FlagsEnum) -> void
+{
+    println(val as int);
+}
+
+func Main() -> void
+{
+    myFlags := FlagsEnum.First | Second | Third;
+    AcceptFlags(myFlags);
+
+    println((myFlags & First) == First);
+    println((myFlags & Second) == Second);
+    println((myFlags & Third) == Third);
+}

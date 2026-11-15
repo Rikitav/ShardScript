@@ -40,7 +40,7 @@ namespace shard
 		void emit_load_const_int8(std::int8_t value);
 		void emit_load_const_int64(std::int64_t value);
 		void emit_load_const_native_int(std::intptr_t value);
-		void emit_load_const_double64(double value);
+		void emit_load_const_float64(double value);
 		void emit_load_const_char16(wchar_t value);
 		void emit_load_const_string(const wchar_t* value);
 		void emit_default_value(StructSymbol* elementType, SymbolTable& table);

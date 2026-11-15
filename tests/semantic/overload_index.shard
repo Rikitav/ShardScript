@@ -5,7 +5,7 @@ func Select(value: int) -> int
 	return 10;
 }
 
-func Select(value: double) -> int
+func Select(value: float) -> int
 {
 	return 20;
 }

@@ -906,7 +906,7 @@ void TypeBinder::visit_predefined_type(const PredefinedTypeSyntax* node)
 	{
 		case TokenType::BooleanKeyword: symbol = table.get_boolean_primitive(); break;
 		case TokenType::IntegerKeyword: symbol = table.get_integer_primitive(); break;
-		case TokenType::DoubleKeyword: symbol = table.get_double_primitive(); break;
+		case TokenType::FloatKeyword: symbol = table.get_float_primitive(); break;
 		case TokenType::CharKeyword: symbol = table.get_char_primitive(); break;
 		case TokenType::ByteKeyword: symbol = table.get_byte_primitive(); break;
 		case TokenType::NativeIntegerKeyword: symbol = table.get_nint_primitive(); break;

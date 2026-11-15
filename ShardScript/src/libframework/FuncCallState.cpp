@@ -190,9 +190,9 @@ std::int64_t FuncCallState::get_integer_argument(std::size_t index) const
 	return get_argument(index).as_integer();
 }
 
-double FuncCallState::get_double_argument(std::size_t index) const
+double FuncCallState::get_float_argument(std::size_t index) const
 {
-	return get_argument(index).as_double();
+	return get_argument(index).as_float();
 }
 
 std::uintptr_t FuncCallState::get_nint_argument(std::size_t index) const
@@ -276,9 +276,9 @@ void FuncCallState::set_return_nint(std::uintptr_t value)
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
-void FuncCallState::set_return_double(double value)
+void FuncCallState::set_return_float(double value)
 {
-	const TypeShape* shape = m_vm.get_primitive_shapes().doubleReal;
+	const TypeShape* shape = m_vm.get_primitive_shapes().floatReal;
 	std::memcpy(m_returnBuffer, &value, sizeof(double));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
@@ -375,9 +375,9 @@ void FuncCallState::set_return_nullable_nint(bool hasValue, std::uintptr_t value
 	write_nullable_return(hasValue, &value, sizeof(std::uintptr_t), m_vm.get_primitive_shapes().nint);
 }
 
-void FuncCallState::set_return_nullable_double(bool hasValue, double value)
+void FuncCallState::set_return_nullable_float(bool hasValue, double value)
 {
-	write_nullable_return(hasValue, &value, sizeof(double), m_vm.get_primitive_shapes().doubleReal);
+	write_nullable_return(hasValue, &value, sizeof(double), m_vm.get_primitive_shapes().floatReal);
 }
 
 void FuncCallState::set_return_nullable_char(bool hasValue, wchar_t value)

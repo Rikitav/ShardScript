@@ -352,7 +352,7 @@ bool SemanticModel::is_reference_shaped(const StructSymbol* type) const
 			if (type == m_table.get_boolean_primitive() || type == m_table.get_integer_primitive())
 				return false;
 
-			if (type == m_table.get_double_primitive() || type == m_table.get_char_primitive())
+			if (type == m_table.get_float_primitive() || type == m_table.get_char_primitive())
 				return false;
 
 			if (type == m_table.get_byte_primitive() || type == m_table.get_nint_primitive())
@@ -429,13 +429,13 @@ bool SemanticModel::is_assignable_to(const StructSymbol* target, const StructSym
 	}
 
 	// numeric widening: byte/char/nint convert to int, anything numeric to double
-	bool sourceNumeric = source == m_table.get_double_primitive();
+	bool sourceNumeric = source == m_table.get_float_primitive();
 	if (!sourceNumeric)
 		sourceNumeric = source == m_table.get_integer_primitive() || source == m_table.get_char_primitive();
 	if (!sourceNumeric)
 		sourceNumeric = source == m_table.get_byte_primitive() || source == m_table.get_nint_primitive();
 
-	if (target == m_table.get_double_primitive() && sourceNumeric)
+	if (target == m_table.get_float_primitive() && sourceNumeric)
 		return true;
 
 	bool sourceSmallerThanInt = source == m_table.get_char_primitive() || source == m_table.get_byte_primitive();
@@ -708,7 +708,7 @@ bool SemanticModel::is_primitive_type(const StructSymbol* type) const
 {
 	return type == m_table.get_boolean_primitive()
 		|| type == m_table.get_integer_primitive()
-		|| type == m_table.get_double_primitive()
+		|| type == m_table.get_float_primitive()
 		|| type == m_table.get_char_primitive()
 		|| type == m_table.get_string_primitive()
 		|| type == m_table.get_array_primitive()
@@ -856,7 +856,7 @@ StructSymbol* SemanticModel::find_type_by_name(std::wstring_view fullName)
 		m_table.get_void_primitive(),
 		m_table.get_boolean_primitive(),
 		m_table.get_integer_primitive(),
-		m_table.get_double_primitive(),
+		m_table.get_float_primitive(),
 		m_table.get_char_primitive(),
 		m_table.get_string_primitive(),
 		m_table.get_array_primitive(),

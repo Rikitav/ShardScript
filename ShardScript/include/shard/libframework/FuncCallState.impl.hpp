@@ -26,7 +26,7 @@ namespace shard::detail
 
 	inline double unwrap_arg(ObjectInstance value, double*)
 	{
-		return value.as_double();
+		return value.as_float();
 	}
 
 	inline wchar_t unwrap_arg(ObjectInstance value, wchar_t*)

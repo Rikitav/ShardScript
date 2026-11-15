@@ -77,7 +77,7 @@ namespace
 		{ L"var", TokenType::VarKeyword },
 		{ L"bool", TokenType::BooleanKeyword },
 		{ L"string", TokenType::StringKeyword },
-		{ L"double", TokenType::DoubleKeyword },
+		{ L"float", TokenType::FloatKeyword },
 		{ L"int", TokenType::IntegerKeyword },
 		{ L"char", TokenType::CharKeyword },
 		{ L"byte", TokenType::ByteKeyword },
@@ -658,7 +658,7 @@ bool LexicalAnalyzer::read_number_literal(gmt::wstring& word, TokenType& type)
 			advance(m_peekSymbol);
 
 			foundDelimeter = true;
-			type = TokenType::DoubleLiteral;
+			type = TokenType::FloatLiteral;
 
 			word += '.';
 			word += afterDot;

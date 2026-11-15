@@ -32,9 +32,9 @@ namespace
 		context.set_return_integer(context.get_integer_argument(0));
 	}
 
-	void primitive_double_hash(FuncCallState& context)
+	void primitive_float_hash(FuncCallState& context)
 	{
-		const double value = context.get_double_argument(0);
+		const double value = context.get_float_argument(0);
 
 		// -0.0 folds onto 0.0 so values that compare equal hash equally
 		std::uint64_t bits = 0;
@@ -89,10 +89,10 @@ namespace
 		context.set_return_integer(sign_of(context.get_integer_argument(0), context.get_integer_argument(1)));
 	}
 
-	void primitive_double_compare(FuncCallState& context)
+	void primitive_float_compare(FuncCallState& context)
 	{
-		const double left = context.get_double_argument(0);
-		const double right = context.get_double_argument(1);
+		const double left = context.get_float_argument(0);
+		const double right = context.get_float_argument(1);
 
 		// NaN sorts below everything, including NaN, so the order stays total
 		const bool leftNaN = left != left;
@@ -179,7 +179,7 @@ void SymbolTable::resolve_primitive_hashables()
 
 	make_hashable(*this, m_boolean, hashable, &primitive_boolean_hash);
 	make_hashable(*this, m_integer, hashable, &primitive_integer_hash);
-	make_hashable(*this, m_double, hashable, &primitive_double_hash);
+	make_hashable(*this, m_float, hashable, &primitive_float_hash);
 	make_hashable(*this, m_char, hashable, &primitive_char_hash);
 	make_hashable(*this, m_byte, hashable, &primitive_byte_hash);
 	make_hashable(*this, m_nativeInteger, hashable, &primitive_nint_hash);
@@ -192,7 +192,7 @@ void SymbolTable::resolve_primitive_comparables()
 
 	make_comparable(*this, m_boolean, comparable, &primitive_boolean_compare);
 	make_comparable(*this, m_integer, comparable, &primitive_integer_compare);
-	make_comparable(*this, m_double, comparable, &primitive_double_compare);
+	make_comparable(*this, m_float, comparable, &primitive_float_compare);
 	make_comparable(*this, m_char, comparable, &primitive_char_compare);
 	make_comparable(*this, m_byte, comparable, &primitive_byte_compare);
 	make_comparable(*this, m_nativeInteger, comparable, &primitive_nint_compare);

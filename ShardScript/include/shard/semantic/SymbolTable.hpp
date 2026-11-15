@@ -35,7 +35,7 @@ namespace shard
 		StructSymbol* m_void = nullptr;
 		StructSymbol* m_boolean = nullptr;
 		StructSymbol* m_integer = nullptr;
-		StructSymbol* m_double = nullptr;
+		StructSymbol* m_float = nullptr;
 		StructSymbol* m_char = nullptr;
 		StructSymbol* m_string = nullptr;
 		StructSymbol* m_array = nullptr;
@@ -111,7 +111,7 @@ namespace shard
 		StructSymbol* get_void_primitive() const;
 		StructSymbol* get_boolean_primitive() const;
 		StructSymbol* get_integer_primitive() const;
-		StructSymbol* get_double_primitive() const;
+		StructSymbol* get_float_primitive() const;
 		StructSymbol* get_char_primitive() const;
 		StructSymbol* get_string_primitive() const;
 		StructSymbol* get_array_primitive() const;

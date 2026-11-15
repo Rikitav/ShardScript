@@ -144,7 +144,7 @@ namespace
 		return std::wcstoll(gmt::wstring(lexeme).c_str(), nullptr, 0);
 	}
 
-	double parse_double(std::wstring_view lexeme)
+	double parse_float(std::wstring_view lexeme)
 	{
 		return std::wcstod(gmt::wstring(lexeme).c_str(), nullptr);
 	}
@@ -222,7 +222,7 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 			return;
 		}
 
-		case TokenType::DoubleLiteral:
+		case TokenType::FloatLiteral:
 		{
 			// the binder already parsed and validated the value locale-independently;
 			// re-parsing the lexeme here would be sensitive to the process locale
@@ -231,11 +231,11 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 			LiteralSymbol* symbol = nodeRef.has_value() ? lookup_symbol<LiteralSymbol>(*nodeRef) : nullptr;
 
 			if (symbol != nullptr)
-				value = symbol->get_double_value();
+				value = symbol->get_float_value();
 			else
-				value = parse_double(literal.get_lexeme());
+				value = parse_float(literal.get_lexeme());
 
-			m_encoder.emit_load_const_double64(value);
+			m_encoder.emit_load_const_float64(value);
 			eval_push(sizeof(double));
 			return;
 		}
@@ -296,9 +296,9 @@ void ByteCodeEmitter::visit_default_expression(const DefaultExpressionSyntax* no
 		return;
 	}
 
-	if (type == table.get_double_primitive())
+	if (type == table.get_float_primitive())
 	{
-		m_encoder.emit_load_const_double64(0.0);
+		m_encoder.emit_load_const_float64(0.0);
 		eval_push_type(type);
 		return;
 	}

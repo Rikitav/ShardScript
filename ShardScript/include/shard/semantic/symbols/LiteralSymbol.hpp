@@ -22,7 +22,7 @@ namespace shard
 		{
 			bool m_asBoolean = false;
 			std::int64_t m_asInteger;
-			std::double_t m_asDouble;
+			std::double_t m_asFloat;
 			wchar_t m_asChar;
 			gmt::StringReference m_asString;
 		};
@@ -48,8 +48,8 @@ namespace shard
 		std::int64_t get_integer_value() const;
 		void set_integer_value(std::int64_t value);
 
-		std::double_t get_double_value() const;
-		void set_double_value(std::double_t value);
+		std::double_t get_float_value() const;
+		void set_float_value(std::double_t value);
 
 		wchar_t get_char_value() const;
 		void set_char_value(wchar_t value);

@@ -55,7 +55,7 @@ namespace
 		if (type == table.get_integer_primitive())
 			return sizeof(std::int64_t);
 
-		if (type == table.get_double_primitive())
+		if (type == table.get_float_primitive())
 			return sizeof(double);
 
 		if (type == table.get_nint_primitive())
@@ -87,8 +87,8 @@ namespace
 		if (type == table.get_nint_primitive())
 			return TypeShape::ValueKind::NativeInteger;
 
-		if (type == table.get_double_primitive())
-			return TypeShape::ValueKind::Double;
+		if (type == table.get_float_primitive())
+			return TypeShape::ValueKind::Float;
 
 		if (type == table.get_void_primitive())
 			return TypeShape::ValueKind::Void;

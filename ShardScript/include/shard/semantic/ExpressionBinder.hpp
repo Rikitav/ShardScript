@@ -110,7 +110,7 @@ namespace shard
 		StructSymbol* analyze_literal_expression(const LiteralExpressionSyntax* node);
 		StructSymbol* analyze_default_expression(const DefaultExpressionSyntax* node);
 		StructSymbol* analyze_number_literal(const LiteralExpressionSyntax* node);
-		StructSymbol* analyze_double_literal(const LiteralExpressionSyntax* node);
+		StructSymbol* analyze_float_literal(const LiteralExpressionSyntax* node);
 		StructSymbol* analyze_binary_expression(const BinaryExpressionSyntax* node);
 		StructSymbol* analyze_unary_expression(const UnaryExpressionSyntax* node);
 		StructSymbol* analyze_object_expression(const ObjectExpressionSyntax* node);

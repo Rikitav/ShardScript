@@ -37949,7 +37949,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_LiteralSymbol_get_double_value(shard_LiteralSymbol_t self)
+	SHARD_API double shard_LiteralSymbol_get_float_value(shard_LiteralSymbol_t self)
 	{
 		if (!self)
 		{
@@ -37957,7 +37957,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_double_value();
+			auto result = self->get_float_value();
 			return static_cast<double>(result);
 		}
 		catch (...)
@@ -38166,7 +38166,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_LiteralSymbol_set_double_value(shard_LiteralSymbol_t self, double p0)
+	SHARD_API shard_status_t shard_LiteralSymbol_set_float_value(shard_LiteralSymbol_t self, double p0)
 	{
 		if (!self)
 		{
@@ -38174,7 +38174,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_double_value(static_cast<std::double_t>(p0));
+			self->set_float_value(static_cast<std::double_t>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -42037,7 +42037,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API void* shard_SymbolTable_get_double_primitive(shard_SymbolTable_t self)
+	SHARD_API void* shard_SymbolTable_get_float_primitive(shard_SymbolTable_t self)
 	{
 		if (!self)
 		{
@@ -42045,7 +42045,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_double_primitive();
+			auto result = self->get_float_primitive();
 			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
@@ -46805,7 +46805,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_ByteCodeDecoder_absorb_double64(shard_ByteCodeDecoder_t self)
+	SHARD_API double shard_ByteCodeDecoder_absorb_float64(shard_ByteCodeDecoder_t self)
 	{
 		if (!self)
 		{
@@ -46813,7 +46813,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->absorb_double64();
+			auto result = self->absorb_float64();
 			return static_cast<double>(result);
 		}
 		catch (...)
@@ -50061,7 +50061,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_double64(shard_ByteCodeEncoder_t self, double p0)
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_float64(shard_ByteCodeEncoder_t self, double p0)
 	{
 		if (!self)
 		{
@@ -50069,7 +50069,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_load_const_double64(static_cast<double>(p0));
+			self->emit_load_const_float64(static_cast<double>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -54451,7 +54451,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_FuncCallState_get_double_argument(shard_FuncCallState_t self, std::size_t p0)
+	SHARD_API double shard_FuncCallState_get_float_argument(shard_FuncCallState_t self, std::size_t p0)
 	{
 		if (!self)
 		{
@@ -54459,7 +54459,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_double_argument(static_cast<std::size_t>(p0));
+			auto result = self->get_float_argument(static_cast<std::size_t>(p0));
 			return static_cast<double>(result);
 		}
 		catch (...)
@@ -54944,7 +54944,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_FuncCallState_set_return_double(shard_FuncCallState_t self, double p0)
+	SHARD_API shard_status_t shard_FuncCallState_set_return_float(shard_FuncCallState_t self, double p0)
 	{
 		if (!self)
 		{
@@ -54952,7 +54952,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_double(static_cast<double>(p0));
+			self->set_return_float(static_cast<double>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -55243,7 +55243,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API double shard_ObjectInstance_as_double(shard_ObjectInstance_t self)
+	SHARD_API double shard_ObjectInstance_as_float(shard_ObjectInstance_t self)
 	{
 		if (!self)
 		{
@@ -55251,7 +55251,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->as_double();
+			auto result = self->as_float();
 			return static_cast<double>(result);
 		}
 		catch (...)
@@ -55548,7 +55548,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_ObjectInstance_write_double(shard_ObjectInstance_t self, double p0)
+	SHARD_API shard_status_t shard_ObjectInstance_write_float(shard_ObjectInstance_t self, double p0)
 	{
 		if (!self)
 		{
@@ -55556,7 +55556,7 @@ extern "C"
 		}
 		try
 		{
-			self->write_double(static_cast<double>(p0));
+			self->write_float(static_cast<double>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)

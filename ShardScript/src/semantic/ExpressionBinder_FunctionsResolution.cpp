@@ -76,7 +76,7 @@ namespace
 		if (type == table.get_integer_primitive())
 			return 1;
 
-		if (type == table.get_double_primitive())
+		if (type == table.get_float_primitive())
 			return 2;
 
 		return -1;

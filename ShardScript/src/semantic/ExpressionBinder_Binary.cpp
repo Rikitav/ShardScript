@@ -76,7 +76,7 @@ namespace
 		if (type == table.get_integer_primitive())
 			return true;
 
-		if (type == table.get_double_primitive())
+		if (type == table.get_float_primitive())
 			return true;
 
 		if (type == table.get_char_primitive())
@@ -548,8 +548,8 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 				return nullptr;
 			}
 
-			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
-				return table.get_double_primitive();
+			if (leftType == table.get_float_primitive() || rightType == table.get_float_primitive())
+				return table.get_float_primitive();
 
 			return table.get_integer_primitive();
 		}
@@ -569,8 +569,8 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 				return nullptr;
 			}
 
-			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
-				return table.get_double_primitive();
+			if (leftType == table.get_float_primitive() || rightType == table.get_float_primitive())
+				return table.get_float_primitive();
 
 			return table.get_integer_primitive();
 		}
@@ -586,8 +586,8 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 				return nullptr;
 			}
 
-			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
-				return table.get_double_primitive();
+			if (leftType == table.get_float_primitive() || rightType == table.get_float_primitive())
+				return table.get_float_primitive();
 
 			return table.get_integer_primitive();
 		}
@@ -604,8 +604,8 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 				return nullptr;
 			}
 
-			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
-				return table.get_double_primitive();
+			if (leftType == table.get_float_primitive() || rightType == table.get_float_primitive())
+				return table.get_float_primitive();
 
 			return table.get_integer_primitive();
 		}
@@ -683,7 +683,7 @@ StructSymbol* ExpressionBinder::analyze_unary_expression(const UnaryExpressionSy
 		case TokenType::IncrementOperator:
 		case TokenType::DecrementOperator:
 		{
-			if (expressionType != table.get_integer_primitive() && expressionType != table.get_double_primitive())
+			if (expressionType != table.get_integer_primitive() && expressionType != table.get_float_primitive())
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::wconcat(L"Arithmetic unary operator requires numeric type, got '", expressionType->get_name(), L"'"));
 				return nullptr;

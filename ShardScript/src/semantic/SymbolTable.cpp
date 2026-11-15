@@ -277,9 +277,9 @@ StructSymbol* SymbolTable::get_integer_primitive() const
 	return m_integer;
 }
 
-StructSymbol* SymbolTable::get_double_primitive() const
+StructSymbol* SymbolTable::get_float_primitive() const
 {
-	return m_double;
+	return m_float;
 }
 
 StructSymbol* SymbolTable::get_char_primitive() const

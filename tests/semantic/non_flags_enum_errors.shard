@@ -1,0 +1,10 @@
+enum NormalEnum
+{
+    First,
+    Second
+}
+
+func Main() -> void
+{
+    bad := NormalEnum.First | Second;
+}

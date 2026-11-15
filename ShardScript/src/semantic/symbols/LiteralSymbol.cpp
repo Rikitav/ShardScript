@@ -32,14 +32,14 @@ void LiteralSymbol::set_integer_value(std::int64_t value)
 	m_asInteger = value;
 }
 
-std::double_t LiteralSymbol::get_double_value() const
+std::double_t LiteralSymbol::get_float_value() const
 {
-	return m_asDouble;
+	return m_asFloat;
 }
 
-void LiteralSymbol::set_double_value(std::double_t value)
+void LiteralSymbol::set_float_value(std::double_t value)
 {
-	m_asDouble = value;
+	m_asFloat = value;
 }
 
 wchar_t LiteralSymbol::get_char_value() const

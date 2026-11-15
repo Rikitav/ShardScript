@@ -48,7 +48,7 @@ namespace shard
 
 		bool as_boolean() const;
 		std::int64_t as_integer() const;
-		double as_double() const;
+		double as_float() const;
 		wchar_t as_char() const;
 		std::uintptr_t as_nint() const;
 		std::byte* as_pointer() const;
@@ -59,7 +59,7 @@ namespace shard
 
 		void write_boolean(bool value);
 		void write_integer(std::int64_t value);
-		void write_double(double value);
+		void write_float(double value);
 		void write_char(wchar_t value);
 		void write_pointer(std::byte* value);
 		void write_length(std::int64_t value);

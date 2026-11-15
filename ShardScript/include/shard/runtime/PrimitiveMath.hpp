@@ -28,7 +28,7 @@ namespace shard
 	{
 		const TypeShape* boolean;
 		const TypeShape* integer;
-		const TypeShape* doubleReal;
+		const TypeShape* floatReal;
 		const TypeShape* character;
 		const TypeShape* nint;
 		const TypeShape* byte;
@@ -43,7 +43,7 @@ namespace shard
 
 	class SHARD_API PrimitiveMath
 	{
-		static bool is_double(const PrimitiveShapes& shapes, const TypeShape* shape);
+		static bool is_float(const PrimitiveShapes& shapes, const TypeShape* shape);
 		static bool is_integral(const PrimitiveShapes& shapes, const TypeShape* shape);
 		static bool is_string(const PrimitiveShapes& shapes, const TypeShape* shape);
 

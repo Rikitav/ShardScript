@@ -136,7 +136,7 @@ namespace
 			case OpCode::LOADCONST_RATIONAL64:
 			{
 				opcode = L"ldc.r8";
-				args << decoder.absorb_double64();
+				args << decoder.absorb_float64();
 				break;
 			}
 

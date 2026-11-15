@@ -1373,7 +1373,7 @@ extern "C"
 	SHARD_API int shard_LiteralSymbol_get_boolean_value(shard_LiteralSymbol_t self);
 	SHARD_API void* shard_LiteralSymbol_get_bound_type(shard_LiteralSymbol_t self);
 	SHARD_API wchar_t shard_LiteralSymbol_get_char_value(shard_LiteralSymbol_t self);
-	SHARD_API double shard_LiteralSymbol_get_double_value(shard_LiteralSymbol_t self);
+	SHARD_API double shard_LiteralSymbol_get_float_value(shard_LiteralSymbol_t self);
 	SHARD_API std::int64_t shard_LiteralSymbol_get_integer_value(shard_LiteralSymbol_t self);
 	SHARD_API int shard_LiteralSymbol_get_literal_type(shard_LiteralSymbol_t self);
 	SHARD_API shard_status_t shard_LiteralSymbol_get_string_value(shard_LiteralSymbol_t self, void** out_value);
@@ -1381,7 +1381,7 @@ extern "C"
 	SHARD_API shard_status_t shard_LiteralSymbol_set_boolean_value(shard_LiteralSymbol_t self, int p0);
 	SHARD_API shard_status_t shard_LiteralSymbol_set_bound_type(shard_LiteralSymbol_t self, const void* p0);
 	SHARD_API shard_status_t shard_LiteralSymbol_set_char_value(shard_LiteralSymbol_t self, wchar_t p0);
-	SHARD_API shard_status_t shard_LiteralSymbol_set_double_value(shard_LiteralSymbol_t self, double p0);
+	SHARD_API shard_status_t shard_LiteralSymbol_set_float_value(shard_LiteralSymbol_t self, double p0);
 	SHARD_API shard_status_t shard_LiteralSymbol_set_integer_value(shard_LiteralSymbol_t self, std::int64_t p0);
 	SHARD_API shard_status_t shard_LiteralSymbol_set_string_value(shard_LiteralSymbol_t self, const void* p0);
 	SHARD_API shard_status_t shard_MemberSymbol_MemberSymbol_create(const wchar_t* p0, int p1, const void* p2, shard_MemberSymbol_t* out_handle);
@@ -1554,7 +1554,7 @@ extern "C"
 	SHARD_API void* shard_SymbolTable_get_boolean_primitive(shard_SymbolTable_t self);
 	SHARD_API void* shard_SymbolTable_get_byte_primitive(shard_SymbolTable_t self);
 	SHARD_API void* shard_SymbolTable_get_char_primitive(shard_SymbolTable_t self);
-	SHARD_API void* shard_SymbolTable_get_double_primitive(shard_SymbolTable_t self);
+	SHARD_API void* shard_SymbolTable_get_float_primitive(shard_SymbolTable_t self);
 	SHARD_API void* shard_SymbolTable_get_integer_primitive(shard_SymbolTable_t self);
 	SHARD_API void* shard_SymbolTable_get_nint_primitive(shard_SymbolTable_t self);
 	SHARD_API void* shard_SymbolTable_get_root_namespace(shard_SymbolTable_t self);
@@ -1752,7 +1752,7 @@ extern "C"
 	SHARD_API wchar_t shard_ByteCodeDecoder_absorb_char16(shard_ByteCodeDecoder_t self);
 	SHARD_API void* shard_ByteCodeDecoder_absorb_constructor_symbol(shard_ByteCodeDecoder_t self);
 	SHARD_API void* shard_ByteCodeDecoder_absorb_delegate_type_symbol(shard_ByteCodeDecoder_t self);
-	SHARD_API double shard_ByteCodeDecoder_absorb_double64(shard_ByteCodeDecoder_t self);
+	SHARD_API double shard_ByteCodeDecoder_absorb_float64(shard_ByteCodeDecoder_t self);
 	SHARD_API std::uint32_t shard_ByteCodeDecoder_absorb_field_slot(shard_ByteCodeDecoder_t self);
 	SHARD_API void* shard_ByteCodeDecoder_absorb_field_symbol(shard_ByteCodeDecoder_t self);
 	SHARD_API std::int64_t shard_ByteCodeDecoder_absorb_int64(shard_ByteCodeDecoder_t self);
@@ -1853,7 +1853,7 @@ extern "C"
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_array_element(shard_ByteCodeEncoder_t self);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_bool(shard_ByteCodeEncoder_t self, int p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_char16(shard_ByteCodeEncoder_t self, wchar_t p0);
-	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_double64(shard_ByteCodeEncoder_t self, double p0);
+	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_float64(shard_ByteCodeEncoder_t self, double p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_int64(shard_ByteCodeEncoder_t self, std::int64_t p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_int8(shard_ByteCodeEncoder_t self, std::int8_t p0);
 	SHARD_API shard_status_t shard_ByteCodeEncoder_emit_load_const_native_int(shard_ByteCodeEncoder_t self, std::intptr_t p0);
@@ -1998,7 +1998,7 @@ extern "C"
 	SHARD_API std::size_t shard_FuncCallState_get_argument_count(shard_FuncCallState_t self);
 	SHARD_API int shard_FuncCallState_get_boolean_argument(shard_FuncCallState_t self, std::size_t p0);
 	SHARD_API wchar_t shard_FuncCallState_get_char_argument(shard_FuncCallState_t self, std::size_t p0);
-	SHARD_API double shard_FuncCallState_get_double_argument(shard_FuncCallState_t self, std::size_t p0);
+	SHARD_API double shard_FuncCallState_get_float_argument(shard_FuncCallState_t self, std::size_t p0);
 	SHARD_API shard_CallStackFrame_t shard_FuncCallState_get_frame(shard_FuncCallState_t self);
 	SHARD_API std::int64_t shard_FuncCallState_get_integer_argument(shard_FuncCallState_t self, std::size_t p0);
 	SHARD_API shard_status_t shard_FuncCallState_get_property(shard_FuncCallState_t self, shard_ObjectInstance_t p0, const void* p1, shard_InvokeResult_t* out_value);
@@ -2012,7 +2012,7 @@ extern "C"
 	SHARD_API shard_status_t shard_FuncCallState_set_return_boolean(shard_FuncCallState_t self, int p0);
 	SHARD_API shard_status_t shard_FuncCallState_set_return_byte(shard_FuncCallState_t self, std::uint8_t p0);
 	SHARD_API shard_status_t shard_FuncCallState_set_return_char(shard_FuncCallState_t self, wchar_t p0);
-	SHARD_API shard_status_t shard_FuncCallState_set_return_double(shard_FuncCallState_t self, double p0);
+	SHARD_API shard_status_t shard_FuncCallState_set_return_float(shard_FuncCallState_t self, double p0);
 	SHARD_API shard_status_t shard_FuncCallState_set_return_integer(shard_FuncCallState_t self, std::int64_t p0);
 	SHARD_API shard_status_t shard_FuncCallState_set_return_string(shard_FuncCallState_t self, const wchar_t* p0);
 	SHARD_API shard_status_t shard_FuncCallState_try_invoke_method(shard_FuncCallState_t self, const void* p0, const void* p1, shard_InvokeResult_t* out_value);
@@ -2021,7 +2021,7 @@ extern "C"
 	SHARD_API void shard_ObjectInstance_ObjectInstance_destroy(shard_ObjectInstance_t self);
 	SHARD_API int shard_ObjectInstance_as_boolean(shard_ObjectInstance_t self);
 	SHARD_API wchar_t shard_ObjectInstance_as_char(shard_ObjectInstance_t self);
-	SHARD_API double shard_ObjectInstance_as_double(shard_ObjectInstance_t self);
+	SHARD_API double shard_ObjectInstance_as_float(shard_ObjectInstance_t self);
 	SHARD_API std::int64_t shard_ObjectInstance_as_integer(shard_ObjectInstance_t self);
 	SHARD_API unsigned char* shard_ObjectInstance_as_pointer(shard_ObjectInstance_t self);
 	SHARD_API shard_status_t shard_ObjectInstance_get_field(shard_ObjectInstance_t self, std::uint32_t p0, shard_ObjectInstance_t* out_value);
@@ -2032,7 +2032,7 @@ extern "C"
 	SHARD_API shard_status_t shard_ObjectInstance_set_field(shard_ObjectInstance_t self, std::uint32_t p0, shard_ObjectInstance_t p1);
 	SHARD_API shard_status_t shard_ObjectInstance_write_boolean(shard_ObjectInstance_t self, int p0);
 	SHARD_API shard_status_t shard_ObjectInstance_write_char(shard_ObjectInstance_t self, wchar_t p0);
-	SHARD_API shard_status_t shard_ObjectInstance_write_double(shard_ObjectInstance_t self, double p0);
+	SHARD_API shard_status_t shard_ObjectInstance_write_float(shard_ObjectInstance_t self, double p0);
 	SHARD_API shard_status_t shard_ObjectInstance_write_integer(shard_ObjectInstance_t self, std::int64_t p0);
 	SHARD_API shard_status_t shard_ObjectInstance_write_pointer(shard_ObjectInstance_t self, unsigned char* p0);
 	SHARD_API shard_status_t shard_PrimitiveMath_PrimitiveMath_create(shard_PrimitiveMath_t* out_handle);

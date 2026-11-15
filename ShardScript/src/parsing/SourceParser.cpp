@@ -2584,7 +2584,7 @@ ExpressionSyntax* SourceParser::read_operand(SourceProvider& reader, SyntaxNode*
 		case TokenType::StringLiteral:
 		case TokenType::BooleanLiteral:
 		case TokenType::NumberLiteral:
-		case TokenType::DoubleLiteral:
+		case TokenType::FloatLiteral:
 		case TokenType::ByteLiteral:
 			return read_linked_expression(reader, parent, read_literal_expression(reader, parent));
 

@@ -23,9 +23,9 @@ namespace
 		context.set_return_string(std::to_wstring(context.get_integer_argument(0)));
 	}
 
-	static void primitive_double_to_string(FuncCallState& context)
+	static void primitive_float_to_string(FuncCallState& context)
 	{
-		context.set_return_string(std::to_wstring(context.get_double_argument(0)));
+		context.set_return_string(std::to_wstring(context.get_float_argument(0)));
 	}
 
 	static void primitive_char_to_string(FuncCallState& context)
@@ -69,7 +69,7 @@ void SymbolTable::resolve_primitive_printables()
 
 	make_printable(*this, m_boolean, printable, &primitive_boolean_to_string);
 	make_printable(*this, m_integer, printable, &primitive_integer_to_string);
-	make_printable(*this, m_double, printable, &primitive_double_to_string);
+	make_printable(*this, m_float, printable, &primitive_float_to_string);
 	make_printable(*this, m_char, printable, &primitive_char_to_string);
 	make_printable(*this, m_byte, printable, &primitive_byte_to_string);
 	make_printable(*this, m_nativeInteger, printable, &primitive_nint_to_string);

@@ -325,7 +325,7 @@ bool shard::is_predefined_type(shard::TokenType type)
 		case TokenType::VoidKeyword:
 		case TokenType::VarKeyword:
 		case TokenType::IntegerKeyword:
-		case TokenType::DoubleKeyword:
+		case TokenType::FloatKeyword:
 		case TokenType::ByteKeyword:
 		case TokenType::NativeIntegerKeyword:
 		case TokenType::CharKeyword:

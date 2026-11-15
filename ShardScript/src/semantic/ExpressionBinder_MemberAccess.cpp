@@ -308,8 +308,8 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 		case TokenType::ByteKeyword:
 			return table.get_byte_primitive();
 
-		case TokenType::DoubleKeyword:
-			return table.get_double_primitive();
+		case TokenType::FloatKeyword:
+			return table.get_float_primitive();
 
 		default:
 			break;

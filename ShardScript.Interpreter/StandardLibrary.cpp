@@ -46,14 +46,14 @@ namespace
 		std::wcout << state.get_string_argument(0) << std::endl;
 	}
 
-	void native_print_double(FuncCallState& state)
+	void native_print_float(FuncCallState& state)
 	{
-		std::wcout << state.get_double_argument(0);
+		std::wcout << state.get_float_argument(0);
 	}
 
-	void native_println_double(FuncCallState& state)
+	void native_println_float(FuncCallState& state)
 	{
-		std::wcout << state.get_double_argument(0) << std::endl;
+		std::wcout << state.get_float_argument(0) << std::endl;
 	}
 
 	void native_print_boolean(FuncCallState& state)
@@ -293,8 +293,8 @@ namespace shard::interpreter
 		register_native(table, stdio, L"println", table.get_integer_primitive(), &native_println_integer);
 		register_native(table, stdio, L"print", table.get_string_primitive(), &native_print_string);
 		register_native(table, stdio, L"println", table.get_string_primitive(), &native_println_string);
-		register_native(table, stdio, L"print", table.get_double_primitive(), &native_print_double);
-		register_native(table, stdio, L"println", table.get_double_primitive(), &native_println_double);
+		register_native(table, stdio, L"print", table.get_float_primitive(), &native_print_float);
+		register_native(table, stdio, L"println", table.get_float_primitive(), &native_println_float);
 		register_native(table, stdio, L"print", table.get_boolean_primitive(), &native_print_boolean);
 		register_native(table, stdio, L"println", table.get_boolean_primitive(), &native_println_boolean);
 
@@ -307,8 +307,8 @@ namespace shard::interpreter
 		register_nullable_native(table, stdio, L"println", table.get_boolean_primitive(), &native_println_nullable<bool>);
 		register_nullable_native(table, stdio, L"print", table.get_integer_primitive(), &native_print_nullable<std::int64_t>);
 		register_nullable_native(table, stdio, L"println", table.get_integer_primitive(), &native_println_nullable<std::int64_t>);
-		register_nullable_native(table, stdio, L"print", table.get_double_primitive(), &native_print_nullable<double>);
-		register_nullable_native(table, stdio, L"println", table.get_double_primitive(), &native_println_nullable<double>);
+		register_nullable_native(table, stdio, L"print", table.get_float_primitive(), &native_print_nullable<double>);
+		register_nullable_native(table, stdio, L"println", table.get_float_primitive(), &native_println_nullable<double>);
 		register_nullable_native(table, stdio, L"print", table.get_char_primitive(), &native_print_nullable<wchar_t>);
 		register_nullable_native(table, stdio, L"println", table.get_char_primitive(), &native_println_nullable<wchar_t>);
 		register_nullable_native(table, stdio, L"print", table.get_byte_primitive(), &native_print_nullable<std::uint8_t>);

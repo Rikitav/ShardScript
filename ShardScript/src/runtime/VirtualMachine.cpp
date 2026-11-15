@@ -85,7 +85,7 @@ VirtualMachine::VirtualMachine(VirtualProgramImage& program, SemanticModel& mode
 	SymbolTable& table = m_model.get_table();
 	m_primitiveShapes.boolean = resolve_shape(table.get_boolean_primitive());
 	m_primitiveShapes.integer = resolve_shape(table.get_integer_primitive());
-	m_primitiveShapes.doubleReal = resolve_shape(table.get_double_primitive());
+	m_primitiveShapes.floatReal = resolve_shape(table.get_float_primitive());
 	m_primitiveShapes.character = resolve_shape(table.get_char_primitive());
 	m_primitiveShapes.nint = resolve_shape(table.get_nint_primitive());
 	m_primitiveShapes.byte = resolve_shape(table.get_byte_primitive());
@@ -157,8 +157,8 @@ const TypeShape* VirtualMachine::primitive_shape(StructSymbol* type) const
 		return m_primitiveShapes.boolean;
 	if (type == table.get_integer_primitive())
 		return m_primitiveShapes.integer;
-	if (type == table.get_double_primitive())
-		return m_primitiveShapes.doubleReal;
+	if (type == table.get_float_primitive())
+		return m_primitiveShapes.floatReal;
 	if (type == table.get_char_primitive())
 		return m_primitiveShapes.character;
 	if (type == table.get_nint_primitive())
@@ -985,8 +985,8 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 		case OpCode::LOADCONST_RATIONAL64:
 		{
-			double value = decoder.absorb_double64();
-			frame->push_entry(m_primitiveShapes.doubleReal, false, &value, sizeof(double));
+			double value = decoder.absorb_float64();
+			frame->push_entry(m_primitiveShapes.floatReal, false, &value, sizeof(double));
 			break;
 		}
 

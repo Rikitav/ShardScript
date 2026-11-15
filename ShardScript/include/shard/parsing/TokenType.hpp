@@ -75,7 +75,7 @@ namespace shard
 		StringLiteral,		  // string in ""
 		BooleanLiteral,		  // 'true' or 'false'
 		NumberLiteral,	      // number value
-		DoubleLiteral,		  // floating point number value
+		FloatLiteral,		  // floating point number value
 		ByteLiteral,		  // unsigned byte 0-255
 
 		// Punctuation
@@ -114,7 +114,7 @@ namespace shard
 		VoidKeyword,		  // void
 		VarKeyword,			  // var
 		IntegerKeyword,		  // int
-		DoubleKeyword,		  // double
+		FloatKeyword,		  // double
 		ShortKeyword,		  // short
 		FlagsKeyword,		  // flags
 		ByteKeyword,		  // byte

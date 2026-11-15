@@ -5,7 +5,7 @@ interface IWidget
 
 func Main() -> void
 {
-    noConversion: double? = 1 as double?;
+    noConversion: float? = 1 as float?;
     noReference: IWidget? = 1 as IWidget?;
     noText: int? = "text" as int?;
 

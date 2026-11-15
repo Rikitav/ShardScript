@@ -176,12 +176,35 @@ AsyncFuncCallState::AsyncFuncCallState(VirtualMachine& vm, CallStackFrame* frame
 	, m_taskState(taskState)
 { }
 
-VirtualMachine& AsyncFuncCallState::get_vm() const { return m_vm; }
-CallStackFrame* AsyncFuncCallState::get_frame() const { return m_frame; }
-MethodSymbol* AsyncFuncCallState::get_method() const { return m_method; }
-ObjectInstance AsyncFuncCallState::get_task_state() const { return m_taskState; }
-bool AsyncFuncCallState::is_finished() const { return m_finished; }
-std::size_t AsyncFuncCallState::get_argument_count() const { return m_arguments.size(); }
+VirtualMachine& AsyncFuncCallState::get_vm() const
+{
+	return m_vm;
+}
+
+CallStackFrame* AsyncFuncCallState::get_frame() const
+{
+	return m_frame;
+}
+
+MethodSymbol* AsyncFuncCallState::get_method() const
+{
+	return m_method;
+}
+
+ObjectInstance AsyncFuncCallState::get_task_state() const
+{
+	return m_taskState;
+}
+
+bool AsyncFuncCallState::is_finished() const
+{
+	return m_finished;
+}
+
+std::size_t AsyncFuncCallState::get_argument_count() const
+{
+	return m_arguments.size();
+}
 
 ObjectInstance AsyncFuncCallState::get_argument(std::size_t index) const
 {
@@ -191,11 +214,30 @@ ObjectInstance AsyncFuncCallState::get_argument(std::size_t index) const
 	return m_arguments[index];
 }
 
-bool AsyncFuncCallState::get_boolean_argument(std::size_t index) const { return get_argument(index).as_boolean(); }
-std::int64_t AsyncFuncCallState::get_integer_argument(std::size_t index) const { return get_argument(index).as_integer(); }
-double AsyncFuncCallState::get_double_argument(std::size_t index) const { return get_argument(index).as_double(); }
-std::uintptr_t AsyncFuncCallState::get_nint_argument(std::size_t index) const { return get_argument(index).as_nint(); }
-wchar_t AsyncFuncCallState::get_char_argument(std::size_t index) const { return get_argument(index).as_char(); }
+bool AsyncFuncCallState::get_boolean_argument(std::size_t index) const
+{
+	return get_argument(index).as_boolean();
+}
+
+std::int64_t AsyncFuncCallState::get_integer_argument(std::size_t index) const
+{
+	return get_argument(index).as_integer();
+}
+
+double AsyncFuncCallState::get_float_argument(std::size_t index) const
+{
+	return get_argument(index).as_float();
+}
+
+std::uintptr_t AsyncFuncCallState::get_nint_argument(std::size_t index) const
+{
+	return get_argument(index).as_nint();
+}
+
+wchar_t AsyncFuncCallState::get_char_argument(std::size_t index) const
+{
+	return get_argument(index).as_char();
+}
 
 std::wstring_view AsyncFuncCallState::get_string_argument(std::size_t index) const
 {
