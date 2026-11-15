@@ -50,14 +50,17 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${LIBUV_LIBRARIES}
+    ${CMAKE_DL_LIBS}
 )
-
-if(NOT WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
-endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types -Wno-discarded-qualifiers>)
+endif()
+
+if(ENABLE_ASAN)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "MI_TRACK=ASAN"
+    )
 endif()
 
 set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
