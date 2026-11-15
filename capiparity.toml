@@ -20,6 +20,6 @@ compile_flags = [
     "-ID:/repos/Rikitav/ShardScript/ShardScript/include",
     "-isystem", "D:/repos/Rikitav/ShardScript/ShardScript/third-party/libuv/include",
     "-isystem", "D:/repos/Rikitav/ShardScript/ShardScript/third-party/mimalloc/include",
-    "-isystem", "D:/repos/Rikitav/ShardScript/ShardScript/third-party/string-intern",
+    "-isystem", "D:/repos/Rikitav/ShardScript/ShardScript/third-party/string-intern/include",
     "-DSHARD_API_EXPORT",
 ]
