@@ -362,6 +362,11 @@ MethodSymbol* ByteCodeEmitter::resolve_call_target(const SyntaxNode* node, Metho
 	bool interfaceOwner = ownerType != nullptr && ownerType->get_kind() == SyntaxKind::InterfaceDeclaration;
 	if (interfaceOwner || method->get_is_virtual())
 	{
+		// a virtual member needs no instantiation of its own: the interface slot
+		// and the receiver's type resolve the implementation at run time
+		if (!methodGeneric)
+			return method;
+
 		unsupported(node, L"virtual generic method invokations");
 		return nullptr;
 	}

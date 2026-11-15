@@ -283,6 +283,12 @@ static bool is_constructed_interface_implemented(GenericTypeSymbol* targetInterf
 			StructSymbol* targetArgument = targetInterface->substitute_type_parameter(parameter);
 			StructSymbol* sourceArgument = candidateInterface->substitute_type_parameter(parameter);
 
+			// an unresolved parameter in the constraint is the self-reference of a
+			// clause like 'where T : IComparable<T>', so it stands for the argument
+			// being checked
+			if (targetArgument != nullptr && targetArgument->get_kind() == SyntaxKind::TypeParameter)
+				continue;
+
 			if (sourceArgument != nullptr && sourceArgument->get_kind() == SyntaxKind::TypeParameter && sourceType != nullptr && sourceType->get_kind() == SyntaxKind::GenericType)
 				sourceArgument = gmt::as<GenericTypeSymbol>(sourceType)->substitute_type_parameter(static_cast<TypeParameterSymbol*>(sourceArgument));
 

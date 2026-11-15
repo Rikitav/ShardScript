@@ -881,14 +881,15 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 	{
 		MethodSymbol* method = nullptr;
 		bool as_extension;
+		StructSymbol* constraint = nullptr; // the constraint the method came from
 	};
 
 	gmt::inline_vector<candidate, 8> candidates;
 	gmt::unordered_set<MethodSymbol*> seenCandidates;
-	auto addCandidate = [&](MethodSymbol* method, bool asExtension)
+	auto addCandidate = [&](MethodSymbol* method, bool asExtension, StructSymbol* constraint = nullptr)
 	{
 		if (seenCandidates.insert(method).second)
-			candidates.push_back({ method, asExtension });
+			candidates.push_back({ method, asExtension, constraint });
 	};
 
 	// instance and static methods declared on the receiver type
@@ -905,10 +906,19 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 				if (constraint == nullptr)
 					continue;
 
-				for (MethodSymbol* method : constraint->methods)
+				// a constructed constraint keeps its members on the interface it
+				// constructs, and its arguments substitute the members' patterns
+				StructSymbol* declared = constraint;
+				if (declared->get_kind() == SyntaxKind::GenericType)
+					declared = static_cast<GenericTypeSymbol*>(declared)->get_underlaying_type();
+
+				if (declared == nullptr)
+					continue;
+
+				for (MethodSymbol* method : declared->methods)
 				{
 					if (method != nullptr && method->get_name() == methodName)
-						addCandidate(method, false);
+						addCandidate(method, false, constraint);
 				}
 			}
 		}
@@ -1061,12 +1071,18 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 			? std::span<StructSymbol* const>(extensionArgs.get_vector())
 			: std::span<StructSymbol* const>(argTypes.get_vector());
 
+		// a method reached through a constraint substitutes its patterns against
+		// that constraint, not against the receiver's construction
+		GenericTypeSymbol* within = item.constraint != nullptr && item.constraint->get_kind() == SyntaxKind::GenericType
+			? static_cast<GenericTypeSymbol*>(item.constraint)
+			: genericType;
+
 		// bind untyped lambda arguments against this candidate's parameter
 		// types first, so scoring and type inference see complete delegates
-		bind_pending_lambda_arguments(node, item.method, item.as_extension, genericType, candidateArgs, explicitTypeArgs.get_vector());
+		bind_pending_lambda_arguments(node, item.method, item.as_extension, within, candidateArgs, explicitTypeArgs.get_vector());
 
 		gmt::inline_vector<StructSymbol*, 4> candidateTypeArgs;
-		int score = score_method_match(item.method, candidateArgs, genericType, candidateTypeArgs.get_vector(), explicitTypeArgs.get_vector());
+		int score = score_method_match(item.method, candidateArgs, within, candidateTypeArgs.get_vector(), explicitTypeArgs.get_vector());
 		if (score < 0)
 			continue;
 
