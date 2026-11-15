@@ -1,0 +1,29 @@
+using stdio;
+
+// Expected diagnostics: a type without the conformance cannot satisfy the
+// constraint, so binding a dictionary key on it has to fail.
+
+struct Plain
+{
+    public Value: int;
+}
+
+func HashOf<T>(value: T) -> int where T : IHashable
+{
+	return value.GetHashCode();
+}
+
+func ComparableOf<T>(left: T, right: T) -> int where T : IComparable<T>
+{
+	return 1;
+}
+
+func Main() -> void
+{
+	item := new Plain();
+	item.Value = 1;
+
+	// both of these must be rejected
+	println(HashOf(item));
+	println(ComparableOf(item, item));
+}

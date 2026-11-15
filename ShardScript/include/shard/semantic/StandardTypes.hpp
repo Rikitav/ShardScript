@@ -97,6 +97,12 @@ namespace shard
 
 		IIndexable,
 
+		IHashable,
+		IHashable_GetHashCode,
+
+		IComparable,
+		IComparable_CompareTo,
+
 		ArrayEnumerator,
 		ArrayEnumerator_T,
 		ArrayEnumerator_SourceField,

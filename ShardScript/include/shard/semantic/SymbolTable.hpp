@@ -60,6 +60,9 @@ namespace shard
 		void resolve_primitives();
 		void resolve_interfaces();
 		void resolve_primitive_printables();
+		void resolve_primitive_hashables();
+		void resolve_primitive_comparables();
+		void resolve_equality();
 		void resolve_enumerables();
 		void resolve_exceptions();
 		void resolve_async_types();

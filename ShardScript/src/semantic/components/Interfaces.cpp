@@ -144,4 +144,32 @@ void SymbolTable::resolve_interfaces()
 		set_standard_type(StandardTypes::IEnumerable, enumerable);
 		set_standard_type(StandardTypes::IEnumerable_GetEnumerator, getEnumerator);
 	}
+
+	// IHashable
+	{
+		InterfaceSymbol* hashable = m_arena.emplace<InterfaceSymbol>(L"IHashable", m_rootNamespace);
+		MethodSymbol* getHashCode = make_virtual_method(*this, hashable, L"GetHashCode", m_integer);
+
+		m_rootNamespace->members.push_back(hashable);
+		set_standard_type(StandardTypes::IHashable, hashable);
+		set_standard_type(StandardTypes::IHashable_GetHashCode, getHashCode);
+	}
+
+	// IComparable<T>
+	{
+		InterfaceSymbol* comparable = m_arena.emplace<InterfaceSymbol>(L"IComparable", m_rootNamespace);
+
+		TypeParameterSymbol* comparableT = m_arena.emplace<TypeParameterSymbol>(L"T", comparable);
+		comparable->type_parameters.push_back(comparableT);
+
+		MethodSymbol* compareTo = make_virtual_method(*this, comparable, L"CompareTo", m_integer);
+
+		ParameterSymbol* other = m_arena.emplace<ParameterSymbol>(L"other", compareTo);
+		other->set_type(comparableT);
+		compareTo->on_symbol_declared(other);
+
+		m_rootNamespace->members.push_back(comparable);
+		set_standard_type(StandardTypes::IComparable, comparable);
+		set_standard_type(StandardTypes::IComparable_CompareTo, compareTo);
+	}
 }

@@ -49,12 +49,15 @@ SymbolTable::SymbolTable()
 {
 	// component order matters:
 	// interfaces reference primitives,
-	// printables and enumerables implement interfaces,
+	// printables, hashing and comparison implement interfaces,
 	// exceptions build on IThrowable,
 	// async types build on the exception surface
 	resolve_primitives();
 	resolve_interfaces();
 	resolve_primitive_printables();
+	resolve_primitive_hashables();
+	resolve_primitive_comparables();
+	resolve_equality();
 	resolve_enumerables();
 	resolve_exceptions();
 	resolve_async_types();

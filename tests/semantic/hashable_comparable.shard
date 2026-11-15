@@ -1,0 +1,88 @@
+using stdio;
+
+// IHashable / IComparable<T>: primitive conformances, dispatch, the generic
+// constraints a Dictionary key relies on, and the Equals extension.
+
+func Assert(cond: bool, msg: string) -> void
+{
+	if (!cond)
+	{
+		println("FAILED: " + msg);
+		throw new RuntimeException();
+	}
+}
+
+func HashOf<T>(value: T) -> int where T : IHashable
+{
+	return value.GetHashCode();
+}
+
+func CompareOf<T>(left: T, right: T) -> int where T : IComparable<T>
+{
+	return left.CompareTo(right);
+}
+
+func TestPrimitiveHashes() -> void
+{
+	try Assert(HashOf(42) == 42, "int hash is the value");
+	try Assert(HashOf(true) == 1 and HashOf(false) == 0, "bool hash");
+	try Assert(HashOf('a') == HashOf('a'), "char hash is stable");
+	try Assert(HashOf(1.5) == HashOf(1.5), "double hash is stable");
+	try Assert(HashOf("abc") == HashOf("abc"), "string hash is value based");
+	try Assert(HashOf("abc") != HashOf("abd"), "string hash separates values");
+
+	println("TestPrimitiveHashes passed");
+}
+
+// a member of a generic interface reached through the constraint
+func TestComparableThroughConstraint() -> void
+{
+	try Assert(CompareOf(1, 2) == -1, "int CompareTo through the constraint");
+	try Assert(CompareOf(2, 1) == 1, "int CompareTo reversed");
+	try Assert(CompareOf(2, 2) == 0, "int CompareTo equal");
+	try Assert(CompareOf("a", "b") == -1, "string CompareTo through the constraint");
+	try Assert(CompareOf(true, false) == 1, "bool CompareTo through the constraint");
+	try Assert(CompareOf('a', 'b') == -1, "char CompareTo through the constraint");
+	try Assert(CompareOf(1.5, 2.5) == -1, "double CompareTo through the constraint");
+
+	println("TestComparableThroughConstraint passed");
+}
+
+func TestDirectCalls() -> void
+{
+	number: int = 5;
+	try Assert(number.GetHashCode() == 5, "direct int hash");
+	try Assert(number.CompareTo(9) == -1, "int CompareTo less");
+	try Assert("a".CompareTo("b") == -1 and "b".CompareTo("a") == 1, "string CompareTo");
+	try Assert(true.CompareTo(false) == 1 and false.CompareTo(true) == -1, "bool CompareTo");
+	try Assert(1.5.CompareTo(2.5) == -1 and 2.5.CompareTo(1.5) == 1, "double CompareTo");
+	try Assert('a'.CompareTo('b') == -1, "char CompareTo");
+
+	println("TestDirectCalls passed");
+}
+
+func TestEqualsExtension() -> void
+{
+	try Assert(Equals(5, 5), "global Equals on int");
+	try Assert(!Equals(5, 6), "global Equals separates ints");
+	try Assert(Equals("same", "same") and !Equals("same", "other"), "global Equals on string");
+	try Assert(Equals(true, true) and !Equals(true, false), "global Equals on bool");
+	try Assert(Equals('a', 'a') and !Equals('a', 'b'), "global Equals on char");
+	try Assert(Equals(1.5, 1.5) and !Equals(1.5, 2.5), "global Equals on double");
+
+	number: int = 7;
+	try Assert(number.Equals(7) and !number.Equals(8), "Equals as an extension");
+	text: string = "shard";
+	try Assert(text.Equals("shard") and !text.Equals("other"), "Equals extension on string");
+
+	println("TestEqualsExtension passed");
+}
+
+func Main() -> void
+{
+	try TestPrimitiveHashes();
+	try TestComparableThroughConstraint();
+	try TestDirectCalls();
+	try TestEqualsExtension();
+	println("ALL HASH/COMPARE/EQUALS TESTS PASSED");
+}
