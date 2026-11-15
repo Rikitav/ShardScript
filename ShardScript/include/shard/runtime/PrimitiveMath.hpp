@@ -44,7 +44,7 @@ namespace shard
 	class SHARD_API PrimitiveMath
 	{
 		static bool is_double(const PrimitiveShapes& shapes, const TypeShape* shape);
-		static bool is_integer(const PrimitiveShapes& shapes, const TypeShape* shape);
+		static bool is_integral(const PrimitiveShapes& shapes, const TypeShape* shape);
 		static bool is_string(const PrimitiveShapes& shapes, const TypeShape* shape);
 
 		static std::wstring_view string_view_of(ObjectInstance value);

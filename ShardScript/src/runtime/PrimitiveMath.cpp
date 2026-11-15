@@ -49,7 +49,7 @@ bool PrimitiveMath::is_double(const PrimitiveShapes& shapes, const TypeShape* sh
 	return shape != nullptr && shape == shapes.doubleReal;
 }
 
-bool PrimitiveMath::is_integer(const PrimitiveShapes& shapes, const TypeShape* shape)
+bool PrimitiveMath::is_integral(const PrimitiveShapes& shapes, const TypeShape* shape)
 {
 	if (shape == nullptr)
 		return false;
@@ -70,7 +70,7 @@ std::wstring_view PrimitiveMath::string_view_of(ObjectInstance value)
 	if (value == nullptr)
 		return std::wstring_view();
 
-	std::int64_t length = value.as_integer();
+	std::int64_t length = value.as_length();
 	const wchar_t* data = reinterpret_cast<const wchar_t*>(value.get_memory() + sizeof(std::int64_t));
 	return std::wstring_view(data, static_cast<std::size_t>(length));
 }
@@ -107,8 +107,8 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 		return PrimitiveStatus::Success;
 	}
 
-	bool isLeftInt = is_integer(shapes, leftShape) || is_enum(leftShape);
-	bool isRightInt = is_integer(shapes, rightShape) || is_enum(rightShape);
+	bool isLeftInt = is_integral(shapes, leftShape) || is_enum(leftShape);
+	bool isRightInt = is_integral(shapes, rightShape) || is_enum(rightShape);
 	if (!isLeftInt || !isRightInt)
 		return PrimitiveStatus::NotPrimitive;
 
@@ -268,6 +268,23 @@ PrimitiveStatus PrimitiveMath::compare(OpCode op, const PrimitiveShapes& shapes,
 				return PrimitiveStatus::NotPrimitive;
 		}
 	}
+	else if (leftShape == shapes.boolean && rightShape == shapes.boolean)
+	{
+		const bool leftValue = left.as_boolean();
+		const bool rightValue = right.as_boolean();
+
+		switch (op)
+		{
+			case OpCode::COMPARE_EQUAL: outcome = leftValue == rightValue; break;
+			case OpCode::COMPARE_NOTEQUAL: outcome = leftValue != rightValue; break;
+			case OpCode::COMPARE_GREATER: outcome = !leftValue && rightValue; break;
+			case OpCode::COMPARE_GREATER_OR_EQUAL: outcome = leftValue || !rightValue; break;
+			case OpCode::COMPARE_LESS: outcome = leftValue && !rightValue; break;
+			case OpCode::COMPARE_LESS_OR_EQUAL: outcome = !leftValue || rightValue; break;
+			default:
+				return PrimitiveStatus::NotPrimitive;
+		}
+	}
 	else if (is_double(shapes, leftShape) || is_double(shapes, rightShape))
 	{
 		double leftValue = is_double(shapes, leftShape) ? left.as_double() : static_cast<double>(left.as_integer());
@@ -319,7 +336,7 @@ PrimitiveStatus PrimitiveMath::negate(const PrimitiveShapes& shapes, ObjectInsta
 		return PrimitiveStatus::Success;
 	}
 
-	if (is_integer(shapes, value.get_shape()))
+	if (is_integral(shapes, value.get_shape()))
 	{
 		if (value.as_integer() == (std::numeric_limits<std::int64_t>::min)())
 			return PrimitiveStatus::Overflow;

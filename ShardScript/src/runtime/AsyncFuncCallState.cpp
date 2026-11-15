@@ -203,7 +203,7 @@ std::wstring_view AsyncFuncCallState::get_string_argument(std::size_t index) con
 	if (instance == nullptr)
 		return std::wstring_view();
 
-	std::int64_t length = instance.as_integer();
+	std::int64_t length = instance.as_length();
 	const wchar_t* data = reinterpret_cast<const wchar_t*>(instance.get_memory() + sizeof(std::int64_t));
 	return std::wstring_view(data, static_cast<std::size_t>(length));
 }

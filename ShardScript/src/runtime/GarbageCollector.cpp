@@ -252,7 +252,7 @@ ObjectInstance GarbageCollector::allocate_array(const TypeShape* arrayShape, con
 	const std::size_t payloadBytes = checked_add(sizeof(std::int64_t), elementsBytes);
 
 	ObjectInstance instance = allocate_block(arrayShape, payloadBytes);
-	instance.write_integer(length);
+	instance.write_length(length);
 
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(arrayShape->get_base_type());
 	bool nullableElements = arrayType->get_underlaying_type()->get_kind() == SyntaxKind::NullableType;
@@ -285,7 +285,7 @@ ObjectInstance GarbageCollector::allocate_string(std::wstring_view value)
 	const std::size_t payloadBytes = checked_add(sizeof(std::int64_t), characterBytes);
 	ObjectInstance instance = allocate_block(stringShape, payloadBytes);
 
-	instance.write_integer(static_cast<std::int64_t>(value.size()));
+	instance.write_length(static_cast<std::int64_t>(value.size()));
 	std::memcpy(instance.get_memory() + sizeof(std::int64_t), value.data(), value.size() * sizeof(wchar_t));
 
 	return instance;

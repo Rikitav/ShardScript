@@ -49,7 +49,7 @@ namespace
 
 	void native_array_length(FuncCallState& state)
 	{
-		state.set_return_integer(state.get_argument(0).as_integer());
+		state.set_return_integer(state.get_argument(0).as_length());
 	}
 
 	void native_range_move_next(FuncCallState& state)
@@ -1427,7 +1427,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			std::int64_t length = instance.as_integer();
+			std::int64_t length = instance.as_length();
 			if (index < 0 || index >= length)
 			{
 				raise_runtime_exception(L"IndexOutOfRangeException");
@@ -1454,7 +1454,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			std::int64_t length = instance.as_integer();
+			std::int64_t length = instance.as_length();
 			if (index < 0 || index >= length)
 			{
 				raise_runtime_exception(L"IndexOutOfRangeException");
@@ -1478,7 +1478,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			std::int64_t length = instance.as_integer();
+			std::int64_t length = instance.as_length();
 			frame->push_entry(m_primitiveShapes.integer, false, &length, sizeof(std::int64_t));
 			break;
 		}

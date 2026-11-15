@@ -39,6 +39,11 @@ bool TypeShape::is_reference() const
 	return m_isReference;
 }
 
+TypeShape::ValueKind TypeShape::get_value_kind() const
+{
+	return m_valueKind;
+}
+
 std::size_t TypeShape::get_slot_count() const
 {
 	return m_slots.size();

@@ -21,6 +21,10 @@ namespace shard
 
 		static std::uint32_t resolve_field_slot(FieldSymbol* field);
 
+		// reading storage as a kind it does not hold is a defect, so fault loudly
+		void require_kind(std::uint32_t allowedKinds, const char* accessor) const;
+		void require_integral(std::size_t capacity, const char* accessor) const;
+
 	public:
 		ObjectInstance();
 		ObjectInstance(const TypeShape* shape, std::byte* memory, GarbageCollector* collector = nullptr);
@@ -50,10 +54,14 @@ namespace shard
 		std::byte* as_pointer() const;
 		std::wstring_view as_string() const;
 
+		// the length header of a variable length object (string, array)
+		std::int64_t as_length() const;
+
 		void write_boolean(bool value);
 		void write_integer(std::int64_t value);
 		void write_double(double value);
 		void write_char(wchar_t value);
 		void write_pointer(std::byte* value);
+		void write_length(std::int64_t value);
 	};
 }

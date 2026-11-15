@@ -497,7 +497,15 @@ void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation
 		{
 			AccessorSymbol* accessor = static_cast<AccessorSymbol*>(open);
 			if (accessor != nullptr)
-				emit_accessor_body(accessor);
+			{
+				const AccessorDeclarationSyntax* accessorNode = gmt::as<AccessorDeclarationSyntax>(declaration);
+
+				// only semicolon-only accessors synthesize over the backing field
+				if (accessorNode != nullptr && !(accessorNode->get_body() == nullptr))
+					emit_body(accessorNode->get_body());
+				else
+					emit_accessor_body(accessor);
+			}
 
 			break;
 		}

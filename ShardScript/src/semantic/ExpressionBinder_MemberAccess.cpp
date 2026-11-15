@@ -1,5 +1,4 @@
 #include <shard/semantic/ExpressionBinder.hpp>
-
 #include <shard/lexical/SyntaxFacts.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 
@@ -385,6 +384,19 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 			m_staticContextExpressions.insert(gmt::as<const ExpressionSyntax>(*nodeRef));
 
 		return static_cast<StructSymbol*>(symbol);
+	}
+
+	if (symbol->get_kind() == SyntaxKind::FieldDeclaration)
+	{
+		FieldSymbol* implicitField = static_cast<FieldSymbol*>(symbol);
+		MethodSymbol* hostMethod = find_host_method_symbol();
+		bool staticBody = hostMethod != nullptr && hostMethod->get_linking() == LINK_STATIC;
+
+		if (staticBody && implicitField->get_linking() == LINK_INSTANCE)
+		{
+			diagnostics.report_error(location, gmt::wconcat(L"Cannot access instance field '", implicitField->get_full_name(), L"' from a static context"));
+			return nullptr;
+		}
 	}
 
 	return resolve_symbol_type(symbol, identifier, nodeRef.has_value() ? gmt::as<const ExpressionSyntax>(*nodeRef) : nullptr, currentType, nodeRef, location);

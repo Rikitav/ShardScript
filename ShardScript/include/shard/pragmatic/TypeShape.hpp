@@ -19,6 +19,23 @@ namespace shard
 		friend class TypeShapeCache;
 
 	public:
+		// What storage behind an instance holds; accessors refuse to read a kind it is not.
+		enum class ValueKind : std::uint8_t
+		{
+			Unknown,
+			Void,
+			Boolean,
+			Byte,
+			Char,
+			Integer,
+			NativeInteger,
+			Double,
+			String,
+			Enum,
+			Array,
+			Reference,
+		};
+
 		struct SlotInfo
 		{
 			std::size_t offset;
@@ -31,6 +48,7 @@ namespace shard
 		TypeShape* m_elementShape = nullptr;
 		bool m_isReference = false;
 		std::size_t m_size = 0;
+		ValueKind m_valueKind = ValueKind::Unknown;
 
 		gmt::vector<StructSymbol*> m_genericArguments;
 		gmt::vector<SlotInfo> m_slots;
@@ -48,6 +66,7 @@ namespace shard
 		std::size_t get_size() const;
 		const TypeShape* get_element_shape() const;
 		bool is_reference() const;
+		ValueKind get_value_kind() const;
 		std::size_t get_slot_count() const;
 		const SlotInfo& get_slot(std::uint32_t slotIndex) const;
 

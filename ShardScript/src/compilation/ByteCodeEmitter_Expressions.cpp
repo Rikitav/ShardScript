@@ -1,5 +1,4 @@
 #include <shard/compilation/ByteCodeEmitter.hpp>
-
 #include <shard/lexical/SyntaxFacts.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/TokenType.hpp>
@@ -855,7 +854,9 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 	if (!nodeRef.has_value())
 		return;
 
-	if (lookup_symbol<OperatorSymbol>(*nodeRef) != nullptr)
+	// only a binder-bound access operator makes this a dynamic access
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
+	if (bound != nullptr && bound->get_kind() == SyntaxKind::OperatorDeclaration)
 	{
 		emit_dynamic_access(*nodeRef, node->get_previous(), node->get_identifier());
 		return;
@@ -869,7 +870,9 @@ void ByteCodeEmitter::visit_qualified_name_type(const QualifiedNameTypeSyntax* n
 	if (node == nullptr)
 		return;
 
-	if (lookup_symbol<OperatorSymbol>(node) != nullptr)
+	// only a binder-bound access operator makes this a dynamic access
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
+	if (bound != nullptr && bound->get_kind() == SyntaxKind::OperatorDeclaration)
 		emit_dynamic_access(node, node->get_left(), node->get_identifier());
 }
 

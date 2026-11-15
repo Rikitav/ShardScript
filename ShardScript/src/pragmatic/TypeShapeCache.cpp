@@ -66,6 +66,41 @@ namespace
 
 		return std::nullopt;
 	}
+
+	TypeShape::ValueKind value_kind(SymbolTable& table, StructSymbol* type)
+	{
+		if (type == table.get_string_primitive())
+			return TypeShape::ValueKind::String;
+
+		if (type == table.get_boolean_primitive())
+			return TypeShape::ValueKind::Boolean;
+
+		if (type == table.get_byte_primitive())
+			return TypeShape::ValueKind::Byte;
+
+		if (type == table.get_char_primitive())
+			return TypeShape::ValueKind::Char;
+
+		if (type == table.get_integer_primitive())
+			return TypeShape::ValueKind::Integer;
+
+		if (type == table.get_nint_primitive())
+			return TypeShape::ValueKind::NativeInteger;
+
+		if (type == table.get_double_primitive())
+			return TypeShape::ValueKind::Double;
+
+		if (type == table.get_void_primitive())
+			return TypeShape::ValueKind::Void;
+
+		if (type->get_kind() == SyntaxKind::EnumDeclaration)
+			return TypeShape::ValueKind::Enum;
+
+		if (type->get_kind() == SyntaxKind::ArrayType)
+			return TypeShape::ValueKind::Array;
+
+		return TypeShape::ValueKind::Reference;
+	}
 }
 
 TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs) const
@@ -109,6 +144,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 	std::optional<std::size_t> baseTypePrimitiveSize = primitive_size(table, baseType);
 	bool isEnum = baseType->get_kind() == SyntaxKind::EnumDeclaration;
 	shape->m_isReference = !baseTypePrimitiveSize.has_value() && !isEnum;
+	shape->m_valueKind = value_kind(table, baseType);
 
 	if (baseType->get_kind() == SyntaxKind::ArrayType)
 	{
