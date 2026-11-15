@@ -2039,6 +2039,16 @@ StatementSyntax* SourceParser::read_statement(SourceProvider& reader, SyntaxNode
 			return syntax;
 		}
 
+		case TokenType::TryKeyword:
+		{
+			if (reader.can_peek() && reader.peek(0).get_type() == TokenType::OpenBrace)
+				return read_try_statement(reader, parent);
+
+			// fall through to an expression statement when 'try' is not followed by a block,
+			// so try expression statements can be written as 'try expr;'
+			break;
+		}
+
 		case TokenType::DeferKeyword:
 			return read_defer(reader, parent);
 
@@ -2057,9 +2067,6 @@ StatementSyntax* SourceParser::read_statement(SourceProvider& reader, SyntaxNode
 
 		case TokenType::ThrowKeyword:
 			return read_throw_statement(reader, parent);
-
-		case TokenType::TryKeyword:
-			return read_try_statement(reader, parent);
 
 		case TokenType::WhileKeyword:
 			return read_while_statement(reader, parent);
