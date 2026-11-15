@@ -1,12 +1,12 @@
 #include "StandardLibrary.hpp"
 
-#include <shard/runtime/FuncCallState.hpp>
+#include <shard/libframework/FuncCallState.hpp>
 
 #include <shard/pragmatic/PragmaticModel.hpp>
 #include <shard/pragmatic/TypeShape.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/PrimitiveMath.hpp>
-#include <shard/runtime/adapters/EnumerableAdapter.hpp>
+#include <shard/libframework/adapters/EnumerableAdapter.hpp>
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/StandardTypes.hpp>
 #include <shard/semantic/SymbolTable.hpp>

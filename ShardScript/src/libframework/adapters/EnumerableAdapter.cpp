@@ -1,4 +1,4 @@
-#include <shard/runtime/adapters/EnumerableAdapter.hpp>
+#include <shard/libframework/adapters/EnumerableAdapter.hpp>
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/StandardTypes.hpp>

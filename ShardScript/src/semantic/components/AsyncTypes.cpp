@@ -9,7 +9,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
-#include <shard/runtime/FuncCallState.hpp>
+#include <shard/libframework/FuncCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 

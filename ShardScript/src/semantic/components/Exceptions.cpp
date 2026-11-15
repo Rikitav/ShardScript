@@ -7,7 +7,7 @@
 
 #include <shard/LibraryMetadata.hpp>
 #include <shard/semantic/SemanticModel.hpp>
-#include <shard/runtime/FuncCallState.hpp>
+#include <shard/libframework/FuncCallState.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 
 using namespace shard;

@@ -1,7 +1,7 @@
 #include <shard/LibraryMetadata.hpp>
 
 #include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/FuncCallState.hpp>
+#include <shard/libframework/FuncCallState.hpp>
 #include <shard/runtime/AsyncRuntime.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>

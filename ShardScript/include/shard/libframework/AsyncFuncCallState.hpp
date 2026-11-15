@@ -1,7 +1,7 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
-#include <shard/runtime/NativeHandlers.hpp>
+#include <shard/libframework/NativeHandlers.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
 #include <cstddef>

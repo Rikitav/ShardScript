@@ -1,7 +1,7 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
-#include <shard/runtime/FuncCallState.hpp>
+#include <shard/libframework/FuncCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
 namespace shard

@@ -12,7 +12,7 @@
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/PrimitiveMath.hpp>
-#include <shard/runtime/NativeHandlers.hpp>
+#include <shard/libframework/NativeHandlers.hpp>
 
 #include <shard/compilation/OperationCode.hpp>
 #include <shard/compilation/ByteCodeDecoder.hpp>

@@ -4,7 +4,7 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/NativeHandlers.hpp>
+#include <shard/libframework/NativeHandlers.hpp>
 
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -150,4 +150,4 @@ namespace shard
 	};
 }
 
-#include <shard/runtime/FuncCallState.impl.hpp>
+#include <shard/libframework/FuncCallState.impl.hpp>

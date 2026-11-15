@@ -1,6 +1,6 @@
 #include <shard/runtime/VirtualMachine.hpp>
 
-#include <shard/runtime/AsyncFuncCallState.hpp>
+#include <shard/libframework/AsyncFuncCallState.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
