@@ -856,6 +856,10 @@ void ControlFlowAnalyzer::enter_member_body(MethodSymbol* method)
 	m_methodStack.push_back(m_currentMethod);
 	m_currentMethod = method;
 
+	m_bodyStack.push_back(BodyState{ std::move(m_assignedVariables), m_loopDepth });
+	m_assignedVariables.clear();
+	m_loopDepth = 0;
+
 	if (method != nullptr)
 		method->set_effects_computed(false);
 }
@@ -864,6 +868,10 @@ void ControlFlowAnalyzer::leave_member_body(MethodSymbol* method)
 {
 	if (method != nullptr)
 		method->set_effects_computed(true);
+
+	m_loopDepth = m_bodyStack.back().loopDepth;
+	m_assignedVariables = std::move(m_bodyStack.back().assignments);
+	m_bodyStack.pop_back();
 
 	m_currentMethod = m_methodStack.back();
 	m_methodStack.pop_back();

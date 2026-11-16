@@ -72,8 +72,17 @@ namespace shard
 			return !has_flag(state, FlowState::Normal);
 		}
 
+		// assigned-variable and loop state are per member body: a body analysis
+		// saves the enclosing one and starts clean, or state grows across bodies
+		struct BodyState
+		{
+			AssignmentSet assignments;
+			int loopDepth = 0;
+		};
+
 		AssignmentSet m_assignedVariables;
 		int m_loopDepth = 0;
+		gmt::vector<BodyState> m_bodyStack;
 		bool m_currentMethodIsAsync = false;
 
 		MethodSymbol* m_currentMethod = nullptr;
