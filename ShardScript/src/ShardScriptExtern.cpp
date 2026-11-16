@@ -335,7 +335,7 @@ extern "C"
 			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
 		}
 	}
-	
+
 	SHARD_API shard_status_t gmt_SharedLibrary_load(shard_gmt_SharedLibrary_t self)
 	{
 		if (!self)
@@ -23476,161 +23476,22 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_SourceParser_ParseFrame(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_SourceParser_ParseFrame_ParseFrame_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_SourceParser_ParseFrame_ParseFrame_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API int shard_SourceParser_ParseState(int value)
 	{
 		return value;
 	}
 
-	SHARD_API int shard_SourceParser_RecoveryContext(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API int shard_SourceParser_RecoveryContext_Guard(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_Guard_Guard_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
 
-	SHARD_API void shard_SourceParser_RecoveryContext_Guard_Guard_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_Guard_operator_assign(void* self, void* p0)
 	{
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
-	}
-
-	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_Guard_set_state(void* self, void* p0)
-	{
-		static_cast<void>(self);
-		static_cast<void>(p0);
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_RecoveryContext_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_SourceParser_RecoveryContext_RecoveryContext_destroy(void* self)
-	{
-		static_cast<void>(self);
 	}
 
 	SHARD_API shard_status_t shard_SourceParser_SourceParser_create(shard_SyntaxTree_t p0, shard_DiagnosticsContext_t p1, shard_SourceParser_t* out_handle)
@@ -33943,51 +33804,7 @@ extern "C"
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
 	}
 
-	SHARD_API int shard_ControlFlowAnalyzer_CallEdge(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_ControlFlowAnalyzer_CallEdge_CallEdge_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_ControlFlowAnalyzer_CallEdge_CallEdge_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API shard_status_t shard_ControlFlowAnalyzer_ControlFlowAnalyzer_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_ControlFlowAnalyzer_t* out_handle)
 	{
@@ -34052,51 +33869,7 @@ extern "C"
 		return value;
 	}
 
-	SHARD_API int shard_ControlFlowAnalyzer_TryCatchFrame(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_ControlFlowAnalyzer_TryCatchFrame_TryCatchFrame_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_ControlFlowAnalyzer_TryCatchFrame_TryCatchFrame_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API shard_status_t shard_ControlFlowAnalyzer_analyze(shard_ControlFlowAnalyzer_t self, shard_SyntaxTree_t p0)
 	{
@@ -37794,38 +37567,6 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_LiteralSymbol_(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
-
 	SHARD_API shard_status_t shard_LiteralSymbol_LiteralSymbol_create(int p0, const void* p1, shard_LiteralSymbol_t* out_handle)
 	{
 		if (!out_handle)
@@ -37882,20 +37623,6 @@ extern "C"
 		catch (...)
 		{
 		}
-	}
-
-	SHARD_API shard_status_t shard_LiteralSymbol__create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_LiteralSymbol__destroy(void* self)
-	{
-		static_cast<void>(self);
 	}
 
 	SHARD_API int shard_LiteralSymbol_get_boolean_value(shard_LiteralSymbol_t self)
@@ -44332,12 +44059,6 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_operator_bit_not(void* p0)
-	{
-		static_cast<void>(p0);
-		return 0;
-	}
-
 	// ----------------------------------------------------------------------
 	// pragmatic
 	// ----------------------------------------------------------------------
@@ -44399,51 +44120,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_EscapeAnalyzer_CachedExpressionRefs(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_EscapeAnalyzer_CachedExpressionRefs_CachedExpressionRefs_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_EscapeAnalyzer_CachedExpressionRefs_CachedExpressionRefs_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API shard_status_t shard_EscapeAnalyzer_EscapeAnalyzer_create(shard_SemanticModel_t p0, shard_PragmaticModel_t p1, shard_DiagnosticsContext_t p2, shard_EscapeAnalyzer_t* out_handle)
 	{
@@ -44503,281 +44180,17 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_EscapeAnalyzer_ExpressionRefs(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_EscapeAnalyzer_ExpressionRefs_ExpressionRefs_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
 
-	SHARD_API void shard_EscapeAnalyzer_ExpressionRefs_ExpressionRefs_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
-	SHARD_API int shard_EscapeAnalyzer_Frame(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Frame_Frame_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
 
-	SHARD_API void shard_EscapeAnalyzer_Frame_Frame_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
-	SHARD_API int shard_EscapeAnalyzer_Graph(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API int shard_EscapeAnalyzer_Graph_CallExposure(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Graph_CallExposure_CallExposure_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
 
-	SHARD_API void shard_EscapeAnalyzer_Graph_CallExposure_CallExposure_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
-	SHARD_API int shard_EscapeAnalyzer_Graph_Event(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Graph_Event_Event_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_EscapeAnalyzer_Graph_Event_Event_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
-
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Graph_Graph_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_EscapeAnalyzer_Graph_Graph_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
-
-	SHARD_API int shard_EscapeAnalyzer_WalkedMethod(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
-
-	SHARD_API shard_status_t shard_EscapeAnalyzer_WalkedMethod_WalkedMethod_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_EscapeAnalyzer_WalkedMethod_WalkedMethod_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API shard_status_t shard_EscapeAnalyzer_analyze(shard_EscapeAnalyzer_t self, shard_SyntaxTree_t p0)
 	{
@@ -47334,51 +46747,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_ByteCodeEmitter_loop_scope(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_ByteCodeEmitter_loop_scope_loop_scope_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_ByteCodeEmitter_loop_scope_loop_scope_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_accessor_declaration(shard_ByteCodeEmitter_t self, shard_AccessorDeclarationSyntax_t p0)
 	{
@@ -52764,13 +52133,6 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t shard_CallStackFrame_place_returned(shard_CallStackFrame_t self, shard_ObjectInstance_t p0)
-	{
-		static_cast<void>(self);
-		static_cast<void>(p0);
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
 	SHARD_API shard_status_t shard_CallStackFrame_pop_entry(shard_CallStackFrame_t self, shard_ObjectInstance_t* out_value)
 	{
 		if (!self)
@@ -53488,51 +52850,7 @@ extern "C"
 		}
 	}
 
-	SHARD_API int shard_GarbageCollector_StaticStorage(void)
-	{
-		try
-		{
-			return 0;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
 
-	SHARD_API shard_status_t shard_GarbageCollector_StaticStorage_StaticStorage_create(void** out_handle)
-	{
-		if (out_handle)
-		{
-			*out_handle = nullptr;
-		}
-		return SHARD_STATUS_ERROR_UNSUPPORTED;
-	}
-
-	SHARD_API void shard_GarbageCollector_StaticStorage_StaticStorage_destroy(void* self)
-	{
-		static_cast<void>(self);
-	}
 
 	SHARD_API shard_status_t shard_GarbageCollector_allocate_array(shard_GarbageCollector_t self, shard_TypeShape_t p0, shard_TypeShape_t p1, std::int64_t p2, shard_ObjectInstance_t* out_value)
 	{

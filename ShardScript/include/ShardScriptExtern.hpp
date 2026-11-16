@@ -918,18 +918,8 @@ extern "C"
 	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_return_keyword(shard_ReturnStatementSyntax_t self, shard_SyntaxToken_t p0);
 	SHARD_API shard_status_t shard_ReturnStatementSyntax_set_semicolon(shard_ReturnStatementSyntax_t self, shard_SyntaxToken_t p0);
 	SHARD_API shard_status_t shard_SourceParser_FromSourceProvider(shard_SourceParser_t self, shard_SourceProvider_t p0);
-	SHARD_API int shard_SourceParser_ParseFrame(void);
-	SHARD_API shard_status_t shard_SourceParser_ParseFrame_ParseFrame_create(void** out_handle);
-	SHARD_API void shard_SourceParser_ParseFrame_ParseFrame_destroy(void* self);
 	SHARD_API int shard_SourceParser_ParseState(int value);
-	SHARD_API int shard_SourceParser_RecoveryContext(void);
-	SHARD_API int shard_SourceParser_RecoveryContext_Guard(void);
-	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_Guard_Guard_create(void** out_handle);
-	SHARD_API void shard_SourceParser_RecoveryContext_Guard_Guard_destroy(void* self);
 	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_Guard_operator_assign(void* self, void* p0);
-	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_Guard_set_state(void* self, void* p0);
-	SHARD_API shard_status_t shard_SourceParser_RecoveryContext_RecoveryContext_create(void** out_handle);
-	SHARD_API void shard_SourceParser_RecoveryContext_RecoveryContext_destroy(void* self);
 	SHARD_API shard_status_t shard_SourceParser_SourceParser_create(shard_SyntaxTree_t p0, shard_DiagnosticsContext_t p1, shard_SourceParser_t* out_handle);
 	SHARD_API void shard_SourceParser_SourceParser_destroy(shard_SourceParser_t self);
 	SHARD_API shard_status_t shard_StatementSyntax_StatementSyntax_create(int p0, const void* p1, shard_StatementSyntax_t* out_handle);
@@ -1236,15 +1226,9 @@ extern "C"
 	SHARD_API shard_status_t shard_ConstructorSymbol_ConstructorSymbol_create(const void* p0, shard_ConstructorSymbol_t* out_handle);
 	SHARD_API void shard_ConstructorSymbol_ConstructorSymbol_destroy(shard_ConstructorSymbol_t self);
 	SHARD_API shard_status_t shard_ConstructorSymbol_operator_assign(shard_ConstructorSymbol_t self, shard_ConstructorSymbol_t p0);
-	SHARD_API int shard_ControlFlowAnalyzer_CallEdge(void);
-	SHARD_API shard_status_t shard_ControlFlowAnalyzer_CallEdge_CallEdge_create(void** out_handle);
-	SHARD_API void shard_ControlFlowAnalyzer_CallEdge_CallEdge_destroy(void* self);
 	SHARD_API shard_status_t shard_ControlFlowAnalyzer_ControlFlowAnalyzer_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_ControlFlowAnalyzer_t* out_handle);
 	SHARD_API void shard_ControlFlowAnalyzer_ControlFlowAnalyzer_destroy(shard_ControlFlowAnalyzer_t self);
 	SHARD_API int shard_ControlFlowAnalyzer_FlowState(int value);
-	SHARD_API int shard_ControlFlowAnalyzer_TryCatchFrame(void);
-	SHARD_API shard_status_t shard_ControlFlowAnalyzer_TryCatchFrame_TryCatchFrame_create(void** out_handle);
-	SHARD_API void shard_ControlFlowAnalyzer_TryCatchFrame_TryCatchFrame_destroy(void* self);
 	SHARD_API shard_status_t shard_ControlFlowAnalyzer_analyze(shard_ControlFlowAnalyzer_t self, shard_SyntaxTree_t p0);
 	SHARD_API int shard_ControlFlowAnalyzer_is_assignment_operator(int p0);
 	SHARD_API shard_status_t shard_DeclarationCollector_DeclarationCollector_create(shard_SemanticModel_t p0, shard_DiagnosticsContext_t p1, shard_DeclarationCollector_t* out_handle);
@@ -1365,11 +1349,8 @@ extern "C"
 	SHARD_API void* shard_LeftDenotationSymbol_get_expected_type(shard_LeftDenotationSymbol_t self);
 	SHARD_API shard_status_t shard_LeftDenotationSymbol_operator_assign(shard_LeftDenotationSymbol_t self, shard_LeftDenotationSymbol_t p0);
 	SHARD_API shard_status_t shard_LeftDenotationSymbol_set_expected_type(shard_LeftDenotationSymbol_t self, const void* p0);
-	SHARD_API int shard_LiteralSymbol_(void);
 	SHARD_API shard_status_t shard_LiteralSymbol_LiteralSymbol_create(int p0, const void* p1, shard_LiteralSymbol_t* out_handle);
 	SHARD_API void shard_LiteralSymbol_LiteralSymbol_destroy(shard_LiteralSymbol_t self);
-	SHARD_API shard_status_t shard_LiteralSymbol__create(void** out_handle);
-	SHARD_API void shard_LiteralSymbol__destroy(void* self);
 	SHARD_API int shard_LiteralSymbol_get_boolean_value(shard_LiteralSymbol_t self);
 	SHARD_API void* shard_LiteralSymbol_get_bound_type(shard_LiteralSymbol_t self);
 	SHARD_API wchar_t shard_LiteralSymbol_get_char_value(shard_LiteralSymbol_t self);
@@ -1629,36 +1610,16 @@ extern "C"
 	SHARD_API void* shard_VariableSymbol_get_type(shard_VariableSymbol_t self);
 	SHARD_API shard_status_t shard_VariableSymbol_operator_assign(shard_VariableSymbol_t self, shard_VariableSymbol_t p0);
 	SHARD_API shard_status_t shard_VariableSymbol_set_type(shard_VariableSymbol_t self, const void* p0);
-	SHARD_API int shard_operator_bit_not(void* p0);
+	// shard_operator_bit_not is not exposed: it would wrap the private
+	// ControlFlowAnalyzer::FlowState operator, which no caller can name
 
 	// ========================================================================
 	// pragmatic
 	// ========================================================================
 	SHARD_API shard_status_t shard_AllocationSiteVerdict_AllocationSiteVerdict_create(shard_AllocationSiteVerdict_t* out_handle);
 	SHARD_API void shard_AllocationSiteVerdict_AllocationSiteVerdict_destroy(shard_AllocationSiteVerdict_t self);
-	SHARD_API int shard_EscapeAnalyzer_CachedExpressionRefs(void);
-	SHARD_API shard_status_t shard_EscapeAnalyzer_CachedExpressionRefs_CachedExpressionRefs_create(void** out_handle);
-	SHARD_API void shard_EscapeAnalyzer_CachedExpressionRefs_CachedExpressionRefs_destroy(void* self);
 	SHARD_API shard_status_t shard_EscapeAnalyzer_EscapeAnalyzer_create(shard_SemanticModel_t p0, shard_PragmaticModel_t p1, shard_DiagnosticsContext_t p2, shard_EscapeAnalyzer_t* out_handle);
 	SHARD_API void shard_EscapeAnalyzer_EscapeAnalyzer_destroy(shard_EscapeAnalyzer_t self);
-	SHARD_API int shard_EscapeAnalyzer_ExpressionRefs(void);
-	SHARD_API shard_status_t shard_EscapeAnalyzer_ExpressionRefs_ExpressionRefs_create(void** out_handle);
-	SHARD_API void shard_EscapeAnalyzer_ExpressionRefs_ExpressionRefs_destroy(void* self);
-	SHARD_API int shard_EscapeAnalyzer_Frame(void);
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Frame_Frame_create(void** out_handle);
-	SHARD_API void shard_EscapeAnalyzer_Frame_Frame_destroy(void* self);
-	SHARD_API int shard_EscapeAnalyzer_Graph(void);
-	SHARD_API int shard_EscapeAnalyzer_Graph_CallExposure(void);
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Graph_CallExposure_CallExposure_create(void** out_handle);
-	SHARD_API void shard_EscapeAnalyzer_Graph_CallExposure_CallExposure_destroy(void* self);
-	SHARD_API int shard_EscapeAnalyzer_Graph_Event(void);
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Graph_Event_Event_create(void** out_handle);
-	SHARD_API void shard_EscapeAnalyzer_Graph_Event_Event_destroy(void* self);
-	SHARD_API shard_status_t shard_EscapeAnalyzer_Graph_Graph_create(void** out_handle);
-	SHARD_API void shard_EscapeAnalyzer_Graph_Graph_destroy(void* self);
-	SHARD_API int shard_EscapeAnalyzer_WalkedMethod(void);
-	SHARD_API shard_status_t shard_EscapeAnalyzer_WalkedMethod_WalkedMethod_create(void** out_handle);
-	SHARD_API void shard_EscapeAnalyzer_WalkedMethod_WalkedMethod_destroy(void* self);
 	SHARD_API shard_status_t shard_EscapeAnalyzer_analyze(shard_EscapeAnalyzer_t self, shard_SyntaxTree_t p0);
 	SHARD_API int shard_EscapeChannel(int value);
 	SHARD_API int shard_EscapeLevel(int value);
@@ -1777,9 +1738,6 @@ extern "C"
 	SHARD_API void shard_ByteCodeEmitter_ByteCodeEmitter_destroy(shard_ByteCodeEmitter_t self);
 	SHARD_API shard_status_t shard_ByteCodeEmitter_emit(shard_ByteCodeEmitter_t self, shard_SyntaxTree_t p0);
 	SHARD_API shard_status_t shard_ByteCodeEmitter_emit_conditional_chain(shard_ByteCodeEmitter_t self, shard_ConditionalClauseBaseSyntax_t p0);
-	SHARD_API int shard_ByteCodeEmitter_loop_scope(void);
-	SHARD_API shard_status_t shard_ByteCodeEmitter_loop_scope_loop_scope_create(void** out_handle);
-	SHARD_API void shard_ByteCodeEmitter_loop_scope_loop_scope_destroy(void* self);
 	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_accessor_declaration(shard_ByteCodeEmitter_t self, shard_AccessorDeclarationSyntax_t p0);
 	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_await_expression(shard_ByteCodeEmitter_t self, shard_AwaitExpressionSyntax_t p0);
 	SHARD_API shard_status_t shard_ByteCodeEmitter_visit_binary_expression(shard_ByteCodeEmitter_t self, shard_BinaryExpressionSyntax_t p0);
@@ -1941,7 +1899,6 @@ extern "C"
 	SHARD_API shard_status_t shard_CallStackFrame_operator_assign(shard_CallStackFrame_t self, shard_CallStackFrame_t p0);
 	SHARD_API shard_status_t shard_CallStackFrame_peek_entry(unsigned char* p0, shard_FrameEntryView_t* out_value);
 	SHARD_API shard_status_t shard_CallStackFrame_peek_entry_at(shard_CallStackFrame_t self, std::size_t p0, shard_ObjectInstance_t* out_value);
-	SHARD_API shard_status_t shard_CallStackFrame_place_returned(shard_CallStackFrame_t self, shard_ObjectInstance_t p0);
 	SHARD_API shard_status_t shard_CallStackFrame_pop_entry(shard_CallStackFrame_t self, shard_ObjectInstance_t* out_value);
 	SHARD_API shard_status_t shard_CallStackFrame_push_entry(shard_CallStackFrame_t self, shard_TypeShape_t p0, int p1, const void* p2, std::size_t p3);
 	SHARD_API shard_status_t shard_CallStackFrame_push_local(shard_CallStackFrame_t self, std::uint16_t p0);
@@ -1964,9 +1921,6 @@ extern "C"
 	SHARD_API void shard_GarbageCollector_GarbageCollector_destroy(shard_GarbageCollector_t self);
 	SHARD_API shard_status_t shard_GarbageCollector_GcHeader_GcHeader_create(shard_GarbageCollector_GcHeader_t* out_handle);
 	SHARD_API void shard_GarbageCollector_GcHeader_GcHeader_destroy(shard_GarbageCollector_GcHeader_t self);
-	SHARD_API int shard_GarbageCollector_StaticStorage(void);
-	SHARD_API shard_status_t shard_GarbageCollector_StaticStorage_StaticStorage_create(void** out_handle);
-	SHARD_API void shard_GarbageCollector_StaticStorage_StaticStorage_destroy(void* self);
 	SHARD_API shard_status_t shard_GarbageCollector_allocate_array(shard_GarbageCollector_t self, shard_TypeShape_t p0, shard_TypeShape_t p1, std::int64_t p2, shard_ObjectInstance_t* out_value);
 	SHARD_API shard_status_t shard_GarbageCollector_allocate_instance(shard_GarbageCollector_t self, shard_TypeShape_t p0, shard_ObjectInstance_t* out_value);
 	SHARD_API shard_status_t shard_GarbageCollector_allocate_string(shard_GarbageCollector_t self, const wchar_t* p0, shard_ObjectInstance_t* out_value);
