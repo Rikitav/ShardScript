@@ -51,12 +51,17 @@ const TypeShape* ByteCodeEmitter::shape_of(StructSymbol* type)
 {
 	if (type == nullptr)
 		return nullptr;
-
+	
+	// an open declaration may still name a type parameter: it resolves to a
+	// concrete shape only in an instantiation, so leave it unshaped here
 	type = substitute_type(type);
+	if (get_model().contains_type_parameter(type))
+		return nullptr;
+
 	return m_pragmatic.find_or_create_type_shape(get_model(), type);
 }
 
-void ByteCodeEmitter::emit_call_method(MethodSymbol* method, std::uint16_t returnSlot)
+void ByteCodeEmitter::emit_call_method(MethodSymbol* method, std::uint16_t returnSlot, StructSymbol* resultTypeOverride)
 {
 	std::uint32_t interfaceSlot = DirectCallSlot;
 
@@ -69,7 +74,9 @@ void ByteCodeEmitter::emit_call_method(MethodSymbol* method, std::uint16_t retur
 			interfaceSlot = *slot;
 	}
 
-	StructSymbol* resultType = method->get_return_type();
+	// a member declared on a generic type keeps the open return type on its
+	// symbol; the caller passes the receiver-substituted type it already bound
+	StructSymbol* resultType = resultTypeOverride != nullptr ? resultTypeOverride : method->get_return_type();
 	if (method->get_is_async())
 		resultType = get_model().get_async_call_type(resultType);
 
@@ -80,6 +87,7 @@ void ByteCodeEmitter::emit_call_method(MethodSymbol* method, std::uint16_t retur
 		PlacementVerdict verdict = resultShape != nullptr && !resultShape->is_reference()
 			? PlacementVerdict::Stack
 			: PlacementVerdict::Heap;
+	
 		returnSlot = allocate_temporary(resultType, verdict);
 	}
 
@@ -161,8 +169,8 @@ std::optional<std::uint16_t> ByteCodeEmitter::slot_of(SyntaxSymbol* symbol) cons
 		// the implicit receiver parameter is scope-only and never appears in
 		// the method's parameter list; by convention it occupies slot 0
 		bool implicitThis = m_generatingFor->get_linking() == LINK_INSTANCE;
-		implicitThis = implicitThis && symbol->get_name() == L"this";
 		implicitThis = implicitThis && symbol->get_parent() == m_generatingFor;
+
 		if (implicitThis)
 			return static_cast<std::uint16_t>(0);
 
@@ -289,9 +297,7 @@ void ByteCodeEmitter::emit_body(const BlockSyntax* body)
 			emit_converted(arrow->get_expression());
 
 			// an expression body yields its value; end_method's RETURN pops it
-			StructSymbol* returnType = (m_generatingFor == nullptr) ? nullptr : m_generatingFor->get_return_type();
-			bool dropsResult = (returnType == nullptr) || returnType == get_symbol_table().get_void_primitive();
-			if (dropsResult)
+			if (m_generatingFor != nullptr && m_generatingFor->get_return_type() == get_symbol_table().get_void_primitive())
 				eval_pop();
 		}
 
@@ -299,13 +305,6 @@ void ByteCodeEmitter::emit_body(const BlockSyntax* body)
 	}
 
 	visit_statements_block(gmt::as<StatementsBlockSyntax>(body));
-}
-
-bool ByteCodeEmitter::method_supported([[maybe_unused]] MethodSymbol* method, [[maybe_unused]] const SyntaxNode* blame)
-{
-	// async methods run through the ordinary bytecode; their invocation
-	// boundary creates the Task wrapper instead of rewriting the body
-	return true;
 }
 
 StructSymbol* ByteCodeEmitter::substitute_type(StructSymbol* type)
@@ -610,9 +609,6 @@ void ByteCodeEmitter::visit_function_declaration(const FunctionDeclarationSyntax
 	if (is_generic_definition(symbol))
 		return;
 
-	if (!method_supported(symbol, *nodeRef))
-		return;
-
 	begin_method(symbol);
 	emit_body(node->get_body());
 	end_method();
@@ -634,9 +630,6 @@ void ByteCodeEmitter::visit_operator_declaration(const OperatorDeclarationSyntax
 	if (is_generic_definition(symbol))
 		return;
 
-	if (!method_supported(symbol, *nodeRef))
-		return;
-
 	begin_method(symbol);
 	emit_body(node->get_body());
 	end_method();
@@ -656,9 +649,6 @@ void ByteCodeEmitter::visit_constructor_declaration(const ConstructorDeclaration
 		return;
 
 	if (is_generic_definition(symbol))
-		return;
-
-	if (!method_supported(symbol, *nodeRef))
 		return;
 
 	begin_method(symbol);
@@ -717,9 +707,6 @@ void ByteCodeEmitter::visit_accessor_declaration(const AccessorDeclarationSyntax
 		return;
 
 	if (is_generic_definition(symbol))
-		return;
-
-	if (!method_supported(symbol, *nodeRef))
 		return;
 
 	begin_method(symbol);

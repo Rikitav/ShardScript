@@ -12,10 +12,12 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/Containers.hpp>
+#include <gmt/Strings.hpp>
 
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 using namespace shard;
 
@@ -101,6 +103,14 @@ namespace
 
 		return TypeShape::ValueKind::Reference;
 	}
+
+	void reject_unsubstituted_type_parameter(StructSymbol* type)
+	{
+		// a type parameter has no layout of its own; reaching the layout layer
+		// means some caller skipped substituting it with a concrete type argument
+		if (type != nullptr && type->get_kind() == SyntaxKind::TypeParameter)
+			throw std::runtime_error(std::string("cannot lay out a type shape for the unsubstituted type parameter '") + gmt::wide_to_utf8(type->get_name()).c_str() + "'");
+	}
 }
 
 TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs) const
@@ -121,6 +131,8 @@ TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, Struc
 	StructSymbol* keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, true);
 	if (keyType == nullptr)
 		throw std::runtime_error("cannot build a type shape for a null base type");
+
+	reject_unsubstituted_type_parameter(keyType);
 
 	auto [choice, inserted] = m_shapes.try_emplace(reinterpret_cast<std::uint64_t>(keyType), keyType, genericArgs);
 	TypeShape& shape = choice->second;
@@ -194,6 +206,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		TypeShape::SlotInfo slot{};
 		slot.offset = offset;
 		slot.isNullable = fieldType->get_kind() == SyntaxKind::NullableType;
+
 		slot.fieldShape = find_or_create_type_shape(model, fieldType);
 
 		offset += sizeof(void*);

@@ -993,14 +993,15 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 				}
 			}
 
-			emit_call_method(getter);
+			// the binder's expression type carries the substituted value type;
+			// the open declared type can still be a type parameter
+			StructSymbol* valueType = get_model().get_expression_type(static_cast<const ExpressionSyntax*>(node));
+
+			emit_call_method(getter, ReturnSlotSentinel, valueType);
 
 			if (!isStatic)
 				eval_pop();
 
-			// the binder's expression type carries the substituted value type;
-			// the open declared type can still be a type parameter
-			StructSymbol* valueType = get_model().get_expression_type(static_cast<const ExpressionSyntax*>(node));
 			eval_push_type((valueType == nullptr) ? getter->get_return_type() : valueType);
 			return;
 		}
@@ -1195,6 +1196,16 @@ void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyn
 
 	bool isAsync = method->get_is_async();
 	StructSymbol* resultType = method->get_return_type();
+
+	// a member declared on a generic type keeps the open return type on its
+	// symbol; the receiver construction supplies the arguments for this call
+	if (receiver != nullptr && resultType != nullptr && get_model().contains_type_parameter(resultType))
+	{
+		StructSymbol* receiverType = get_model().get_expression_type(receiver);
+		if (receiverType != nullptr && receiverType->get_kind() == SyntaxKind::GenericType)
+			resultType = get_model().substitute_type(resultType, static_cast<GenericTypeSymbol*>(receiverType));
+	}
+
 	if (isAsync)
 		resultType = get_model().get_async_call_type(resultType);
 
@@ -1446,12 +1457,13 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 			eval_push(sizeof(void*));
 		}
 
-		emit_call_method(getter);
+		StructSymbol* valueType = get_model().get_expression_type(*nodeRef);
+
+		emit_call_method(getter, ReturnSlotSentinel, valueType);
 
 		std::size_t argumentCount = indexator->get_parameters().size() + 1;
 		eval_pop(argumentCount);
 
-		StructSymbol* valueType = get_model().get_expression_type(*nodeRef);
 		eval_push_type((valueType == nullptr) ? getter->get_return_type() : valueType);
 		return;
 	}

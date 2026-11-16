@@ -12,6 +12,11 @@ StructSymbol* GenericTypeSymbol::get_underlaying_type() const
 	return m_underlayingType;
 }
 
+const gmt::FlatMap<gmt::StringReference, StructSymbol*>& GenericTypeSymbol::get_type_arguments() const
+{
+	return m_typeArguments;
+}
+
 bool GenericTypeSymbol::add_type_parameter(TypeParameterSymbol* typeParameter, StructSymbol* argumentType)
 {
 	return m_typeArguments.try_emplace(gmt::intern(typeParameter->get_name()), argumentType);

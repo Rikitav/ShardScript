@@ -30,6 +30,8 @@ namespace shard
 
 		StructSymbol* get_underlaying_type() const;
 
+		const gmt::FlatMap<gmt::StringReference, StructSymbol*>& get_type_arguments() const;
+
 		bool add_type_parameter(TypeParameterSymbol* type_parameter, StructSymbol* argument_type);
 		StructSymbol* substitute_type_parameter(TypeParameterSymbol* type_parameter) const;
 	};

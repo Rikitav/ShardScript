@@ -489,7 +489,9 @@ ObjectInstance VirtualMachine::invoke_into(MethodSymbol* method, std::span<const
 	const TypeShape* returnShape = convention == CallingConvention::NativeSync
 		? primitive_shape(returnType)
 		: nullptr;
-	if (returnShape == nullptr)
+
+	// an open return type has no shape of its own; the returned value carries its own
+	if (returnShape == nullptr && (returnType == nullptr || !m_model.contains_type_parameter(returnType)))
 		returnShape = resolve_shape(returnType);
 
 	if (convention == CallingConvention::NativeSync || convention == CallingConvention::NativeAsync)
@@ -529,10 +531,15 @@ ObjectInstance VirtualMachine::invoke_into(MethodSymbol* method, std::span<const
 
 ObjectInstance VirtualMachine::invoke_managed(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout)
 {
-	const TypeShape* returnShape = is_void_method(method) ? nullptr : resolve_shape(method->get_return_type());
+	StructSymbol* declaredReturn = is_void_method(method) ? nullptr : method->get_return_type();
+	const TypeShape* returnShape = (declaredReturn == nullptr || m_model.contains_type_parameter(declaredReturn))
+		? nullptr
+		: resolve_shape(declaredReturn);
+
 	ObjectInstance destination = returnShape != nullptr && returnShape->get_size() > 0
 		? m_collector.allocate_instance(returnShape)
 		: ObjectInstance::null();
+
 	if (destination != nullptr)
 		m_collector.pin(destination);
 

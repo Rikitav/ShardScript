@@ -120,7 +120,11 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	else
 	{
 		if (method != nullptr && method->get_return_type() != nullptr)
-			returnShape = pragmatic.find_or_create_type_shape(model, method->get_return_type());
+		{
+			// an open return type has no shape; the returned value carries its own
+			if (!model.contains_type_parameter(method->get_return_type()))
+				returnShape = pragmatic.find_or_create_type_shape(model, method->get_return_type());
+		}
 
 		if (layout != nullptr)
 			layout->set_return_shape(returnShape);
@@ -152,6 +156,11 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 		}
 
 		if (type == nullptr)
+			return nullptr;
+
+		// an open type has no layout of its own: the value stored in the slot
+		// carries its own concrete shape, so the slot needs no shape here
+		if (model.contains_type_parameter(type))
 			return nullptr;
 
 		return pragmatic.find_or_create_type_shape(model, type);

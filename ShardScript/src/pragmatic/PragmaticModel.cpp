@@ -257,7 +257,7 @@ FrameLayout& PragmaticModel::get_or_create_frame_layout(SemanticModel& model, Me
 
 	gmt::inline_vector<const TypeShape*, 8> argumentShapes;
 	for (StructSymbol* argumentType : layout.get_argument_types())
-		argumentShapes.push_back((argumentType == nullptr) ? nullptr : find_or_create_type_shape(model, argumentType));
+		argumentShapes.push_back((argumentType == nullptr || model.contains_type_parameter(argumentType)) ? nullptr : find_or_create_type_shape(model, argumentType));
 
 	gmt::inline_vector<const TypeShape*, 8> variableShapes;
 	for (const FrameSlotRecipe& recipe : open->get_variable_slots())
@@ -275,7 +275,7 @@ FrameLayout& PragmaticModel::get_or_create_frame_layout(SemanticModel& model, Me
 		}
 
 		layout.add_variable(slotType, recipe.verdict);
-		variableShapes.push_back((slotType == nullptr) ? nullptr : find_or_create_type_shape(model, slotType));
+		variableShapes.push_back((slotType == nullptr || model.contains_type_parameter(slotType)) ? nullptr : find_or_create_type_shape(model, slotType));
 	}
 
 	layout.set_argument_shapes(gmt::vector<const TypeShape*>(argumentShapes.get_vector().begin(), argumentShapes.get_vector().end()));

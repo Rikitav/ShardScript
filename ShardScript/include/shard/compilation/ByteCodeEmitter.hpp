@@ -106,7 +106,6 @@ namespace shard
 		void end_method();
 		void emit_body(const BlockSyntax* body);
 		void emit_accessor_body(AccessorSymbol* symbol);
-		bool method_supported(MethodSymbol* method, const SyntaxNode* blame);
 
 		StructSymbol* substitute_type(StructSymbol* type);
 		static StructSymbol* owner_type_of(MethodSymbol* method);
@@ -141,7 +140,7 @@ namespace shard
 		FieldSymbol* capture_field_of(SyntaxSymbol* bound) const;
 		void emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst, const InvokationExpressionSyntax* callSite = nullptr);
 		void emit_method_call_into(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
-		void emit_call_method(MethodSymbol* method, std::uint16_t returnSlot = ReturnSlotSentinel);
+		void emit_call_method(MethodSymbol* method, std::uint16_t returnSlot = ReturnSlotSentinel, StructSymbol* resultTypeOverride = nullptr);
 		bool is_extension_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments);
 		MethodSymbol* into_call_method(const ExpressionSyntax* expression);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);

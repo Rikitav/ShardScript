@@ -85,7 +85,12 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 			continue;
 		}
 
-		TypeShape* shape = m_pragmatic.find_or_create_type_shape(model, argumentType);
+		// an open declaration keeps a null placeholder for slots that still name a
+		// type parameter; each instantiation re-resolves them
+		TypeShape* shape = model.contains_type_parameter(argumentType)
+			? nullptr
+			: m_pragmatic.find_or_create_type_shape(model, argumentType);
+
 		argumentShapes.push_back(shape);
 	}
 
@@ -123,7 +128,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 		m_pragmatic.set_local_slot(method, local, argumentCount + variableIndex);
 
 		TypeShape* shape = nullptr;
-		if (localType != nullptr)
+		if (localType != nullptr && !model.contains_type_parameter(localType))
 			shape = m_pragmatic.find_or_create_type_shape(model, localType);
 
 		variableShapes.push_back(shape);

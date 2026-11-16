@@ -1093,6 +1093,46 @@ StructSymbol* SemanticModel::substitute_type(StructSymbol* type, std::span<Struc
 	return resolve_runtime_type_argument(type, resolver);
 }
 
+bool SemanticModel::contains_type_parameter(const StructSymbol* type) const
+{
+	if (type == nullptr)
+		return false;
+
+	switch (type->get_kind())
+	{
+		case SyntaxKind::TypeParameter:
+			return true;
+
+		case SyntaxKind::ArrayType:
+			return contains_type_parameter(static_cast<const ArrayTypeSymbol*>(type)->get_underlaying_type());
+		
+		case SyntaxKind::NullableType:
+			return contains_type_parameter(static_cast<const NullableTypeSymbol*>(type)->get_underlaying_type());
+		
+		case SyntaxKind::GenericType:
+		{
+			const auto* generic = static_cast<const GenericTypeSymbol*>(type);
+			const StructSymbol* underlaying = generic->get_underlaying_type();
+			if (underlaying == nullptr)
+				return false;
+
+			// a construction is open while any stored argument still names a parameter
+			for (const auto& argument : generic->get_type_arguments())
+			{
+				if (contains_type_parameter(argument.second))
+					return true;
+			}
+
+			// a construction missing arguments for its own definition is still open
+			return generic->get_type_arguments().length() < underlaying->type_parameters.size();
+		}
+		
+		// a generic definition used before construction still names its parameters
+		default:
+			return !type->type_parameters.empty();
+	}
+}
+
 bool SemanticModel::try_resolve_generic_arguments(StructSymbol* type, const TypeParameterResolver& resolveParameter, StructSymbol*& baseType, gmt::vector<StructSymbol*>& genericArgs)
 {
 	if (type == nullptr)

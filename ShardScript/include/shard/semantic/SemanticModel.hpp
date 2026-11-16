@@ -81,6 +81,9 @@ namespace shard
 
 		StructSymbol* substitute_type(StructSymbol* type, GenericTypeSymbol* within = nullptr);
 		StructSymbol* substitute_type(StructSymbol* type, std::span<StructSymbol* const> typeArguments);
+		// a type still naming a type parameter has no concrete layout until an
+		// instantiation supplies its arguments
+		bool contains_type_parameter(const StructSymbol* type) const;
 		StructSymbol* get_field_type(FieldSymbol* field, GenericTypeSymbol* within = nullptr);
 		StructSymbol* get_method_return_type(MethodSymbol* method, GenericTypeSymbol* within = nullptr);
 		StructSymbol* get_property_type(PropertySymbol* property, GenericTypeSymbol* within = nullptr);
