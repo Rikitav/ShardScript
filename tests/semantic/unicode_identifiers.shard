@@ -1,0 +1,31 @@
+using stdio;
+
+func Привет(имя: string) -> string
+{
+    return "привет, " + имя;
+}
+
+func Διπλάσιο(τιμή: int) -> int
+{
+    return τιμή * 2;
+}
+
+func 倍数(値: int) -> int
+{
+    return 値 * 3;
+}
+
+func Main() -> void
+{
+    переменная := 42;
+    println(переменная);
+    println(Διπλάσιο(переменная));
+    println(倍数(переменная));
+
+    // a combining mark stays part of the same identifier
+    café := 5;
+    println(café);
+
+    println('ё' == 'ё');
+    println(Привет("мир") == "привет, мир");
+}

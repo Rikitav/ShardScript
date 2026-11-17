@@ -7,8 +7,6 @@
 #include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 
-#include <cctype>
-#include <cwctype>
 #include <iterator>
 #include <string>
 #include <stdexcept>
@@ -19,14 +17,62 @@ using namespace shard;
 
 namespace
 {
-	// ASCII is the overwhelmingly common case; only fall back to the
-	// locale-aware cwctype calls for non-ASCII code points
+	struct CodePointRange
+	{
+		wchar_t first;
+		wchar_t last;
+	};
+
+	// scripts a source file may be written in; iswalnum cannot answer this under
+	// the C locale, and the answer must not depend on the host's locale setup
+	constexpr CodePointRange IdentifierRanges[] =
+	{
+		{ 0x00AA, 0x00AA }, // ordinal indicators and micro sign
+		{ 0x00B5, 0x00B5 },
+		{ 0x00BA, 0x00BA },
+		{ 0x00C0, 0x00D6 }, // latin-1 letters
+		{ 0x00D8, 0x00F6 },
+		{ 0x00F8, 0x02AF }, // latin extended, ipa
+		{ 0x0300, 0x036F }, // combining marks
+		{ 0x0370, 0x03FF }, // greek
+		{ 0x0400, 0x052F }, // cyrillic
+		{ 0x0530, 0x058F }, // armenian
+		{ 0x0590, 0x05FF }, // hebrew
+		{ 0x0600, 0x06FF }, // arabic
+		{ 0x0900, 0x0DFF }, // indic
+		{ 0x0E00, 0x0EFF }, // thai, lao
+		{ 0x1E00, 0x1FFF }, // latin extended additional, greek extended
+		{ 0x3040, 0x30FF }, // kana
+		{ 0x3400, 0x4DBF }, // cjk extension a
+		{ 0x4E00, 0x9FFF }, // cjk unified
+		{ 0xA000, 0xA4CF }, // yi
+		{ 0xAC00, 0xD7AF }, // hangul syllables
+		{ 0xF900, 0xFAFF }, // cjk compatibility
+	};
+
+	// ASCII is the overwhelmingly common case; only fall back to the Unicode
+	// ranges for non-ASCII code points
 	bool is_space_character(wchar_t ch)
 	{
 		if (ch == L' ' || (ch >= L'\t' && ch <= L'\r'))
 			return true;
 
-		return ch > 0x7F && std::iswspace(static_cast<wint_t>(ch)) != 0;
+		switch (ch)
+		{
+			case 0x00A0: // no-break space
+			case 0x1680:
+			case 0x2028:
+			case 0x2029:
+			case 0x202F:
+			case 0x205F:
+			case 0x3000:
+				return true;
+
+			default:
+				break;
+		}
+
+		return ch >= 0x2000 && ch <= 0x200A;
 	}
 
 	bool is_word_character(wchar_t ch)
@@ -35,7 +81,16 @@ namespace
 			(ch >= L'0' && ch <= L'9') || ch == L'_')
 			return true;
 
-		return ch > 0x7F && std::iswalnum(static_cast<wint_t>(ch)) != 0;
+		if (ch < 0x80)
+			return false;
+
+		for (const CodePointRange& range : IdentifierRanges)
+		{
+			if (ch >= range.first && ch <= range.last)
+				return true;
+		}
+
+		return false;
 	}
 
 	struct KeywordEntry

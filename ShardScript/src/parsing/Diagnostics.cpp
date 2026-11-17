@@ -1,12 +1,12 @@
 #include <shard/parsing/Diagnostics.hpp>
 
+#include <shard/lexical/FileReader.hpp>
+
 #include <gmt/Containers.hpp>
 
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
-#include <locale>
 #include <string>
 #include <iostream>
 
@@ -50,21 +50,38 @@ namespace
 		auto [it, inserted] = cache.emplace(filePath, gmt::vector<gmt::wstring>{});
 		gmt::vector<gmt::wstring>& lines = it->second;
 
-		std::wifstream in{std::filesystem::path(filePath)};
-		if (!in.is_open())
-			return lines;
+		// decoded exactly like the lexer decodes it, otherwise a caret would sit on
+		// the wrong character of a non-ASCII line
+		gmt::wstring text;
 
-		in.imbue(std::locale::classic());
-
-		gmt::wstring line;
-		while (std::getline(in, line))
+		try
 		{
-			if (!line.empty() && line.back() == L'\r')
-				line.pop_back();
+			FileReader reader{gmt::wstring(filePath)};
 
-			lines.push_back(line);
+			wchar_t ch = 0;
+			while (reader.read_next(ch))
+				text.push_back(ch);
+		}
+		catch (...)
+		{
+			return lines;
 		}
 
+		gmt::wstring line;
+		for (const wchar_t ch : text)
+		{
+			if (ch == L'\n')
+			{
+				lines.push_back(line);
+				line.clear();
+				continue;
+			}
+
+			if (ch != L'\r')
+				line.push_back(ch);
+		}
+
+		lines.push_back(line);
 		return lines;
 	}
 
