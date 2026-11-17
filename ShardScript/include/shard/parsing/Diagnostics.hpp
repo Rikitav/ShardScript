@@ -14,7 +14,9 @@
 
 namespace shard
 {
-	using SourceFileCache = gmt::unordered_map<std::wstring_view, std::wifstream>;
+	// whole-file line cache: reading up to a diagnostic's line from the stream
+	// made printing N diagnostics on an L-line file cost O(N * L)
+	using SourceFileCache = gmt::unordered_map<std::wstring_view, gmt::vector<gmt::wstring>>;
 
 	enum class DiagnosticSeverity
 	{

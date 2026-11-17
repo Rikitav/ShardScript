@@ -18,6 +18,9 @@ namespace shard
 	{
 	private:
 		gmt::vector<SyntaxToken> m_sequence;
+		// tokens handed back by the parser; the last one is 'current', so pushing
+		// never shifts the sequence (inserting it used to cost O(remaining tokens))
+		gmt::vector<SyntaxToken> m_pending;
 		std::size_t m_currentIndex = 0;
 
 	public:

@@ -82,6 +82,7 @@ void LexicalBuffer::set_sequence(gmt::vector<SyntaxToken> setvector)
 void LexicalBuffer::set_index(std::size_t newIndex)
 {
 	m_currentIndex = newIndex;
+	m_pending.clear();
 }
 
 SyntaxToken LexicalBuffer::at(std::size_t index)
@@ -128,10 +129,14 @@ void LexicalBuffer::clear()
 {
 	m_currentIndex = 0;
 	m_sequence.clear();
+	m_pending.clear();
 }
 
 SyntaxToken LexicalBuffer::current()
 {
+	if (!m_pending.empty())
+		return m_pending.back();
+
 	if (m_currentIndex >= m_sequence.size())
 		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 
@@ -140,6 +145,13 @@ SyntaxToken LexicalBuffer::current()
 
 SyntaxToken LexicalBuffer::consume()
 {
+	if (!m_pending.empty())
+	{
+		SyntaxToken token = m_pending.back();
+		m_pending.pop_back();
+		return token;
+	}
+
 	if (m_currentIndex >= m_sequence.size())
 		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 
@@ -150,30 +162,34 @@ SyntaxToken LexicalBuffer::consume()
 
 SyntaxToken LexicalBuffer::peek(int index)
 {
-	std::size_t target = m_currentIndex + 1 + static_cast<std::size_t>(index);
-	if (target >= m_sequence.size())
+	// pending tokens are read newest-first, ahead of the sequence
+	const std::int64_t pendingCount = static_cast<std::int64_t>(m_pending.size());
+	const std::int64_t target = static_cast<std::int64_t>(index) + 1;
+
+	if (target < pendingCount)
+		return m_pending[m_pending.size() - 1 - static_cast<std::size_t>(target)];
+
+	const std::int64_t sequenceIndex = static_cast<std::int64_t>(m_currentIndex) + (target - pendingCount);
+	if (sequenceIndex < 0 || sequenceIndex >= static_cast<std::int64_t>(m_sequence.size()))
 		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 
-	return m_sequence[target];
+	return m_sequence[static_cast<std::size_t>(sequenceIndex)];
 }
 
 void LexicalBuffer::put_back(SyntaxToken token)
 {
-	if (m_currentIndex > m_sequence.size())
-		m_currentIndex = m_sequence.size();
-
-	m_sequence.insert(m_sequence.begin() + m_currentIndex, token);
+	m_pending.push_back(token);
 }
 
 bool LexicalBuffer::can_consume()
 {
-	return m_currentIndex < m_sequence.size();
+	return !m_pending.empty() || m_currentIndex < m_sequence.size();
 }
 
 bool LexicalBuffer::can_peek()
 {
-	if (m_sequence.empty())
-		return false;
+	if (!m_pending.empty())
+		return true;
 
 	return m_currentIndex + 1 < m_sequence.size();
 }

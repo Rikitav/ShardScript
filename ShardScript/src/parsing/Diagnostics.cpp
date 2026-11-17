@@ -41,42 +41,40 @@ namespace
 		}
 	}
 
-	std::wifstream* open_source_file(SourceFileCache& cache, const std::wstring_view filePath)
+	const gmt::vector<gmt::wstring>& load_source_lines(SourceFileCache& cache, const std::wstring_view filePath)
 	{
 		auto cached = cache.find(filePath);
 		if (cached != cache.end())
-			return &cached->second;
+			return cached->second;
 
-		auto [it, inserted] = cache.emplace(filePath, std::wifstream {});
-		std::wifstream& in = it->second;
+		auto [it, inserted] = cache.emplace(filePath, gmt::vector<gmt::wstring>{});
+		gmt::vector<gmt::wstring>& lines = it->second;
 
-		in.open(std::filesystem::path(filePath));
+		std::wifstream in{std::filesystem::path(filePath)};
+		if (!in.is_open())
+			return lines;
+
 		in.imbue(std::locale::classic());
 
-		return &in;
+		gmt::wstring line;
+		while (std::getline(in, line))
+		{
+			if (!line.empty() && line.back() == L'\r')
+				line.pop_back();
+
+			lines.push_back(line);
+		}
+
+		return lines;
 	}
 
 	gmt::wstring read_source_line(SourceFileCache& cache, const std::wstring_view filePath, const std::int32_t targetLine)
 	{
-		std::wifstream& in = *open_source_file(cache, filePath);
-		if (!in.is_open())
+		const gmt::vector<gmt::wstring>& lines = load_source_lines(cache, filePath);
+		if (targetLine < 1 || static_cast<std::size_t>(targetLine) > lines.size())
 			return L"";
 
-		in.clear();
-		in.seekg(0);
-
-		gmt::wstring line;
-		std::int32_t currentLine = 1;
-		while (currentLine < targetLine && std::getline(in, line))
-			++currentLine;
-
-		if (!std::getline(in, line))
-			return L"";
-
-		if (!line.empty() && line.back() == L'\r')
-			line.pop_back();
-
-		return line;
+		return lines[static_cast<std::size_t>(targetLine) - 1];
 	}
 }
 
