@@ -106,15 +106,14 @@ namespace shard
 
 	class SHARD_API SourceParser
 	{
-		enum class ParseState : std::uint8_t
+		// what a panicking construct may resume at; a frame's kind selects one class
+		enum AnchorClass : std::uint32_t
 		{
-			None
-		};
-
-		struct ParseFrame
-		{
-			SyntaxKind kind;
-			ParseState state;
+			AnchorCompilationUnit = 1u << 0,
+			AnchorMemberList = 1u << 1,
+			AnchorStatementList = 1u << 2,
+			AnchorEnumBody = 1u << 3,
+			AnchorDelimitedList = 1u << 4
 		};
 
 		struct RecoveryContext
@@ -124,16 +123,16 @@ namespace shard
 				SourceParser& m_parser;
 
 			public:
-				Guard(SourceParser& parser, SyntaxKind kind, ParseState state = ParseState::None);
+				Guard(SourceParser& parser, SyntaxKind kind);
 				~Guard();
 
 				Guard(const Guard&) = delete;
 				Guard& operator=(const Guard&) = delete;
 
-				void set_state(ParseState state);
+				void set_state(SyntaxKind state);
 			};
 
-			gmt::vector<ParseFrame> parseStack;
+			gmt::vector<SyntaxKind> parseStack;
 		};
 
 		class DepthGuard final
@@ -147,9 +146,28 @@ namespace shard
 			DepthGuard& operator=(const DepthGuard&) = delete;
 		};
 
-		static constexpr int max_loop_iterations = 10000;
+		// breaks parse loops that stop consuming tokens, without capping their length
+		class ProgressGuard final
+		{
+			SourceProvider& m_reader;
+			std::int32_t m_line = -1;
+			std::int32_t m_offset = -1;
+			int m_stalled = 0;
+
+		public:
+			explicit ProgressGuard(SourceProvider& reader);
+			bool progressed();
+		};
+
+		static constexpr int max_scan_distance = 4096;
+		static constexpr int max_type_argument_scan = 256;
+		// the binders walk an expression spine recursively, so its length is
+		// capped before it can overflow their stack
+		static constexpr int max_expression_chain = 256;
+		static constexpr int max_recovery_skip = 4096;
 		static constexpr int max_block_depth = 256;
 		static constexpr int max_expression_depth = 256;
+		static constexpr int max_stalled_iterations = 8;
 
 		SyntaxTree& m_syntaxTree;
 		DiagnosticsContext& m_diagnostics;
@@ -164,6 +182,9 @@ namespace shard
 		void FromSourceProvider(SourceProvider& reader);
 
 	private:
+		static AnchorClass anchor_class_of(SyntaxKind kind) noexcept;
+		static bool is_resume_anchor(std::uint32_t anchors, TokenType type) noexcept;
+
 		// Token stream helpers
 		SyntaxToken expect(SourceProvider& reader, TokenType type, const wchar_t* message);
 		bool matches(SourceProvider& reader, std::initializer_list<TokenType> types);
@@ -174,6 +195,7 @@ namespace shard
 		bool scan_generic_invokation(SourceProvider& reader);
 		void reject_generic_type_parameters(SourceProvider& reader, const wchar_t* message);
 		bool skip_towards(SourceProvider& reader, std::initializer_list<TokenType> expectedTokens, int maxSkips);
+		std::uint32_t active_anchor_mask() const;
 		bool try_synchronize(SourceProvider& reader);
 
 		// Translation unit level

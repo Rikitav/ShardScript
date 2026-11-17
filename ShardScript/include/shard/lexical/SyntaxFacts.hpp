@@ -42,6 +42,10 @@ namespace shard
 	SHARD_API bool is_valid_generic_type_token(shard::TokenType type);
 	SHARD_API bool is_type(shard::TokenType type, shard::TokenType peekType);
 
+	SHARD_API bool is_literal(shard::TokenType type);
+	SHARD_API bool can_start_expression(shard::TokenType type);
+	SHARD_API bool can_start_statement(shard::TokenType type);
+
 	SHARD_API bool is_keyword(shard::TokenType type);
 	SHARD_API bool is_look_keyword(shard::TokenType type);
 	SHARD_API bool is_conditional_keyword(shard::TokenType type);

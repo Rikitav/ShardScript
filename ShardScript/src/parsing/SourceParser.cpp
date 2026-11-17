@@ -77,16 +77,11 @@ namespace detail
 
 SourceParser::RecoveryContext::Guard::Guard(
 	SourceParser& parser,
-	SyntaxKind kind,
-	ParseState state
+	SyntaxKind kind
 ) :
 	m_parser(parser)
 {
-	m_parser.m_recovery.parseStack.push_back(ParseFrame
-	{
-		.kind = kind,
-		.state = state
-	});
+	m_parser.m_recovery.parseStack.push_back(kind);
 }
 
 SourceParser::RecoveryContext::Guard::~Guard()
@@ -94,9 +89,9 @@ SourceParser::RecoveryContext::Guard::~Guard()
 	m_parser.m_recovery.parseStack.pop_back();
 }
 
-void SourceParser::RecoveryContext::Guard::set_state(ParseState state)
+void SourceParser::RecoveryContext::Guard::set_state(SyntaxKind state)
 {
-	m_parser.m_recovery.parseStack.back().state = state;
+	m_parser.m_recovery.parseStack.back() = state;
 }
 
 SourceParser::DepthGuard::DepthGuard(int& depth)
@@ -108,6 +103,105 @@ SourceParser::DepthGuard::DepthGuard(int& depth)
 SourceParser::DepthGuard::~DepthGuard()
 {
 	--m_depth;
+}
+
+SourceParser::ProgressGuard::ProgressGuard(SourceProvider& reader)
+	: m_reader(reader)
+{ }
+
+bool SourceParser::ProgressGuard::progressed()
+{
+	if (!m_reader.can_consume())
+		return true;
+
+	const TextLocation location = m_reader.current().get_location();
+	if (location.get_line() == m_line && location.get_offset() == m_offset)
+		return ++m_stalled < max_stalled_iterations;
+
+	m_line = location.get_line();
+	m_offset = location.get_offset();
+	m_stalled = 0;
+	return true;
+}
+
+SourceParser::AnchorClass SourceParser::anchor_class_of(SyntaxKind kind) noexcept
+{
+	switch (kind)
+	{
+		case SyntaxKind::CompilationUnit:
+			return AnchorCompilationUnit;
+
+		case SyntaxKind::StructDeclaration:
+		case SyntaxKind::InterfaceDeclaration:
+			return AnchorMemberList;
+
+		case SyntaxKind::StatementsBlock:
+			return AnchorStatementList;
+
+		case SyntaxKind::EnumDeclaration:
+		case SyntaxKind::EnumFieldDeclaration:
+			return AnchorEnumBody;
+
+		// every list-shaped construct resumes at its own separators
+		default:
+			return AnchorDelimitedList;
+	}
+}
+
+bool SourceParser::is_resume_anchor(std::uint32_t anchors, TokenType type) noexcept
+{
+	// '}' ends whatever construct is being recovered, so every frame stops there
+	if (type == TokenType::CloseBrace)
+		return true;
+
+	if ((anchors & AnchorCompilationUnit) != 0 && can_start_compilation_unit(type))
+		return true;
+
+	if ((anchors & AnchorMemberList) != 0 && can_start_member_declaration(type))
+		return true;
+
+	if ((anchors & AnchorStatementList) != 0 && can_start_statement(type))
+		return true;
+
+	if ((anchors & AnchorEnumBody) != 0 && (type == TokenType::Comma || type == TokenType::Identifier))
+		return true;
+
+	if ((anchors & AnchorDelimitedList) != 0)
+	{
+		switch (type)
+		{
+			case TokenType::CloseCurl:
+			case TokenType::CloseSquare:
+			case TokenType::CloseBrace:
+			case TokenType::Comma:
+			case TokenType::Semicolon:
+			case TokenType::GreaterOperator:
+			case TokenType::RightShiftOperator:
+			case TokenType::ArrowOperator:
+			case TokenType::LambdaOperator:
+			case TokenType::PipeOperator:
+				return true;
+
+			default:
+				break;
+		}
+	}
+
+	return false;
+}
+
+std::uint32_t SourceParser::active_anchor_mask() const
+{
+	// a frame only widens the resume set of the frames around it, so duplicate
+	// classes collapse into one bit
+	std::uint32_t mask = 0;
+	for (const SyntaxKind& kind : m_recovery.parseStack)
+		mask |= static_cast<std::uint32_t>(anchor_class_of(kind));
+
+	if (mask == 0)
+		mask = static_cast<std::uint32_t>(AnchorDelimitedList);
+
+	return mask;
 }
 
 SourceParser::SourceParser(SyntaxTree& syntaxTree, DiagnosticsContext& diagnostics) :
@@ -241,12 +335,14 @@ TranslationUnitSyntax* SourceParser::read_compilation_unit(SourceProvider& reade
 	gmt::inline_ref_vector<UsingDirectiveSyntax, 10> usings{};
 	gmt::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
 
-	int loopGuard = 0;
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::CompilationUnit);
+
+	ProgressGuard progress(reader);
 	while (reader.can_consume())
 	{
-		if (++loopGuard > max_loop_iterations)
+		if (!progress.progressed())
 		{
-			m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting compilation unit");
+			m_diagnostics.report_error(reader.current(), L"Parser made no progress - aborting compilation unit");
 			break;
 		}
 
@@ -299,6 +395,7 @@ TranslationUnitSyntax* SourceParser::read_compilation_unit(SourceProvider& reade
 
 				m_diagnostics.report_error(token, L"Unknown token in compilation unit declaration");
 				reader.consume();
+				try_synchronize(reader);
 				break;
 			}
 		}
@@ -389,8 +486,10 @@ MemberDeclarationSyntax* SourceParser::read_member_declaration(SourceProvider& r
 	if (m_expressionDepth > max_expression_depth)
 	{
 		m_diagnostics.report_error(reader.current(), L"Declaration is too deeply nested");
-		while (reader.can_consume())
-			reader.consume();
+
+		// skip only to the next boundary of the enclosing construct; consuming the
+		// rest of the file here threw away every declaration that followed
+		try_synchronize(reader);
 		return nullptr;
 	}
 
@@ -463,7 +562,7 @@ MemberDeclarationSyntax* SourceParser::read_member_declaration(SourceProvider& r
 				int offset = 0;
 				int depth = 0;
 
-				while (offset < max_loop_iterations)
+				while (offset < max_scan_distance)
 				{
 					TokenType scanType = reader.peek(offset).get_type();
 					switch (scanType)
@@ -584,12 +683,12 @@ StructDeclarationSyntax* SourceParser::read_struct_declaration(SourceProvider& r
 
 			gmt::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
 
-			int loopGuard = 0;
+			ProgressGuard progress(reader);
 			while (reader.can_consume())
 			{
-				if (++loopGuard > max_loop_iterations)
+				if (!progress.progressed())
 				{
-					m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting struct body");
+					m_diagnostics.report_error(reader.current(), L"Parser made no progress - aborting struct body");
 					break;
 				}
 
@@ -600,6 +699,7 @@ StructDeclarationSyntax* SourceParser::read_struct_declaration(SourceProvider& r
 				{
 					m_diagnostics.report_error(reader.current(), L"Unexpected token in struct body");
 					reader.consume();
+					try_synchronize(reader);
 					continue;
 				}
 
@@ -653,12 +753,12 @@ InterfaceDeclarationSyntax* SourceParser::read_interface_declaration(SourceProvi
 
 			gmt::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
 
-			int loopGuard = 0;
+			ProgressGuard progress(reader);
 			while (reader.can_consume())
 			{
-				if (++loopGuard > max_loop_iterations)
+				if (!progress.progressed())
 				{
-					m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting interface body");
+					m_diagnostics.report_error(reader.current(), L"Parser made no progress - aborting interface body");
 					break;
 				}
 
@@ -669,6 +769,7 @@ InterfaceDeclarationSyntax* SourceParser::read_interface_declaration(SourceProvi
 				{
 					m_diagnostics.report_error(reader.current(), L"Unexpected token in interface body");
 					reader.consume();
+					try_synchronize(reader);
 					continue;
 				}
 
@@ -741,12 +842,12 @@ EnumDeclarationSyntax* SourceParser::read_enum_declaration(SourceProvider& reade
 
 			gmt::inline_ref_vector<EnumFieldDeclarationSyntax, 10> fields{};
 
-			int loopGuard = 0;
+			ProgressGuard progress(reader);
 			while (reader.can_consume())
 			{
-				if (++loopGuard > max_loop_iterations)
+				if (!progress.progressed())
 				{
-					m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting enum body");
+					m_diagnostics.report_error(reader.current(), L"Parser made no progress - aborting enum body");
 					break;
 				}
 
@@ -770,6 +871,7 @@ EnumDeclarationSyntax* SourceParser::read_enum_declaration(SourceProvider& reade
 				{
 					m_diagnostics.report_error(current, L"Expected enum field identifier");
 					reader.consume();
+					try_synchronize(reader);
 				}
 
 				current = reader.current();
@@ -843,7 +945,7 @@ void SourceParser::reject_generic_type_parameters(SourceProvider& reader, const 
 
 	int depth = 1;
 	int loopGuard = 0;
-	while (reader.can_consume() && ++loopGuard <= max_loop_iterations)
+	while (reader.can_consume() && ++loopGuard <= max_scan_distance)
 	{
 		TokenType type = reader.current().get_type();
 
@@ -878,75 +980,36 @@ void SourceParser::reject_generic_type_parameters(SourceProvider& reader, const 
 
 bool SourceParser::try_synchronize(SourceProvider& reader)
 {
-	for (int frame = static_cast<int>(m_recovery.parseStack.size()) - 1; frame >= 0; --frame)
+	if (!reader.can_consume())
+		return false;
+
+	// one bounded forward pass over the token stream: the frames only decide which
+	// token kinds count as a resume point, so a junk run costs a single scan
+	const std::uint32_t anchors = active_anchor_mask();
+
+	int offset = 0;
+	while (offset < max_recovery_skip)
 	{
-		ParseFrame context = m_recovery.parseStack[frame];
+		const TokenType type = offset == 0
+			? reader.current().get_type()
+			: reader.peek(offset - 1).get_type();
 
-		int offset = 0;
-		while (offset < max_loop_iterations)
+		if (type == TokenType::EndOfFile)
+			break;
+
+		if (is_resume_anchor(anchors, type))
 		{
-			TokenType type = reader.peek(offset).get_type();
-			if (type == TokenType::EndOfFile)
-				break;
+			for (int i = 0; i < offset; ++i)
+				reader.consume();
 
-			bool isAnchor = false;
-			switch (context.kind)
-			{
-				case SyntaxKind::StatementsBlock:
-				{
-					isAnchor = type == TokenType::CloseBrace || type == TokenType::Semicolon;
-					break;
-				}
-
-				case SyntaxKind::StructDeclaration:
-				case SyntaxKind::InterfaceDeclaration:
-				{
-					isAnchor = type == TokenType::CloseBrace || can_start_member_declaration(type);
-					break;
-				}
-
-				case SyntaxKind::ParametersList:
-				{
-					isAnchor = type == TokenType::CloseCurl || type == TokenType::Comma || type == TokenType::ArrowOperator;
-					break;
-				}
-
-				case SyntaxKind::TypeArgumentsList:
-				case SyntaxKind::TypeParametersList:
-				{
-					isAnchor = type == TokenType::GreaterOperator || type == TokenType::RightShiftOperator || type == TokenType::Comma;
-					break;
-				}
-
-				case SyntaxKind::ArgumentsList:
-				{
-					isAnchor = type == TokenType::CloseCurl || type == TokenType::Comma;
-					break;
-				}
-
-				default:
-				{
-					// member declarations and everything else: recover at the next declaration boundary
-					isAnchor = type == TokenType::Semicolon || type == TokenType::CloseBrace;
-					break;
-				}
-			}
-
-			if (isAnchor)
-			{
-				// consume the skipped span in one go, leaving the anchor as current
-				while (offset-- > 0)
-					reader.consume();
-
-				return true;
-			}
-
-			++offset;
+			return true;
 		}
+
+		++offset;
 	}
 
-	// no anchor found anywhere: bail with a single guaranteed step of progress
-	if (reader.can_consume())
+	// nothing to resume at: consume what was scanned so every recovery advances
+	for (int i = 0; i < offset && reader.can_consume(); ++i)
 		reader.consume();
 
 	return false;
@@ -993,12 +1056,12 @@ PropertyDeclarationSyntax* SourceParser::read_property_declaration(SourceProvide
 
 	syntax->set_open_bracket(expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors"));
 
-	int loopGuard = 0;
+	ProgressGuard progress(reader);
 	while (reader.can_consume())
 	{
-		if (++loopGuard > max_loop_iterations)
+		if (!progress.progressed())
 		{
-			m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting property accessors");
+			m_diagnostics.report_error(reader.current(), L"Parser made no progress - aborting property accessors");
 			break;
 		}
 
@@ -1039,6 +1102,7 @@ PropertyDeclarationSyntax* SourceParser::read_property_declaration(SourceProvide
 
 		m_diagnostics.report_error(reader.current(), L"Expected 'get', 'set' or '}' in property accessors");
 		reader.consume(); // error recovery: guarantee progress
+		try_synchronize(reader);
 	}
 
 	if ((syntax->get_getter() == nullptr) && (syntax->get_setter() == nullptr))
@@ -1073,12 +1137,12 @@ IndexatorDeclarationSyntax* SourceParser::read_indexator_declaration(SourceProvi
 
 	syntax->set_open_bracket(expect(reader, TokenType::OpenBrace, L"Expected '{' for indexer accessors"));
 
-	int loopGuard = 0;
+	ProgressGuard progress(reader);
 	while (reader.can_consume())
 	{
-		if (++loopGuard > max_loop_iterations)
+		if (!progress.progressed())
 		{
-			m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting indexer accessors");
+			m_diagnostics.report_error(reader.current(), L"Parser made no progress - aborting indexer accessors");
 			break;
 		}
 
@@ -1119,6 +1183,7 @@ IndexatorDeclarationSyntax* SourceParser::read_indexator_declaration(SourceProvi
 
 		m_diagnostics.report_error(reader.current(), L"Expected 'get', 'set' or '}' in indexer accessors");
 		reader.consume(); // error recovery: guarantee progress
+		try_synchronize(reader);
 	}
 
 	if ((syntax->get_getter() == nullptr) && (syntax->get_setter() == nullptr))
@@ -1401,8 +1466,15 @@ TypeSyntax* SourceParser::read_type(SourceProvider& reader, SyntaxNode* parent)
 	}
 
 	// array and nullable suffixes
+	int suffixCount = 0;
 	while (reader.can_consume())
 	{
+		if (++suffixCount > max_expression_chain)
+		{
+			m_diagnostics.report_error(reader.current(), L"Type is too long");
+			break;
+		}
+
 		gmt::Arena& arena = m_syntaxTree.get_arena();
 
 		if (reader.current().get_type() == TokenType::OpenSquare && reader.peek().get_type() == TokenType::CloseSquare)
@@ -1447,8 +1519,15 @@ TypeSyntax* SourceParser::read_identifier_name_type(SourceProvider& reader, Synt
 	TypeSyntax* identifier = name;
 
 	// namespace-qualified name: Foo::Bar::Baz
+	int qualifierCount = 0;
 	while (reader.can_consume() && reader.current().get_type() == TokenType::NamespaceQualifier)
 	{
+		if (++qualifierCount > max_expression_chain)
+		{
+			m_diagnostics.report_error(reader.current(), L"Type is too long");
+			break;
+		}
+
 		auto qualified = arena.emplace<QualifiedNameTypeSyntax>(parent);
 		qualified->set_qualifier_token(reader.current());
 		qualified->set_left(identifier);
@@ -1488,7 +1567,9 @@ int SourceParser::scan_type_argument_list_end(SourceProvider& reader)
 	int depth = 1;
 	int offset = 1;
 
-	while (offset < max_loop_iterations)
+	// this scan runs for every '<' in expression context, so its bound is tight:
+	// a real type argument list is nowhere near this long
+	while (offset < max_type_argument_scan)
 	{
 		SyntaxToken token = reader.peek(offset - 1);
 		TokenType type = token.get_type();
@@ -1565,6 +1646,7 @@ ParameterSyntax* SourceParser::read_parameter(SourceProvider& reader, SyntaxNode
 
 ParametersListSyntax* SourceParser::read_method_parameters(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::ParametersList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ParametersListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenCurl, L"Expected '(' token"));
@@ -1604,6 +1686,7 @@ ParametersListSyntax* SourceParser::read_method_parameters(SourceProvider& reade
 
 ParametersListSyntax* SourceParser::read_indexer_parameters(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::ParametersList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ParametersListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenSquare, L"Expected '[' token"));
@@ -1672,6 +1755,7 @@ ParameterSyntax* SourceParser::read_lambda_parameter(SourceProvider& reader, Syn
 
 ParametersListSyntax* SourceParser::read_lambda_parameters(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::ParametersList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ParametersListSyntax>(parent);
 	SyntaxToken openToken = expect(reader, TokenType::PipeOperator, L"Expected '|' token");
@@ -1730,6 +1814,7 @@ TypeParameterSyntax* SourceParser::read_type_parameter(SourceProvider& reader, S
 
 TypeParametersListSyntax* SourceParser::read_generic_type_parameters(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::TypeParametersList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<TypeParametersListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::LessOperator, L"Expected '<' token"));
@@ -1781,6 +1866,7 @@ ArgumentSyntax* SourceParser::read_argument(SourceProvider& reader, SyntaxNode* 
 
 ArgumentsListSyntax* SourceParser::read_arguments_list(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::ArgumentsList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ArgumentsListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenCurl, L"Expected '(' token"));
@@ -1820,6 +1906,7 @@ ArgumentsListSyntax* SourceParser::read_arguments_list(SourceProvider& reader, S
 
 TypeArgumentsListSyntax* SourceParser::read_type_arguments_list(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::TypeArgumentsList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<TypeArgumentsListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::LessOperator, L"Expected '<' token"));
@@ -1859,6 +1946,7 @@ TypeArgumentsListSyntax* SourceParser::read_type_arguments_list(SourceProvider& 
 
 BaseTypesListSyntax* SourceParser::read_base_types(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::BaseTypesList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<BaseTypesListSyntax>(parent);
 
@@ -1926,6 +2014,7 @@ WhereClauseSyntax* SourceParser::read_where_clause(SourceProvider& reader, Synta
 
 WhereClausesListSyntax* SourceParser::read_where_clauses(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::WhereClausesList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<WhereClausesListSyntax>(parent);
 
@@ -1984,23 +2073,33 @@ StatementsBlockSyntax* SourceParser::read_statements_block(SourceProvider& reade
 
 	gmt::inline_ref_vector<StatementSyntax, 10> statements{};
 
-	int loopGuard = 0;
+	ProgressGuard progress(reader);
 	while (reader.can_consume())
 	{
-		if (++loopGuard > max_loop_iterations)
+		if (!progress.progressed())
 		{
-			m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting statement block");
+			m_diagnostics.report_error(reader.current(), L"Parser made no progress - aborting statement block");
 			break;
 		}
 
 		if (reader.current().get_type() == TokenType::CloseBrace)
 			break;
 
+		// a statement can only begin with a statement-starting token, so anything
+		// else is junk the block skips in one pass instead of one error per token
+		if (!can_start_statement(reader.current().get_type()))
+		{
+			m_diagnostics.report_error(reader.current(), L"Unexpected token in statement block");
+			reader.consume();
+			try_synchronize(reader);
+			continue;
+		}
+
 		StatementSyntax* statement = read_statement(reader, syntax);
 		if (statement != nullptr)
 			statements.push_back(statement);
-		else if (!try_synchronize(reader))
-			break; // no anchor anywhere; the block reader will resync at '}'
+		else
+			try_synchronize(reader); // the block itself resyncs at '}'
 	}
 
 	syntax->set_close_bracket(expect(reader, TokenType::CloseBrace, L"Expected '}'"));
@@ -2250,8 +2349,10 @@ ConditionalClauseBaseSyntax* SourceParser::read_conditional_clause(SourceProvide
 	if (m_expressionDepth > max_expression_depth)
 	{
 		m_diagnostics.report_error(reader.current(), L"Conditional chain is too deeply nested");
-		while (reader.can_consume())
-			reader.consume();
+
+		// skip only to the next boundary of the enclosing construct; consuming the
+		// rest of the file here threw away every declaration that followed
+		try_synchronize(reader);
 		return nullptr;
 	}
 
@@ -2466,10 +2567,18 @@ ExpressionSyntax* SourceParser::read_expression(SourceProvider& reader, SyntaxNo
 	}
 
 	ExpressionSyntax* left = read_operand(reader, parent);
+
+	int chainLength = 0;
 	while (left != nullptr && reader.can_consume())
 	{
 		SyntaxToken operation = reader.current();
 		TokenType operationType = operation.get_type();
+
+		if (is_operator(operationType) && ++chainLength > max_expression_chain)
+		{
+			m_diagnostics.report_error(operation, L"Expression is too long");
+			break;
+		}
 
 		// type-testing operators take a type on the right
 		if (operationType == TokenType::IsOperator || operationType == TokenType::AsOperator)
@@ -2823,8 +2932,15 @@ ExpressionSyntax* SourceParser::read_linked_expression(SourceProvider& reader, S
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	ExpressionSyntax* expression = previous;
 
+	int chainLength = 0;
 	while (reader.can_consume())
 	{
+		if (++chainLength > max_expression_chain)
+		{
+			m_diagnostics.report_error(reader.current(), L"Expression is too long");
+			return expression;
+		}
+
 		switch (reader.current().get_type())
 		{
 			case TokenType::Delimeter: // member access '.'
@@ -2948,6 +3064,7 @@ ExpressionSyntax* SourceParser::read_linked_expression(SourceProvider& reader, S
 
 ArgumentsListSyntax* SourceParser::read_indexer_arguments_list(SourceProvider& reader, SyntaxNode* parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::ArgumentsList);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ArgumentsListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenSquare, L"Expected '[' token"));

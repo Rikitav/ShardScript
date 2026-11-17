@@ -354,6 +354,73 @@ bool shard::is_valid_generic_type_token(shard::TokenType type)
 	}
 }
 
+bool shard::is_literal(shard::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::NullLiteral:
+		case TokenType::CharLiteral:
+		case TokenType::StringLiteral:
+		case TokenType::BooleanLiteral:
+		case TokenType::NumberLiteral:
+		case TokenType::FloatLiteral:
+		case TokenType::ByteLiteral:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool shard::can_start_expression(shard::TokenType type)
+{
+	if (is_literal(type) || is_identifier_like(type) || is_left_unary_operator(type))
+		return true;
+
+	switch (type)
+	{
+		case TokenType::OpenCurl:
+		case TokenType::OpenSquare:
+		case TokenType::NewKeyword:
+		case TokenType::DefaultKeyword:
+		case TokenType::AwaitKeyword:
+		case TokenType::IfKeyword:
+		case TokenType::PipeOperator:
+		case TokenType::LambdaKeyword:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool shard::can_start_statement(shard::TokenType type)
+{
+	if (can_start_expression(type))
+		return true;
+
+	switch (type)
+	{
+		case TokenType::Semicolon:
+		case TokenType::FakeSemicolon:
+		case TokenType::TryKeyword:
+		case TokenType::DeferKeyword:
+		case TokenType::ReturnKeyword:
+		case TokenType::BreakKeyword:
+		case TokenType::ContinueKeyword:
+		case TokenType::IfKeyword:
+		case TokenType::UnlessKeyword:
+		case TokenType::ThrowKeyword:
+		case TokenType::WhileKeyword:
+		case TokenType::UntilKeyword:
+		case TokenType::ForKeyword:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 
 bool shard::is_type(shard::TokenType type, shard::TokenType peekType)
 {
