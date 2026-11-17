@@ -1,5 +1,6 @@
 project(ShardScript.Interpreter)
 
+# cppdap backs the deferred Debug Adapter Protocol server (see VirtualMachine.hpp)
 include("cmake/cppdap.cmake")
 
 set(INTERPRETER_SOURCES

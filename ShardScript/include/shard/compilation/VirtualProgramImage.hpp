@@ -16,6 +16,8 @@ namespace shard
 	using DataSection = gmt::vector<std::byte>;
 	using BytecodeSection = gmt::vector<std::byte>;
 
+	// TODO: v0.8 - carry a per-method (offset -> file:line:col) table here; the VM
+	// needs it for stack traces, line breakpoints and stepping in the inspector
 	class SHARD_API VirtualProgramImage
 	{
 	public:

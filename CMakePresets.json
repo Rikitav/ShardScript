@@ -7,6 +7,20 @@
   },
   "configurePresets": [
     {
+      "name": "x64-clang-debug",
+      "displayName": "x64 clang-cl Debug (AVX2, ThinLTO)",
+      "description": "Native x86-64 Windows Debug build. Run from a Visual Studio developer environment (or use build_optimized.bat).",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/x64-clang-debug-optimized",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "SHARD_ENABLE_AVX2": "ON",
+        "SHARD_ENABLE_LTO": "ON"
+      }
+    },
+    {
       "name": "x64-clang-release",
       "displayName": "x64 clang-cl Release (AVX2, ThinLTO)",
       "description": "Native x86-64 Windows Release build. Run from a Visual Studio developer environment (or use build_optimized.bat).",
@@ -34,17 +48,11 @@
   "buildPresets": [
     {
       "name": "x64-clang-release",
-      "configurePreset": "x64-clang-release",
-      "targets": [
-        "ShardScript.Interpreter"
-      ]
+      "configurePreset": "x64-clang-release"
     },
     {
       "name": "x64-clang-pgo",
-      "configurePreset": "x64-clang-pgo",
-      "targets": [
-        "ShardScript.Interpreter"
-      ]
+      "configurePreset": "x64-clang-pgo"
     }
   ]
 }

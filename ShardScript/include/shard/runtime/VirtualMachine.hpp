@@ -40,6 +40,9 @@ namespace shard
 		virtual ~NativeAsyncResource() = default;
 	};
 
+	// TODO: v0.8 - runtime inspection: an observer hook on the dispatch loop
+	// (frame, call, field write, allocation, task, exception) plus pause/step,
+	// feeding runtime tracing and the deferred DAP server (cppdap is already linked)
 	class SHARD_API VirtualMachine
 	{
 		friend class AsyncFuncCallState;
