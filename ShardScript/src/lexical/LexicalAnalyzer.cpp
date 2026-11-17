@@ -126,19 +126,41 @@ namespace
 		{ L"as", TokenType::AsOperator },
 	};
 
+	// a word may only fall back to an identifier when it is spelled like one:
+	// letters, digits and underscores, not starting with a digit
+	bool is_identifier_text(std::wstring_view word)
+	{
+		if (word.empty() || (word.front() >= L'0' && word.front() <= L'9'))
+			return false;
+
+		for (const wchar_t ch : word)
+		{
+			if (!is_word_character(ch))
+				return false;
+		}
+
+		return true;
+	}
+
 	TokenType classify_word(std::wstring_view word)
 	{
 		static const std::unordered_map<std::wstring_view, TokenType> table = []
 		{
 			std::unordered_map<std::wstring_view, TokenType> entries;
 			entries.reserve(std::size(KeywordTable));
+
 			for (const KeywordEntry& entry : KeywordTable)
 				entries.emplace(entry.text, entry.type);
 			return entries;
 		}();
 
 		const auto choice = table.find(word);
-		return choice != table.end() ? choice->second : TokenType::Identifier;
+		if (choice != table.end())
+			return choice->second;
+
+		// otherwise '#' or '$$' would become identifiers and only surface much
+		// later as unresolved names
+		return is_identifier_text(word) ? TokenType::Identifier : TokenType::Unknown;
 	}
 }
 
