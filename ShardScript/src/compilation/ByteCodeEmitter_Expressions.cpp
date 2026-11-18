@@ -1842,22 +1842,14 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	// construct the capture box and store the captured values into its fields
 	const gmt::vector<SyntaxSymbol*>* captures = m_pragmatic.get_lambda_captures(anonymousMethod);
 
-	PlacementVerdict verdict = site_verdict(*nodeRef);
-	std::uint16_t boxSlot = allocate_temporary(captureBox, verdict);
-	bool stackBorn = verdict == PlacementVerdict::Stack;
+	// a box carries the delegate's identity, not its payload: a box with no
+	// captures has no storage that could hold it inline, so it is always heap
+	std::uint16_t boxSlot = allocate_temporary(captureBox, PlacementVerdict::Heap);
 
-	if (stackBorn)
-	{
-		m_encoder.emit_load_slot_addr(boxSlot);
-		eval_push(sizeof(void*));
-	}
-	else
-	{
-		m_encoder.emit_alloc_heap(captureBox);
-		eval_push(sizeof(void*));
-		m_encoder.emit_store_local(boxSlot);
-		eval_pop();
-	}
+	m_encoder.emit_alloc_heap(captureBox);
+	eval_push(sizeof(void*));
+	m_encoder.emit_store_local(boxSlot);
+	eval_pop();
 
 	if (captures != nullptr)
 	{
@@ -1875,16 +1867,8 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 				return;
 			}
 
-			if (stackBorn)
-			{
-				m_encoder.emit_load_slot_addr(boxSlot);
-				eval_push(sizeof(void*));
-			}
-			else
-			{
-				m_encoder.emit_load_local(boxSlot);
-				eval_push(sizeof(void*));
-			}
+			m_encoder.emit_load_local(boxSlot);
+			eval_push(sizeof(void*));
 
 			// nested lambdas read transitively captured values through the
 			// enclosing box's own capture fields
@@ -1905,13 +1889,6 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 			m_encoder.emit_store_field(field_slot_index(field));
 			eval_pop(2);
 		}
-	}
-
-	if (stackBorn)
-	{
-		m_encoder.emit_load_slot_addr(boxSlot);
-		eval_push(sizeof(void*));
-		return;
 	}
 
 	m_encoder.emit_load_local(boxSlot);

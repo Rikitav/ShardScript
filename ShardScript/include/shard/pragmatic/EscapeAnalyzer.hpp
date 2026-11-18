@@ -80,7 +80,6 @@ namespace shard
 			gmt::vector<EscapeChannel> channelSets;
 			gmt::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
 			gmt::vector<bool> borrowedAlias; // the node stores a reference created outside it
-			gmt::vector<bool> forcedHeap; // the node's value is an identity and never lives in the frame
 			gmt::vector<bool> identityExposed;
 			gmt::vector<MethodSymbol*> idOwners;
 			gmt::vector<bool> allocationNodes;
@@ -111,7 +110,6 @@ namespace shard
 
 		int add_node(bool allocation);
 		void contain_expression(int containerId, const ExpressionSyntax* expression);
-		void contain_receiver(const ExpressionSyntax* receiver, const ExpressionSyntax* value);
 		int ensure_local_id(SyntaxSymbol* symbol);
 		int ensure_site_id(const ExpressionSyntax* site);
 		void add_edge(int from, int to);
@@ -140,7 +138,8 @@ namespace shard
 		void mark_identity(const ExpressionSyntax* expression, bool includeReceivers);
 		void mark_wrap_identity(const ExpressionSyntax* expression);
 		void record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver);
-		EscapeLevel argument_escape_level(MethodSymbol* callee, std::size_t parameterIndex, EscapeLevel base) const;
+		EscapeLevel argument_escape_level(MethodSymbol* callee, std::uint16_t parameterIndex, EscapeLevel base) const;
+		ParameterSymbol* parameter_at(MethodSymbol* callee, std::uint16_t exposureIndex) const;
 		EscapeContract declared_contract(MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver) const;
 		void alias_into(SyntaxSymbol* target, const ExpressionSyntax* sourceExpression);
 

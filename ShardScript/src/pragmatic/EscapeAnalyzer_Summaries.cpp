@@ -135,10 +135,9 @@ void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<MethodSymbol*
 		// (libfunc, bodyless member): the trusted conservative default
 		if (summaryPtr == nullptr)
 		{
-			// a body-less callee may still promise how it retains the value;
-			// 'IntoReceiver' is covered by the containment edge at the call site
-			const EscapeContract contract = declared_contract(exposure.callee, exposure.parameterIndex, exposure.receiver);
-			if (contract != EscapeContract::Global)
+			// only a callee that merely reads the value keeps it in the frame;
+			// a receiver store is a container write, which a frame slot cannot serve
+			if (declared_contract(exposure.callee, exposure.parameterIndex, exposure.receiver) == EscapeContract::OnlyReads)
 				continue;
 
 			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, EscapeChannel::UnknownCallee, exposure.cold);
@@ -354,8 +353,8 @@ bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<MethodSymbol*,
 		EscapeSummary precomputed = m_pragmatic.get_summary(exposure.callee);
 		if (!precomputed.computed)
 		{
-			// an unwalked callee with a declared contract keeps the cone closed
-			if (declared_contract(exposure.callee, exposure.parameterIndex, exposure.receiver) != EscapeContract::Global)
+			// an unwalked callee that only reads the value keeps the cone closed
+			if (declared_contract(exposure.callee, exposure.parameterIndex, exposure.receiver) == EscapeContract::OnlyReads)
 				continue;
 
 			return false;
@@ -371,7 +370,7 @@ AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, StructSymbol* nodeTy
 	verdict.level = m_graph.levels[id];
 	verdict.channels = m_graph.channelSets[id];
 
-	if (m_graph.forcedHeap[id] || (m_graph.borrowedAlias[id] && get_model().is_reference_shaped(nodeType)))
+	if (m_graph.borrowedAlias[id] && get_model().is_reference_shaped(nodeType))
 	{
 		verdict.verdict = PlacementVerdict::Heap;
 		return verdict;
@@ -408,7 +407,8 @@ void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<MethodSymbol*, Esc
 	for (const auto& pair : m_graph.siteIds)
 	{
 		StructSymbol* siteType = get_model().get_expression_type(pair.first);
-		m_pragmatic.set_allocation_site_verdict(pair.first, classify_node(pair.second, siteType, summaries));
+		AllocationSiteVerdict verdict = classify_node(pair.second, siteType, summaries);
+		m_pragmatic.set_allocation_site_verdict(pair.first, verdict);
 	}
 
 	for (const auto& pair : m_graph.localIds)

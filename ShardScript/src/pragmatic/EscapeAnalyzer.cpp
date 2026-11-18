@@ -193,7 +193,6 @@ void EscapeAnalyzer::clear_graph()
 	m_graph.channelSets.clear();
 	m_graph.coldChannels.clear();
 	m_graph.borrowedAlias.clear();
-	m_graph.forcedHeap.clear();
 	m_graph.identityExposed.clear();
 	m_graph.idOwners.clear();
 	m_graph.allocationNodes.clear();
@@ -219,7 +218,6 @@ int EscapeAnalyzer::add_node(bool allocation)
 	m_graph.channelSets.push_back(EscapeChannel::None);
 	m_graph.coldChannels.push_back(EscapeChannel::None);
 	m_graph.borrowedAlias.push_back(false);
-	m_graph.forcedHeap.push_back(false);
 	m_graph.identityExposed.push_back(false);
 	m_graph.idOwners.push_back(in_frame() ? current_frame().method : nullptr);
 	m_graph.allocationNodes.push_back(allocation);
@@ -266,21 +264,6 @@ void EscapeAnalyzer::contain_expression(int containerId, const ExpressionSyntax*
 		add_edge(containerId, ensure_site_id(site));
 }
 
-void EscapeAnalyzer::contain_receiver(const ExpressionSyntax* receiver, const ExpressionSyntax* value)
-{
-	if ((receiver == nullptr) || (value == nullptr))
-		return;
-
-	// 'IntoReceiver' is modelled as containment: whatever is stored inherits the receiver's level
-	ExpressionRefs refs;
-	collect_expression_refs(receiver, refs, true);
-
-	for (SyntaxSymbol* local : refs.locals.get_vector())
-		contain_expression(ensure_local_id(local), value);
-
-	for (const ExpressionSyntax* site : refs.sites.get_vector())
-		contain_expression(ensure_site_id(site), value);
-}
 
 void EscapeAnalyzer::add_edge(int from, int to)
 {
@@ -534,16 +517,30 @@ void EscapeAnalyzer::record_call_exposure(const ExpressionSyntax* expression, Me
 		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver, cold });
 }
 
-EscapeLevel EscapeAnalyzer::argument_escape_level(MethodSymbol* callee, std::size_t parameterIndex, EscapeLevel base) const
+ParameterSymbol* EscapeAnalyzer::parameter_at(MethodSymbol* callee, std::uint16_t exposureIndex) const
 {
 	if (callee == nullptr)
-		return base;
+		return nullptr;
+
+	std::size_t index = exposureIndex;
+	if (callee->get_linking() == LINK_INSTANCE)
+	{
+		if (index == 0)
+			return nullptr;
+
+		index -= 1;
+	}
 
 	const gmt::vector<ParameterSymbol*>& parameters = callee->get_parameters();
-	if (parameterIndex >= parameters.size())
-		return base;
+	if (index >= parameters.size())
+		return nullptr;
 
-	ParameterSymbol* parameter = parameters[parameterIndex];
+	return parameters[index];
+}
+
+EscapeLevel EscapeAnalyzer::argument_escape_level(MethodSymbol* callee, std::uint16_t parameterIndex, EscapeLevel base) const
+{
+	ParameterSymbol* parameter = parameter_at(callee, parameterIndex);
 	if (parameter == nullptr)
 		return base;
 
@@ -558,27 +555,11 @@ EscapeContract EscapeAnalyzer::declared_contract(MethodSymbol* callee, std::uint
 	if (receiver && callee->get_linking() == LINK_INSTANCE)
 		return callee->get_instance_escape_contract();
 
-	// exposure indices reserve slot 0 for the receiver of an instance method
-	std::size_t index = parameterIndex;
-	if (callee->get_linking() == LINK_INSTANCE)
-	{
-		if (index == 0)
-			return EscapeContract::Global;
-
-		index -= 1;
-	}
-
-	const gmt::vector<ParameterSymbol*>& parameters = callee->get_parameters();
-	if (index >= parameters.size() || parameters[index] == nullptr)
+	ParameterSymbol* parameter = parameter_at(callee, parameterIndex);
+	if (parameter == nullptr)
 		return EscapeContract::Global;
 
-	EscapeContract contract = parameters[index]->get_escape_contract();
-
-	// 'IntoReceiver' is only meaningful where there is a receiver to be stored into
-	if (contract == EscapeContract::WithInstance && callee->get_linking() != LINK_INSTANCE)
-		return EscapeContract::Global;
-
-	return contract;
+	return parameter->get_escape_contract();
 }
 
 void EscapeAnalyzer::alias_into(SyntaxSymbol* target, const ExpressionSyntax* sourceExpression)
@@ -982,19 +963,11 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 					continue;
 
 				const ExpressionSyntax* argumentExpression = argument->get_expression();
-				expose_expression(argumentExpression, argument_escape_level(callee, i, argumentLevel), EscapeChannel::UnknownCallee);
+				const std::uint16_t parameterIndex = parameterOffset + static_cast<std::uint16_t>(i);
+				expose_expression(argumentExpression, argument_escape_level(callee, parameterIndex, argumentLevel), EscapeChannel::UnknownCallee);
 
 				if (knownConcrete)
-				{
-					const std::uint16_t parameterIndex = parameterOffset + static_cast<std::uint16_t>(i);
 					record_call_exposure(argumentExpression, callee, parameterIndex, false);
-
-					const bool storedIntoTarget = instanceCallee
-						&& declared_contract(callee, parameterIndex, false) == EscapeContract::WithInstance;
-
-					if (storedIntoTarget)
-						contain_receiver(receiver, argumentExpression);
-				}
 				else
 					mark_identity(argumentExpression, false);
 			}
