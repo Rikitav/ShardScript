@@ -268,6 +268,7 @@ namespace
 
 		ParameterSymbol* parameter = table.emplace<ParameterSymbol>(L"value", method);
 		parameter->set_type(parameterType);
+		parameter->set_escape_contract(EscapeContract::OnlyReads);
 		method->on_symbol_declared(parameter);
 
 		owner->members.push_back(method);
