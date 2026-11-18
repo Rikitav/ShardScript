@@ -346,6 +346,13 @@ ParameterSymbol* SymbolFactory::create_parameter(std::wstring_view name, SyntaxS
 	return symbol;
 }
 
+ParameterSymbol* SymbolFactory::create_parameter(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* type, EscapeContract escapeContract)
+{
+	ParameterSymbol* symbol = m_table->emplace<ParameterSymbol>(gmt::intern(name), parent, escapeContract);
+	symbol->set_type(type);
+	return symbol;
+}
+
 VariableSymbol* SymbolFactory::create_variable(const VariableStatementSyntax* node, SyntaxSymbol* parent)
 {
 	VariableSymbol* symbol = m_table->emplace<VariableSymbol>(node->get_identifier().get_lexeme(), parent);

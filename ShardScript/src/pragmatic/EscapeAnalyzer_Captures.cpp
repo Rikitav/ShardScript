@@ -154,6 +154,16 @@ void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
 
 	register_allocation_site(node);
 
+	auto nodeRef = ref_from(node);
+	const ExpressionSyntax* closureSite = nullptr;
+	if (nodeRef.has_value())
+	{
+		closureSite = *nodeRef;
+
+		// a delegate's closure box carries the callable's identity, not inline data
+		m_graph.forcedHeap[ensure_site_id(*nodeRef)] = true;
+	}
+
 	// the anonymous method symbol is bound to the lambda's parameters list node
 	MethodSymbol* symbol = nullptr;
 	if (!(node->get_parameters() == nullptr))
@@ -162,11 +172,6 @@ void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
 		if (bound != nullptr && bound->is_method())
 			symbol = static_cast<MethodSymbol*>(bound);
 	}
-
-	const ExpressionSyntax* closureSite = nullptr;
-	auto nodeRef = ref_from(node);
-	if (nodeRef.has_value())
-		closureSite = *nodeRef;
 
 	enter_frame(symbol, closureSite);
 	declare_parameters(symbol);

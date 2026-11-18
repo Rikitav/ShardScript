@@ -102,6 +102,7 @@ namespace shard
 		ParameterSymbol* create_parameter(const ParameterSyntax* node, SyntaxSymbol* parent);
 		ParameterSymbol* create_parameter(std::wstring_view name, SyntaxSymbol* parent);
 		ParameterSymbol* create_parameter(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* type);
+		ParameterSymbol* create_parameter(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* type, EscapeContract escapeContract);
 
 		VariableSymbol* create_variable(const VariableStatementSyntax* node, SyntaxSymbol* parent);
 		VariableSymbol* create_variable(const ForInStatementSyntax* node, SyntaxSymbol* parent);

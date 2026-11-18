@@ -149,7 +149,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 		SymbolBuilder(SymbolTable& table, std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 
-		SymbolBuilder<MethodSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
+		SymbolBuilder<MethodSymbol>& add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract);
 		SymbolBuilder<MethodSymbol>& set_callback(FuncHandler callback);
 		SymbolBuilder<MethodSymbol>& set_callback(AsyncFuncHandler callback);
 		SymbolBuilder<MethodSymbol>& set_handler(FuncHandler handler);
@@ -163,6 +163,8 @@ namespace shard
 		SymbolBuilder<MethodSymbol>& set_mutates_static(bool value = true);
 		SymbolBuilder<MethodSymbol>& set_mutates_arguments(bool value = true);
 		SymbolBuilder<MethodSymbol>& set_has_unknown_side_effects(bool value = true);
+		SymbolBuilder<MethodSymbol>& set_instance_escape(EscapeContract escapeContract);
+		SymbolBuilder<MethodSymbol>& promise_pure_function(bool value = true);
 	};
 
 	template<>
@@ -172,7 +174,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, SymbolAccesibility access, SyntaxSymbol* parent);
 		SymbolBuilder(SymbolTable& table, SymbolAccesibility access, SyntaxSymbol* parent);
 
-		SymbolBuilder<ConstructorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
+		SymbolBuilder<ConstructorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract);
 		SymbolBuilder<ConstructorSymbol>& set_callback(FuncHandler callback);
 
 		SymbolBuilder<ConstructorSymbol>& set_may_throw(bool value = true);
@@ -181,6 +183,8 @@ namespace shard
 		SymbolBuilder<ConstructorSymbol>& set_mutates_static(bool value = true);
 		SymbolBuilder<ConstructorSymbol>& set_mutates_arguments(bool value = true);
 		SymbolBuilder<ConstructorSymbol>& set_has_unknown_side_effects(bool value = true);
+		SymbolBuilder<ConstructorSymbol>& set_instance_escape(EscapeContract escapeContract);
+		SymbolBuilder<ConstructorSymbol>& promise_pure_function(bool value = true);
 	};
 
 	template<>
@@ -190,7 +194,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, TokenType operatorToken, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 		SymbolBuilder(SymbolTable& table, TokenType operatorToken, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 
-		SymbolBuilder<OperatorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
+		SymbolBuilder<OperatorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract);
 		SymbolBuilder<OperatorSymbol>& set_callback(FuncHandler callback);
 
 		SymbolBuilder<OperatorSymbol>& set_may_throw(bool value = true);
@@ -199,6 +203,8 @@ namespace shard
 		SymbolBuilder<OperatorSymbol>& set_mutates_static(bool value = true);
 		SymbolBuilder<OperatorSymbol>& set_mutates_arguments(bool value = true);
 		SymbolBuilder<OperatorSymbol>& set_has_unknown_side_effects(bool value = true);
+		SymbolBuilder<OperatorSymbol>& set_instance_escape(EscapeContract escapeContract);
+		SymbolBuilder<OperatorSymbol>& promise_pure_function(bool value = true);
 	};
 
 	template<>
@@ -220,7 +226,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 		SymbolBuilder(SymbolTable& table, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent);
 
-		SymbolBuilder<IndexatorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
+		SymbolBuilder<IndexatorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract);
 
 		SymbolBuilder<AccessorSymbol> add_getter(SymbolAccesibility access = ACS_PUBLIC);
 		SymbolBuilder<AccessorSymbol> add_setter(SymbolAccesibility access = ACS_PUBLIC);
@@ -236,7 +242,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, bool isGetter, SymbolAccesibility access, PropertySymbol* property);
 		SymbolBuilder(SymbolTable& table, bool isGetter, SymbolAccesibility access, PropertySymbol* property);
 
-		SymbolBuilder<AccessorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type);
+		SymbolBuilder<AccessorSymbol>& add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract);
 		SymbolBuilder<AccessorSymbol>& set_callback(FuncHandler callback);
 
 		SymbolBuilder<AccessorSymbol>& set_may_throw(bool value = true);
@@ -245,6 +251,8 @@ namespace shard
 		SymbolBuilder<AccessorSymbol>& set_mutates_static(bool value = true);
 		SymbolBuilder<AccessorSymbol>& set_mutates_arguments(bool value = true);
 		SymbolBuilder<AccessorSymbol>& set_has_unknown_side_effects(bool value = true);
+		SymbolBuilder<AccessorSymbol>& set_instance_escape(EscapeContract escapeContract);
+		SymbolBuilder<AccessorSymbol>& promise_pure_function(bool value = true);
 	};
 
 	template<>

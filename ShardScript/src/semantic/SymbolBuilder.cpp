@@ -9,6 +9,23 @@
 
 using namespace shard;
 
+namespace
+{
+	void apply_pure_promise(MethodSymbol* symbol, bool value)
+	{
+		if (symbol == nullptr)
+			return;
+
+		MethodEffectSummary& summary = symbol->get_effect_summary();
+		summary.mayThrow = !value;
+		summary.mutatesInstance = !value;
+		summary.mutatesStatic = !value;
+		summary.mutatesArguments = !value;
+		summary.hasUnknownSideEffects = !value;
+		symbol->set_effects_computed(true);
+	}
+}
+
 // =========================================================================
 // NamespaceSymbol
 // =========================================================================
@@ -266,9 +283,9 @@ SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view
 SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, returnType, linking, access, parent) { }
 
-SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract)
 {
-	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type, escapeContract);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -359,6 +376,18 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_has_unknown_side_e
 	return *this;
 }
 
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_instance_escape(EscapeContract escapeContract)
+{
+	m_symbol->set_instance_escape_contract(escapeContract);
+	return *this;
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::promise_pure_function(bool value)
+{
+	apply_pure_promise(m_symbol, value);
+	return *this;
+}
+
 // =========================================================================
 // ConstructorSymbol
 // =========================================================================
@@ -375,9 +404,9 @@ SymbolBuilder<ConstructorSymbol>::SymbolBuilder(SymbolTable& table, SymbolAccesi
 SymbolBuilder<ConstructorSymbol>::SymbolBuilder(CompilationContext& context, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), access, parent) { }
 
-SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract)
 {
-	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type, escapeContract);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -435,6 +464,18 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_has_unkn
 	return *this;
 }
 
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_instance_escape(EscapeContract escapeContract)
+{
+	m_symbol->set_instance_escape_contract(escapeContract);
+	return *this;
+}
+
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::promise_pure_function(bool value)
+{
+	apply_pure_promise(m_symbol, value);
+	return *this;
+}
+
 // =========================================================================
 // OperatorSymbol
 // =========================================================================
@@ -454,9 +495,9 @@ SymbolBuilder<OperatorSymbol>::SymbolBuilder(SymbolTable& table, TokenType opera
 SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& context, TokenType operatorToken, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), operatorToken, returnType, linking, access, parent) { }
 
-SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract)
 {
-	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type, escapeContract);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -511,6 +552,18 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_mutates_argume
 SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_has_unknown_side_effects(bool value)
 {
 	m_symbol->get_effect_summary().hasUnknownSideEffects = value;
+	return *this;
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_instance_escape(EscapeContract escapeContract)
+{
+	m_symbol->set_instance_escape_contract(escapeContract);
+	return *this;
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::promise_pure_function(bool value)
+{
+	apply_pure_promise(m_symbol, value);
 	return *this;
 }
 
@@ -571,9 +624,9 @@ SymbolBuilder<IndexatorSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_v
 SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, type, linking, access, parent) { }
 
-SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
+SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract)
 {
-	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type, escapeContract);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -641,9 +694,9 @@ SymbolBuilder<AccessorSymbol>::SymbolBuilder(SymbolTable& table, bool isGetter, 
 SymbolBuilder<AccessorSymbol>::SymbolBuilder(CompilationContext& context, bool isGetter, SymbolAccesibility access, PropertySymbol* property)
 	: SymbolBuilder(context.get_semantic_model().get_table(), isGetter, access, property) { }
 
-SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type, EscapeContract escapeContract)
 {
-	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type, escapeContract);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -698,6 +751,18 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_mutates_argume
 SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_has_unknown_side_effects(bool value)
 {
 	m_symbol->get_effect_summary().hasUnknownSideEffects = value;
+	return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_instance_escape(EscapeContract escapeContract)
+{
+	m_symbol->set_instance_escape_contract(escapeContract);
+	return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::promise_pure_function(bool value)
+{
+	apply_pure_promise(m_symbol, value);
 	return *this;
 }
 

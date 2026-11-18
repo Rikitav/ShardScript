@@ -119,7 +119,7 @@ void SymbolTable::resolve_async_types()
 	FieldSymbol* taskStateField = taskBuilder.add_field(L"_state", taskState, LINK_INSTANCE, ACS_PRIVATE);
 
 	MethodSymbol* delayMethod = taskBuilder.add_method(L"Delay", task, LINK_STATIC)
-		.add_parameter(L"milliseconds", integerType)
+		.add_parameter(L"milliseconds", integerType, EscapeContract::OnlyReads)
 		.set_callback(&task_delay)
 		.get();
 
@@ -146,8 +146,8 @@ void SymbolTable::resolve_async_types()
 	// a static function whose first parameter is the receiver binds as an
 	// extension call: 'task.ContinueWith(continuation)'
 	MethodSymbol* continueMethod = SymbolBuilder<MethodSymbol>(*this, L"ContinueWith", task, LINK_STATIC, ACS_PUBLIC, m_rootNamespace)
-		.add_parameter(L"task", task)
-		.add_parameter(L"continuation", action)
+		.add_parameter(L"task", task, EscapeContract::OnlyReads)
+		.add_parameter(L"continuation", action, EscapeContract::Global)
 		.set_callback(&task_continue_with)
 		.get();
 
@@ -158,8 +158,8 @@ void SymbolTable::resolve_async_types()
 
 	continueGeneric.get()->set_return_type(continueTaskType);
 	MethodSymbol* continueTMethod = continueGeneric
-		.add_parameter(L"task", continueTaskType)
-		.add_parameter(L"continuation", action)
+		.add_parameter(L"task", continueTaskType, EscapeContract::OnlyReads)
+		.add_parameter(L"continuation", action, EscapeContract::Global)
 		.set_callback(&task_continue_with)
 		.get();
 
@@ -183,12 +183,12 @@ void SymbolTable::resolve_async_types()
 		.get();
 
 	MethodSymbol* setResultMethod = completionSourceBuilder.add_method(L"SetResult", voidType, LINK_INSTANCE)
-		.add_parameter(L"result", completionTParameter)
+		.add_parameter(L"result", completionTParameter, EscapeContract::WithInstance)
 		.set_callback(&task_completion_source_set_result)
 		.get();
 
 	MethodSymbol* setExceptionMethod = completionSourceBuilder.add_method(L"SetException", voidType, LINK_INSTANCE)
-		.add_parameter(L"exception", throwableType)
+		.add_parameter(L"exception", throwableType, EscapeContract::WithInstance)
 		.set_callback(&task_completion_source_set_exception)
 		.get();
 

@@ -38466,6 +38466,23 @@ extern "C"
 		}
 	}
 
+	SHARD_API int shard_MethodSymbol_get_instance_escape_contract(shard_MethodSymbol_t self)
+	{
+		if (!self)
+		{
+			return 0;
+		}
+		try
+		{
+			auto result = self->get_instance_escape_contract();
+			return static_cast<int>(result);
+		}
+		catch (...)
+		{
+			return 0;
+		}
+	}
+
 	SHARD_API int shard_MethodSymbol_get_is_generic_instantiation(shard_MethodSymbol_t self)
 	{
 		if (!self)
@@ -38712,6 +38729,31 @@ extern "C"
 		catch (const std::bad_alloc&)
 		{
 			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
+		}
+		catch (const std::exception&)
+		{
+			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
+		}
+		catch (...)
+		{
+			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
+		}
+	}
+
+	SHARD_API shard_status_t shard_MethodSymbol_set_instance_escape_contract(shard_MethodSymbol_t self, int p0)
+	{
+		if (!self)
+		{
+			return SHARD_STATUS_ERROR_NULL_POINTER;
+		}
+		try
+		{
+			self->set_instance_escape_contract(static_cast<shard::EscapeContract>(p0));
+			return SHARD_STATUS_OK;
+		}
+		catch (const std::invalid_argument&)
+		{
+			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
 		}
 		catch (const std::exception&)
 		{
@@ -39268,6 +39310,44 @@ extern "C"
 		static_cast<void>(self);
 		static_cast<void>(p0);
 		return SHARD_STATUS_ERROR_DELETED_OPERATION;
+	}
+
+	SHARD_API int shard_ParameterSymbol_get_escape_contract(shard_ParameterSymbol_t self)
+	{
+		if (!self)
+		{
+			return 0;
+		}
+		try
+		{
+			auto result = self->get_escape_contract();
+			return static_cast<int>(result);
+		}
+		catch (...)
+		{
+			return 0;
+		}
+	}
+
+	SHARD_API shard_status_t shard_ParameterSymbol_set_escape_contract(shard_ParameterSymbol_t self, int p0)
+	{
+		if (!self)
+		{
+			return SHARD_STATUS_ERROR_NULL_POINTER;
+		}
+		try
+		{
+			self->set_escape_contract(static_cast<shard::EscapeContract>(p0));
+			return SHARD_STATUS_OK;
+		}
+		catch (const std::invalid_argument&)
+		{
+			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
+		}
+		catch (...)
+		{
+			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
+		}
 	}
 
 	SHARD_API shard_status_t shard_ParameterSymbol_set_type(shard_ParameterSymbol_t self, const void* p0)
@@ -40830,6 +40910,11 @@ extern "C"
 	}
 
 	SHARD_API int shard_SymbolAccesibility(int value)
+	{
+		return value;
+	}
+
+	SHARD_API int shard_EscapeContract(int value)
 	{
 		return value;
 	}

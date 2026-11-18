@@ -1385,6 +1385,7 @@ extern "C"
 	SHARD_API int shard_MethodSymbol_get_effects_computed(shard_MethodSymbol_t self);
 	SHARD_API void* shard_MethodSymbol_get_function_pointer(shard_MethodSymbol_t self);
 	SHARD_API int shard_MethodSymbol_get_is_async(shard_MethodSymbol_t self);
+	SHARD_API int shard_MethodSymbol_get_instance_escape_contract(shard_MethodSymbol_t self);
 	SHARD_API int shard_MethodSymbol_get_is_generic_instantiation(shard_MethodSymbol_t self);
 	SHARD_API int shard_MethodSymbol_get_is_virtual(shard_MethodSymbol_t self);
 	SHARD_API void* shard_MethodSymbol_get_parameters(shard_MethodSymbol_t self);
@@ -1397,6 +1398,7 @@ extern "C"
 	SHARD_API shard_status_t shard_MethodSymbol_set_effects_computed(shard_MethodSymbol_t self, int p0);
 	SHARD_API shard_status_t shard_MethodSymbol_set_function_pointer(shard_MethodSymbol_t self, void* p0);
 	SHARD_API shard_status_t shard_MethodSymbol_set_is_async(shard_MethodSymbol_t self, int p0);
+	SHARD_API shard_status_t shard_MethodSymbol_set_instance_escape_contract(shard_MethodSymbol_t self, int p0);
 	SHARD_API shard_status_t shard_MethodSymbol_set_is_virtual(shard_MethodSymbol_t self, int p0);
 	SHARD_API shard_status_t shard_MethodSymbol_set_return_type(shard_MethodSymbol_t self, const void* p0);
 	SHARD_API shard_status_t shard_NamespaceSymbol_NamespaceSymbol_create(const wchar_t* p0, const void* p1, shard_NamespaceSymbol_t* out_handle);
@@ -1420,6 +1422,8 @@ extern "C"
 	SHARD_API void* shard_ParameterSymbol_get_type(shard_ParameterSymbol_t self);
 	SHARD_API shard_status_t shard_ParameterSymbol_operator_assign(shard_ParameterSymbol_t self, shard_ParameterSymbol_t p0);
 	SHARD_API shard_status_t shard_ParameterSymbol_set_type(shard_ParameterSymbol_t self, const void* p0);
+	SHARD_API int shard_ParameterSymbol_get_escape_contract(shard_ParameterSymbol_t self);
+	SHARD_API shard_status_t shard_ParameterSymbol_set_escape_contract(shard_ParameterSymbol_t self, int p0);
 	SHARD_API shard_status_t shard_PropertySymbol_PropertySymbol_create(const wchar_t* p0, int p1, const void* p2, shard_PropertySymbol_t* out_handle);
 	SHARD_API void shard_PropertySymbol_PropertySymbol_destroy(shard_PropertySymbol_t self);
 	SHARD_API void* shard_PropertySymbol_get_backing_field(shard_PropertySymbol_t self);
@@ -1487,6 +1491,7 @@ extern "C"
 	SHARD_API shard_status_t shard_StructSymbol_on_symbol_declared(shard_StructSymbol_t self, const void* p0);
 	SHARD_API shard_status_t shard_StructSymbol_operator_assign(shard_StructSymbol_t self, shard_StructSymbol_t p0);
 	SHARD_API int shard_SymbolAccesibility(int value);
+	SHARD_API int shard_EscapeContract(int value);
 	SHARD_API shard_status_t shard_SymbolFactory_SymbolFactory_create(shard_SymbolTable_t p0, shard_SymbolFactory_t* out_handle);
 	SHARD_API void shard_SymbolFactory_SymbolFactory_destroy(shard_SymbolFactory_t self);
 	SHARD_API void* shard_SymbolFactory_create_accessor(shard_SymbolFactory_t self, const void* p0, const void* p1);

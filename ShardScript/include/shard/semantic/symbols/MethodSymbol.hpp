@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
+#include <shard/semantic/EscapeContract.hpp>
 #include <shard/semantic/MethodEffectSummary.hpp>
 #include <shard/semantic/symbols/MemberSymbol.hpp>
 
@@ -40,6 +41,8 @@ namespace shard
 		bool m_isVirtual = false;
 		bool m_isAsync = false;
 
+		EscapeContract m_instanceEscapeContract = EscapeContract::Global;
+
 		MethodEffectSummary m_effectSummary;
 		bool m_effectsComputed = false;
 
@@ -71,6 +74,9 @@ namespace shard
 
 		bool get_is_async() const;
 		void set_is_async(bool is_async);
+
+		EscapeContract get_instance_escape_contract() const;
+		void set_instance_escape_contract(EscapeContract escapeContract);
 
 		MethodEffectSummary& get_effect_summary();
 		const MethodEffectSummary& get_effect_summary() const;

@@ -80,6 +80,16 @@ void MethodSymbol::set_is_async(bool isAsync)
 	m_isAsync = isAsync;
 }
 
+EscapeContract MethodSymbol::get_instance_escape_contract() const
+{
+	return m_instanceEscapeContract;
+}
+
+void MethodSymbol::set_instance_escape_contract(EscapeContract escapeContract)
+{
+	m_instanceEscapeContract = escapeContract;
+}
+
 MethodEffectSummary& MethodSymbol::get_effect_summary()
 {
 	return m_effectSummary;

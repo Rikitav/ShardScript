@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
+#include <shard/semantic/EscapeContract.hpp>
 #include <shard/semantic/SyntaxSymbol.hpp>
 
 #include <gmt/Arena.hpp>
@@ -18,10 +19,12 @@ namespace shard
 	class SHARD_API ParameterSymbol : public SyntaxSymbol
 	{
 		StructSymbol* m_type = nullptr;
+		EscapeContract m_escapeContract = EscapeContract::Global;
 
 	public:
 		ParameterSymbol(std::wstring_view name, SyntaxSymbol* parent);
 		ParameterSymbol(gmt::StringReference name, SyntaxSymbol* parent);
+		ParameterSymbol(gmt::StringReference name, SyntaxSymbol* parent, EscapeContract escapeContract);
 		virtual ~ParameterSymbol() = default;
 
 		ParameterSymbol(const ParameterSymbol& other) = delete;
@@ -32,5 +35,8 @@ namespace shard
 
 		StructSymbol* get_type() const;
 		void set_type(StructSymbol* type);
+
+		EscapeContract get_escape_contract() const;
+		void set_escape_contract(EscapeContract escapeContract);
 	};
 }
