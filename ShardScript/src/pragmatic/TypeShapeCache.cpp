@@ -217,4 +217,16 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		shape->m_size = baseTypePrimitiveSize.has_value() ? baseTypePrimitiveSize.value() : offset;
 	else
 		shape->m_size = offset;
+
+	// a fieldless struct occupies one byte by convention: an empty payload has no
+	// address to hand out, and in-place frame storage is gated on size > 0
+	if (offset == 0 && fieldOwner->get_kind() == SyntaxKind::StructDeclaration)
+	{
+		const bool builtinStorage = model.is_primitive_type(baseType)
+			|| baseType == table.get_void_primitive()
+			|| baseType == table.get_null_primitive();
+
+		if (!builtinStorage)
+			shape->m_size = 1;
+	}
 }
