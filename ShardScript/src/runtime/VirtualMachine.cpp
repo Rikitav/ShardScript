@@ -490,9 +490,18 @@ ObjectInstance VirtualMachine::invoke_into(MethodSymbol* method, std::span<const
 		? primitive_shape(returnType)
 		: nullptr;
 
-	// an open return type has no shape of its own; the returned value carries its own
-	if (returnShape == nullptr && (returnType == nullptr || !m_model.contains_type_parameter(returnType)))
+	// the layout resolves the return shape once; only layouts that are still
+	// open (or absent) consult the shape cache here
+	if (returnShape == nullptr && layout != nullptr && layout->has_return_shape())
+	{
+		returnShape = layout->get_return_shape();
+	}
+	else if (returnShape == nullptr && (returnType == nullptr || !m_model.contains_type_parameter(returnType)))
+	{
 		returnShape = resolve_shape(returnType);
+		if (layout != nullptr)
+			layout->set_return_shape(returnShape);
+	}
 
 	if (convention == CallingConvention::NativeSync || convention == CallingConvention::NativeAsync)
 	{
@@ -532,9 +541,20 @@ ObjectInstance VirtualMachine::invoke_into(MethodSymbol* method, std::span<const
 ObjectInstance VirtualMachine::invoke_managed(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout)
 {
 	StructSymbol* declaredReturn = is_void_method(method) ? nullptr : method->get_return_type();
-	const TypeShape* returnShape = (declaredReturn == nullptr || m_model.contains_type_parameter(declaredReturn))
-		? nullptr
-		: resolve_shape(declaredReturn);
+	const TypeShape* returnShape = nullptr;
+	if (declaredReturn != nullptr && !m_model.contains_type_parameter(declaredReturn))
+	{
+		if (layout != nullptr && layout->has_return_shape())
+		{
+			returnShape = layout->get_return_shape();
+		}
+		else
+		{
+			returnShape = resolve_shape(declaredReturn);
+			if (layout != nullptr)
+				layout->set_return_shape(returnShape);
+		}
+	}
 
 	ObjectInstance destination = returnShape != nullptr && returnShape->get_size() > 0
 		? m_collector.allocate_instance(returnShape)
@@ -1441,8 +1461,14 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			StructSymbol* baseType = instance.get_shape()->get_base_type();
-			const TypeShape* elementShape = resolve_shape(static_cast<ArrayTypeSymbol*>(baseType)->get_underlaying_type());
+			// the array's own shape already carries its element shape, so an
+			// element access costs no shape-cache probe
+			const TypeShape* elementShape = instance.get_shape()->get_element_shape();
+			if (elementShape == nullptr)
+			{
+				raise_runtime_exception(L"InvalidOperationException: array value carries no element shape");
+				break;
+			}
 
 			std::byte* elementAddress = instance.get_memory() + sizeof(std::int64_t) + static_cast<std::size_t>(index) * sizeof(void*);
 			push_instance(frame, read_pointer_slot(m_collector, elementShape, elementAddress));
@@ -1468,8 +1494,12 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			StructSymbol* baseType = instance.get_shape()->get_base_type();
-			const TypeShape* elementShape = resolve_shape(static_cast<ArrayTypeSymbol*>(baseType)->get_underlaying_type());
+			const TypeShape* elementShape = instance.get_shape()->get_element_shape();
+			if (elementShape == nullptr)
+			{
+				raise_runtime_exception(L"InvalidOperationException: array value carries no element shape");
+				break;
+			}
 
 			std::byte* elementAddress = instance.get_memory() + sizeof(std::int64_t) + static_cast<std::size_t>(index) * sizeof(void*);
 			write_pointer_slot(m_collector, elementShape, elementAddress, value);
@@ -1557,7 +1587,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			else
 				argumentCount = native_argument_count(method);
 
-			gmt::inline_vector<ObjectInstance, 8> arguments;			
+			gmt::inline_vector<ObjectInstance, 8> arguments;
 			for (std::size_t i = 0; i < argumentCount; ++i)
 				arguments.push_back(frame->pop_entry());
 

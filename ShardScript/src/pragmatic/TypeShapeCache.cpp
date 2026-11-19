@@ -113,17 +113,97 @@ namespace
 	}
 }
 
+namespace
+{
+	constexpr std::size_t NoSlot = static_cast<std::size_t>(-1);
+	constexpr std::size_t InitialBuckets = 64;
+}
+
+TypeShapeCache::TypeShapeCache()
+{
+	rehash(InitialBuckets);
+}
+
+std::size_t TypeShapeCache::hash_key(const void* key)
+{
+	std::uint64_t mixed = static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(key) >> 3) * 0x9E3779B97F4A7C15ull;
+	mixed ^= mixed >> 29;
+	return static_cast<std::size_t>(mixed);
+}
+
+std::size_t TypeShapeCache::probe(StructSymbol* keyType) const
+{
+	const std::size_t mask = m_buckets.size() - 1;
+	std::size_t slot = hash_key(keyType) & mask;
+
+	while (true)
+	{
+		const std::uint32_t entry = m_buckets[slot];
+		if (entry == 0)
+			return NoSlot;
+
+		if (m_shapes[entry - 1].get_base_type() == keyType)
+			return slot;
+
+		slot = (slot + 1) & mask;
+	}
+}
+
+void TypeShapeCache::rehash(std::size_t capacity)
+{
+	gmt::vector<std::uint32_t> fresh(capacity, 0);
+	const std::size_t mask = capacity - 1;
+
+	for (std::size_t index = 0; index < m_shapes.size(); ++index)
+	{
+		std::size_t slot = hash_key(m_shapes[index].get_base_type()) & mask;
+		while (fresh[slot] != 0)
+			slot = (slot + 1) & mask;
+
+		fresh[slot] = static_cast<std::uint32_t>(index + 1);
+	}
+
+	m_buckets = std::move(fresh);
+}
+
+void TypeShapeCache::insert(StructSymbol* keyType)
+{
+	if ((m_count + 1) * 10 >= m_buckets.size() * 7)
+		rehash(m_buckets.size() * 2);
+
+	const std::size_t mask = m_buckets.size() - 1;
+	std::size_t slot = hash_key(keyType) & mask;
+	while (m_buckets[slot] != 0)
+		slot = (slot + 1) & mask;
+
+	m_buckets[slot] = static_cast<std::uint32_t>(m_shapes.size()); // index + 1 of the newest shape
+	++m_count;
+}
+
+void TypeShapeCache::remember(const TypeShape* shape) const
+{
+	const std::size_t slot = hash_key(shape->get_base_type()) & (MemoSize - 1);
+	m_memo[slot] = shape;
+}
+
 TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs) const
 {
 	StructSymbol* keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, false);
 	if (keyType == nullptr)
 		return nullptr;
 
-	const auto choice = m_shapes.find(reinterpret_cast<std::uint64_t>(keyType));
-	if (choice == m_shapes.end())
+	const std::size_t memoSlot = hash_key(keyType) & (MemoSize - 1);
+	const TypeShape* cached = m_memo[memoSlot];
+	if (cached != nullptr && cached->get_base_type() == keyType)
+		return const_cast<TypeShape*>(cached);
+
+	const std::size_t slot = probe(keyType);
+	if (slot == NoSlot)
 		return nullptr;
 
-	return const_cast<TypeShape*>(&choice->second);
+	TypeShape* shape = const_cast<TypeShape*>(&m_shapes[m_buckets[slot] - 1]);
+	remember(shape);
+	return shape;
 }
 
 TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs)
@@ -134,12 +214,27 @@ TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, Struc
 
 	reject_unsubstituted_type_parameter(keyType);
 
-	auto [choice, inserted] = m_shapes.try_emplace(reinterpret_cast<std::uint64_t>(keyType), keyType, genericArgs);
-	TypeShape& shape = choice->second;
+	const std::size_t memoSlot = hash_key(keyType) & (MemoSize - 1);
+	const TypeShape* cached = m_memo[memoSlot];
+	if (cached != nullptr && cached->get_base_type() == keyType)
+		return const_cast<TypeShape*>(cached);
 
-	if (inserted)
-		build(&shape, model);
+	const std::size_t slot = probe(keyType);
+	if (slot != NoSlot)
+	{
+		TypeShape* existing = &m_shapes[m_buckets[slot] - 1];
+		remember(existing);
+		return existing;
+	}
 
+	TypeShape& shape = m_shapes.emplace_back(keyType, genericArgs);
+
+	// the shape becomes findable before it is built: a self-referential type
+	// reaches this same key while its slots are still being laid out, and the
+	// partially built shape is what breaks that cycle
+	insert(keyType);
+	build(&shape, model);
+	remember(&shape);
 	return &shape;
 }
 
