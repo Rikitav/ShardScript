@@ -84,6 +84,7 @@ namespace shard
 			const TypeShape* shape = nullptr;
 			std::byte* dataAddress = nullptr;
 			bool isNullable = false;
+			bool isOpen = false;	// names a type parameter: the stored value owns the shape
 		};
 
 		LocalSlot* m_localSlots = nullptr;

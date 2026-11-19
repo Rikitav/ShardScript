@@ -23,6 +23,35 @@ namespace shard
 		PlacementVerdict verdict = PlacementVerdict::Heap; // stamped by the layout pass from the escape verdicts; the conservative default
 	};
 
+	// What materializing a frame needs to know about one slot: the shape, the
+	// in-place storage it reserves, and the handful of predicates the runtime
+	// used to re-derive from the type on every call.
+	enum class FrameSlotFlag : std::uint8_t
+	{
+		None = 0,
+		Nullable = 1 << 0,
+		Open = 1 << 1,		// names a type parameter: the stored value carries its own shape
+		OwnsData = 1 << 2,	// owns in-place storage inside the frame's locals region
+		HeapCell = 1 << 3,	// a value variable whose storage is a collector cell
+	};
+
+	constexpr FrameSlotFlag operator|(FrameSlotFlag left, FrameSlotFlag right)
+	{
+		return static_cast<FrameSlotFlag>(static_cast<std::uint8_t>(left) | static_cast<std::uint8_t>(right));
+	}
+
+	constexpr bool has_flag(FrameSlotFlag value, FrameSlotFlag bit)
+	{
+		return (static_cast<std::uint8_t>(value) & static_cast<std::uint8_t>(bit)) != 0;
+	}
+
+	struct FrameSlotPlan
+	{
+		const TypeShape* shape = nullptr;	// resolved shape; null for open and unknown slots
+		std::uint32_t dataBytes = 0;		// locals-region bytes reserved for this slot
+		FrameSlotFlag flags = FrameSlotFlag::None;
+	};
+
 	class SHARD_API FrameLayout
 	{
 		gmt::vector<FrameSlotRecipe> m_variableSlots;
@@ -42,10 +71,24 @@ namespace shard
 		std::size_t m_localsBytes = 0; // total frame bytes for arguments and locals; computed by the layout pass
 		bool m_isComplete = false;
 
+		// filled by build_slot_plans once the layout stops changing, so the
+		// runtime never re-resolves a slot through the shape cache
+		mutable gmt::vector<FrameSlotPlan> m_slotPlans;
+		mutable bool m_slotPlansReady = false;
+		mutable bool m_slotPlansComplete = true;
+
 		static FrameSlotRecipe make_recipe(StructSymbol* type);
+
+		void invalidate_slot_plans();
+		void build_slot_plans() const;
+		std::span<const FrameSlotPlan> ensure_slot_plans() const;
+		bool slot_plans_complete() const;
+		std::size_t planned_locals_bytes() const;
 
 	public:
 		static constexpr std::size_t EntryHeaderSize = sizeof(void*);
+
+		friend class CallStackFrame;
 
 		FrameLayout() = default;
 

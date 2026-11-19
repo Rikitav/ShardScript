@@ -134,16 +134,23 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	const std::uint16_t variableCount = layout != nullptr ? layout->get_variable_count() : 0;
 	const std::uint16_t localCount = static_cast<std::uint16_t>(argumentCount + variableCount);
 
-	const bool cachedShapes = layout != nullptr
-		&& layout->get_argument_shape_count() == argumentCount
-		&& layout->get_variable_shape_count() == variableCount;
+	// a sealed layout carries its resolved slots; the runtime then only copies
+	// the plan instead of re-resolving every slot through the shape cache
+	const std::span<const FrameSlotPlan> plans = layout != nullptr
+		? layout->ensure_slot_plans()
+		: std::span<const FrameSlotPlan>();
+
+	const bool planned = layout != nullptr
+		&& layout->slot_plans_complete()
+		&& plans.size() == static_cast<std::size_t>(localCount);
 
 	auto local_shape = [&](std::size_t index) -> const TypeShape*
 	{
-		if (cachedShapes)
+		if (planned)
 		{
 			if (index < argumentCount)
 				return layout->get_argument_shape(index);
+
 			return layout->get_variable_shape(index - argumentCount);
 		}
 
@@ -211,11 +218,18 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 	};
 
 	std::size_t localsBytes = 0;
-	for (std::size_t i = 0; i < localCount; ++i)
+	if (planned)
 	{
-		const TypeShape* shape = local_shape(i);
-		if (owns_local_data(i, shape))
-			localsBytes += data_bytes(shape);
+		localsBytes = layout->planned_locals_bytes();
+	}
+	else
+	{
+		for (std::size_t i = 0; i < localCount; ++i)
+		{
+			const TypeShape* shape = local_shape(i);
+			if (owns_local_data(i, shape))
+				localsBytes += data_bytes(shape);
+		}
 	}
 
 	std::size_t evalSlotPayload = layout != nullptr ? layout->get_eval_slot_payload() : 0;
@@ -444,7 +458,7 @@ void CallStackFrame::set_local(std::uint16_t slot, ObjectInstance value)
 		throw std::runtime_error("local slot index is out of range");
 
 	LocalSlot& local = m_localSlots[slot];
-	if (value.get_shape() != nullptr && (local.shape == nullptr || local.shape->get_base_type()->get_kind() == SyntaxKind::TypeParameter))
+	if (value.get_shape() != nullptr && (local.shape == nullptr || local.isOpen))
 		local.shape = value.get_shape();
 
 	if (local.shape == nullptr || local.shape->is_reference())
