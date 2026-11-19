@@ -32,18 +32,28 @@ namespace
 		return mask;
 	}
 
-	// bytes a value of this kind occupies, 0 when it is not integral
 	constexpr std::size_t integral_width(ValueKind kind)
 	{
-		switch (kind)
+		// bytes a value of this kind occupies, 0 when it is not integral; indexed by
+		// ValueKind so the hot accessors do not run a switch per read
+		std::size_t IntegralWidths[] =
 		{
-			case ValueKind::Byte: return sizeof(std::uint8_t);
-			case ValueKind::Char: return sizeof(wchar_t);
-			case ValueKind::Integer:
-			case ValueKind::NativeInteger:
-			case ValueKind::Enum: return sizeof(std::int64_t);
-			default: return 0;
-		}
+			0,								// Unknown
+			0,								// Void
+			0,								// Boolean
+			sizeof(std::uint8_t),			// Byte
+			sizeof(wchar_t),				// Char
+			sizeof(std::int64_t),			// Integer
+			sizeof(std::int64_t),			// NativeInteger
+			0,								// Float
+			0,								// String
+			sizeof(std::int64_t),			// Enum
+			0,								// Array
+			0,								// Reference
+		};
+
+		const std::size_t index = static_cast<std::size_t>(kind);
+		return index < (sizeof(IntegralWidths) / sizeof(IntegralWidths[0])) ? IntegralWidths[index] : 0;
 	}
 
 	constexpr std::uint32_t IntegralKinds = kinds_of({ ValueKind::Byte, ValueKind::Char, ValueKind::Integer, ValueKind::NativeInteger, ValueKind::Enum });

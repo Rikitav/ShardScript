@@ -155,14 +155,21 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 
 	std::optional<std::size_t> baseTypePrimitiveSize = primitive_size(table, baseType);
 	bool isEnum = baseType->get_kind() == SyntaxKind::EnumDeclaration;
-	shape->m_isReference = !baseTypePrimitiveSize.has_value() && !isEnum;
-	shape->m_valueKind = value_kind(table, baseType);
+	TypeShape::ShapeFlag flags = (!baseTypePrimitiveSize.has_value() && !isEnum)
+		? TypeShape::ShapeFlag::Reference
+		: TypeShape::ShapeFlag::None;
+	TypeShape::ValueKind kind = value_kind(table, baseType);
+	shape->set_kind(kind, flags, 0);
 
 	if (baseType->get_kind() == SyntaxKind::ArrayType)
 	{
 		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		TypeShape* elementShape = find_or_create_type_shape(model, arrayType->get_underlaying_type());
 
+		if (arrayType->get_underlaying_type()->get_kind() == SyntaxKind::NullableType)
+			flags = flags | TypeShape::ShapeFlag::NullableElements;
+
+		shape->set_kind(kind, flags, 0);
 		shape->m_elementShape = elementShape;
 		shape->m_size = sizeof(std::int64_t) + sizeof(void*) * arrayType->get_length();
 		return;
@@ -204,7 +211,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 			continue;
 
 		TypeShape::SlotInfo slot{};
-		slot.offset = offset;
+		slot.offset = static_cast<std::uint32_t>(offset);
 		slot.isNullable = fieldType->get_kind() == SyntaxKind::NullableType;
 
 		slot.fieldShape = find_or_create_type_shape(model, fieldType);
@@ -212,6 +219,11 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		offset += sizeof(void*);
 		shape->m_slots.push_back(slot);
 	}
+
+	if (shape->m_slots.size() > 0xFFFF)
+		throw std::length_error("type shape exceeds the 65535 field slot limit");
+
+	shape->set_kind(kind, flags, shape->m_slots.size());
 
 	if (offset == 0)
 		shape->m_size = baseTypePrimitiveSize.has_value() ? baseTypePrimitiveSize.value() : offset;

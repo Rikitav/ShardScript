@@ -16,12 +16,35 @@ using namespace shard;
 
 namespace
 {
-	bool is_enum(const TypeShape* shape)
+	// One read of the packed kind word classifies an operand for arithmetic and
+	// comparison, replacing a chain of shape-identity and type-kind tests.
+	enum class OperandClass : std::uint8_t
+	{
+		Other,
+		Boolean,
+		Integral,
+		Float,
+		String,
+		Enum,
+	};
+
+	constexpr OperandClass classify(const TypeShape* shape)
 	{
 		if (shape == nullptr)
-			return false;
-		StructSymbol* baseType = shape->get_base_type();
-		return baseType != nullptr && baseType->get_kind() == SyntaxKind::EnumDeclaration;
+			return OperandClass::Other;
+
+		switch (shape->get_value_kind())
+		{
+			case TypeShape::ValueKind::String: return OperandClass::String;
+			case TypeShape::ValueKind::Float: return OperandClass::Float;
+			case TypeShape::ValueKind::Integer:
+			case TypeShape::ValueKind::NativeInteger:
+			case TypeShape::ValueKind::Byte:
+			case TypeShape::ValueKind::Char: return OperandClass::Integral;
+			case TypeShape::ValueKind::Boolean: return OperandClass::Boolean;
+			case TypeShape::ValueKind::Enum: return OperandClass::Enum;
+			default: return OperandClass::Other;
+		}
 	}
 
 	bool try_multiply(std::int64_t left, std::int64_t right, std::int64_t& result)
@@ -79,15 +102,17 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 {
 	const TypeShape* leftShape = left.get_shape();
 	const TypeShape* rightShape = right.get_shape();
+	const OperandClass leftClass = classify(leftShape);
+	const OperandClass rightClass = classify(rightShape);
 
-	if (is_string(shapes, leftShape) || is_string(shapes, rightShape))
+	if (leftClass == OperandClass::String || rightClass == OperandClass::String)
 		return PrimitiveStatus::NotPrimitive;
 
-	bool doubleMath = is_float(shapes, leftShape) || is_float(shapes, rightShape);
+	bool doubleMath = leftClass == OperandClass::Float || rightClass == OperandClass::Float;
 	if (doubleMath)
 	{
-		double leftValue = is_float(shapes, leftShape) ? left.as_float() : static_cast<double>(left.as_integer());
-		double rightValue = is_float(shapes, rightShape) ? right.as_float() : static_cast<double>(right.as_integer());
+		double leftValue = leftClass == OperandClass::Float ? left.as_float() : static_cast<double>(left.as_integer());
+		double rightValue = rightClass == OperandClass::Float ? right.as_float() : static_cast<double>(right.as_integer());
 
 		double computed;
 		switch (op)
@@ -107,8 +132,8 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 		return PrimitiveStatus::Success;
 	}
 
-	bool isLeftInt = is_integral(shapes, leftShape) || is_enum(leftShape);
-	bool isRightInt = is_integral(shapes, rightShape) || is_enum(rightShape);
+	bool isLeftInt = leftClass == OperandClass::Integral || leftClass == OperandClass::Enum;
+	bool isRightInt = rightClass == OperandClass::Integral || rightClass == OperandClass::Enum;
 	if (!isLeftInt || !isRightInt)
 		return PrimitiveStatus::NotPrimitive;
 
@@ -235,9 +260,9 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 	}
 
 	const TypeShape* resultShape = shapes.integer;
-	if (is_enum(leftShape))
+	if (leftClass == OperandClass::Enum)
 		resultShape = leftShape;
-	else if (is_enum(rightShape))
+	else if (rightClass == OperandClass::Enum)
 		resultShape = rightShape;
 	else if (leftShape == shapes.nint || rightShape == shapes.nint)
 		resultShape = shapes.nint;
@@ -251,11 +276,11 @@ PrimitiveStatus PrimitiveMath::binary_math(OpCode op, const PrimitiveShapes& sha
 
 PrimitiveStatus PrimitiveMath::compare(OpCode op, const PrimitiveShapes& shapes, ObjectInstance left, ObjectInstance right, ScalarResult& result)
 {
-	const TypeShape* leftShape = left.get_shape();
-	const TypeShape* rightShape = right.get_shape();
+	const OperandClass leftClass = classify(left.get_shape());
+	const OperandClass rightClass = classify(right.get_shape());
 
 	bool outcome;
-	if (is_string(shapes, leftShape) && is_string(shapes, rightShape))
+	if (leftClass == OperandClass::String && rightClass == OperandClass::String)
 	{
 		std::wstring_view leftText = string_view_of(left);
 		std::wstring_view rightText = string_view_of(right);
@@ -268,7 +293,7 @@ PrimitiveStatus PrimitiveMath::compare(OpCode op, const PrimitiveShapes& shapes,
 				return PrimitiveStatus::NotPrimitive;
 		}
 	}
-	else if (leftShape == shapes.boolean && rightShape == shapes.boolean)
+	else if (leftClass == OperandClass::Boolean && rightClass == OperandClass::Boolean)
 	{
 		const bool leftValue = left.as_boolean();
 		const bool rightValue = right.as_boolean();
@@ -285,10 +310,10 @@ PrimitiveStatus PrimitiveMath::compare(OpCode op, const PrimitiveShapes& shapes,
 				return PrimitiveStatus::NotPrimitive;
 		}
 	}
-	else if (is_float(shapes, leftShape) || is_float(shapes, rightShape))
+	else if (leftClass == OperandClass::Float || rightClass == OperandClass::Float)
 	{
-		double leftValue = is_float(shapes, leftShape) ? left.as_float() : static_cast<double>(left.as_integer());
-		double rightValue = is_float(shapes, rightShape) ? right.as_float() : static_cast<double>(right.as_integer());
+		double leftValue = leftClass == OperandClass::Float ? left.as_float() : static_cast<double>(left.as_integer());
+		double rightValue = rightClass == OperandClass::Float ? right.as_float() : static_cast<double>(right.as_integer());
 
 		switch (op)
 		{
@@ -328,7 +353,8 @@ PrimitiveStatus PrimitiveMath::compare(OpCode op, const PrimitiveShapes& shapes,
 
 PrimitiveStatus PrimitiveMath::negate(const PrimitiveShapes& shapes, ObjectInstance value, ScalarResult& result)
 {
-	if (is_float(shapes, value.get_shape()))
+	const OperandClass operandClass = classify(value.get_shape());
+	if (operandClass == OperandClass::Float)
 	{
 		double computed = -value.as_float();
 		result.shape = shapes.floatReal;
@@ -336,7 +362,7 @@ PrimitiveStatus PrimitiveMath::negate(const PrimitiveShapes& shapes, ObjectInsta
 		return PrimitiveStatus::Success;
 	}
 
-	if (is_integral(shapes, value.get_shape()))
+	if (operandClass == OperandClass::Integral)
 	{
 		if (value.as_integer() == (std::numeric_limits<std::int64_t>::min)())
 			return PrimitiveStatus::Overflow;
@@ -355,10 +381,11 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	if (targetShape == nullptr || (targetType == nullptr))
 		return PrimitiveStatus::NotPrimitive;
 
+	const OperandClass sourceClass = classify(value.get_shape());
 	if (targetShape == shapes.floatReal)
 	{
 		double converted;
-		if (is_float(shapes, value.get_shape()))
+		if (sourceClass == OperandClass::Float)
 			converted = value.as_float();
 		else
 			converted = static_cast<double>(value.as_integer());
@@ -371,7 +398,7 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	if (targetShape == shapes.integer || targetShape == shapes.nint)
 	{
 		std::int64_t converted;
-		if (is_float(shapes, value.get_shape()))
+		if (sourceClass == OperandClass::Float)
 			converted = static_cast<std::int64_t>(value.as_float());
 		else
 			converted = value.as_integer();
@@ -381,10 +408,10 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 		return PrimitiveStatus::Success;
 	}
 
-	if (is_enum(targetShape))
+	if (targetShape->is_enum())
 	{
 		std::int64_t converted;
-		if (is_float(shapes, value.get_shape()))
+		if (sourceClass == OperandClass::Float)
 			converted = static_cast<std::int64_t>(value.as_float());
 		else
 			converted = value.as_integer();
@@ -423,6 +450,11 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 
 gmt::wstring PrimitiveMath::to_display_string(const PrimitiveShapes& shapes, ObjectInstance value)
 {
+	// the canonical shapes are only needed to classify an operand, which the
+	// value's own kind now answers; the parameter stays part of the public
+	// signature for native callers that already hold a PrimitiveShapes
+	(void)shapes;
+
 	if (value == nullptr)
 		return L"null";
 
@@ -430,25 +462,32 @@ gmt::wstring PrimitiveMath::to_display_string(const PrimitiveShapes& shapes, Obj
 	if (shape == nullptr)
 		return L"<void>";
 
-	// identity checks first: primitives have canonical shapes, so this avoids
-	// up to six wide-string comparisons per operand
-	if (shape == shapes.string)
-		return gmt::wstring(string_view_of(value));
-
-	if (shape == shapes.integer || shape == shapes.nint || shape == shapes.byte)
-		return gmt::wstring(std::to_wstring(value.as_integer()));
-
-	if (shape == shapes.boolean)
-		return value.as_boolean() ? L"true" : L"false";
-
-	if (shape == shapes.character)
-		return gmt::wstring(1, value.as_char());
-
-	if (shape == shapes.floatReal)
+	// the packed kind word classifies the operand without any name lookups
+	switch (shape->get_value_kind())
 	{
-		wchar_t buffer[32];
-		std::swprintf(buffer, 32, L"%g", value.as_float());
-		return gmt::wstring(buffer);
+		case TypeShape::ValueKind::String:
+			return gmt::wstring(string_view_of(value));
+
+		case TypeShape::ValueKind::Integer:
+		case TypeShape::ValueKind::NativeInteger:
+		case TypeShape::ValueKind::Byte:
+			return gmt::wstring(std::to_wstring(value.as_integer()));
+
+		case TypeShape::ValueKind::Boolean:
+			return value.as_boolean() ? L"true" : L"false";
+
+		case TypeShape::ValueKind::Char:
+			return gmt::wstring(1, value.as_char());
+
+		case TypeShape::ValueKind::Float:
+		{
+			wchar_t buffer[32];
+			std::swprintf(buffer, 32, L"%g", value.as_float());
+			return gmt::wstring(buffer);
+		}
+
+		default:
+			break;
 	}
 
 	// enums and custom display names keep the name-based path
