@@ -27,14 +27,19 @@ namespace shard
 	class SHARD_API GarbageCollector
 	{
 	public:
+		// Kept as part of the public surface; nothing ever validated it, so the
+		// header no longer stores it. See GcHeader below.
 		static constexpr std::uint64_t Magic = 0x5348415244474348ULL;
 
+		// The header is read on every allocation, mark and write-back, so it is
+		// kept to three words. Shrinking it further shifts every allocation into
+		// a different allocator size class, which measured ~2x slower on a
+		// growing-string workload, so 24 bytes is the floor.
 		struct GcHeader
 		{
-			std::uint64_t magic;
 			const TypeShape* shape;
 			std::uint64_t marked;
-			std::uint64_t payloadBytes;
+			std::uint32_t payloadBytes;
 		};
 
 	private:
@@ -118,6 +123,7 @@ namespace shard
 		gmt::vector<std::byte*> m_markStack;
 
 		ObjectInstance allocate_block(const TypeShape* shape, std::size_t payloadBytes);
+		GcHeader* try_header(std::byte* payload) const;
 		void mark_object(std::byte* payload);
 		void trace_pointer(std::byte* pointer);
 		void drain_mark_stack();

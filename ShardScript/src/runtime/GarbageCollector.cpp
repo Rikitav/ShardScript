@@ -188,8 +188,19 @@ bool GarbageCollector::is_heap_backed(std::byte* payload) const
 	return payload != nullptr && m_heap.contains(payload);
 }
 
+GarbageCollector::GcHeader* GarbageCollector::try_header(std::byte* payload) const
+{
+	if (payload == nullptr || !m_heap.contains(payload))
+		return nullptr;
+
+	return get_header(payload);
+}
+
 ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::size_t payloadBytes)
 {
+	if (payloadBytes > (std::numeric_limits<std::uint32_t>::max)())
+		throw std::length_error("allocation payload exceeds the 4 GiB object limit");
+
 	if (m_allocatedSinceCollection >= m_collectionThreshold)
 		collect();
 
@@ -198,10 +209,9 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 	if (header == nullptr)
 		throw std::bad_alloc();
 
-	header->magic = Magic;
 	header->shape = shape;
 	header->marked = 0;
-	header->payloadBytes = payloadBytes;
+	header->payloadBytes = static_cast<std::uint32_t>(payloadBytes);
 
 	std::byte* payload = reinterpret_cast<std::byte*>(header + 1);
 	m_heap.insert(payload);
@@ -254,8 +264,7 @@ ObjectInstance GarbageCollector::allocate_array(const TypeShape* arrayShape, con
 	ObjectInstance instance = allocate_block(arrayShape, payloadBytes);
 	instance.write_length(length);
 
-	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(arrayShape->get_base_type());
-	bool nullableElements = arrayType->get_underlaying_type()->get_kind() == SyntaxKind::NullableType;
+	bool nullableElements = arrayShape->has_nullable_elements();
 	if (!elementShape->is_reference() && !nullableElements && length > 0)
 	{
 		pin(instance);
@@ -395,14 +404,9 @@ void GarbageCollector::remove_root(ObjectInstance instance)
 
 void GarbageCollector::trace_pointer(std::byte* pointer)
 {
-	if (pointer == nullptr)
-		return;
-
-	if (!is_heap_backed(pointer))
-		return;
-
-	GcHeader* header = get_header(pointer);
-	if (header->marked != 0)
+	// one lookup answers "is this a heap object" and yields its header
+	GcHeader* header = try_header(pointer);
+	if (header == nullptr || header->marked != 0)
 		return;
 
 	header->marked = 1;
@@ -424,23 +428,19 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 	if (shape == nullptr)
 		return;
 
-	StructSymbol* baseType = shape->get_base_type();
-	if (baseType == nullptr)
+	// the packed kind word answers "string?" and "array?" without touching the
+	// declaring symbol or the symbol table
+	if (shape->get_value_kind() == TypeShape::ValueKind::String)
 		return;
 
-	SyntaxKind kind = baseType->get_kind();
-	if (baseType == m_model.get_table().get_string_primitive())
-		return;
-
-	if (kind == SyntaxKind::ArrayType)
+	if (shape->is_array())
 	{
 		std::int64_t length;
 		std::memcpy(&length, payload, sizeof(std::int64_t));
 
-		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		const TypeShape* elementShape = shape->get_element_shape();
 		std::byte* elements = payload + sizeof(std::int64_t);
-		if (!elementShape->is_reference() && arrayType->get_underlaying_type()->get_kind() != SyntaxKind::NullableType)
+		if (!elementShape->is_reference() && !shape->has_nullable_elements())
 		{
 			if (length > 0)
 			{
@@ -477,7 +477,7 @@ void GarbageCollector::trace_frame(CallStackFrame* frame)
 		if (value == nullptr || value.get_shape() == nullptr)
 			return;
 
-		if (is_heap_backed(value.get_memory()))
+		if (try_header(value.get_memory()) != nullptr)
 			trace_pointer(value.get_memory());
 		else
 			trace_object_fields(value.get_shape(), value.get_memory());
@@ -495,10 +495,7 @@ void GarbageCollector::trace_frame(CallStackFrame* frame)
 			std::byte* pointer;
 			std::memcpy(&pointer, view.payloadAddress, sizeof(std::byte*));
 
-			if (pointer == nullptr)
-				return;
-
-			if (is_heap_backed(pointer))
+			if (try_header(pointer) != nullptr)
 			{
 				trace_pointer(pointer);
 				return;
@@ -561,7 +558,7 @@ void GarbageCollector::collect()
 		if (shape == nullptr)
 			continue;
 
-		if (is_heap_backed(pinned.get_memory()))
+		if (try_header(pinned.get_memory()) != nullptr)
 			trace_pointer(pinned.get_memory());
 		else
 			trace_object_fields(shape, pinned.get_memory());
@@ -573,7 +570,7 @@ void GarbageCollector::collect()
 		if (shape == nullptr)
 			continue;
 
-		if (is_heap_backed(root.get_memory()))
+		if (try_header(root.get_memory()) != nullptr)
 			trace_pointer(root.get_memory());
 		else
 			trace_object_fields(shape, root.get_memory());
