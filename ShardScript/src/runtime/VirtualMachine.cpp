@@ -29,7 +29,7 @@
 #include <gmt/Allocator.hpp>
 #include <gmt/Concat.hpp>
 #include <gmt/Containers.hpp>
-#include <gmt/InlineVector.hpp>
+#include <gmt/SmallVector.hpp>
 #include <gmt/Strings.hpp>
 
 #include <stdexcept>
@@ -695,13 +695,12 @@ ObjectInstance VirtualMachine::invoke_virtual(MethodSymbol* interfaceMethod, std
 	if (receiver.get_shape() == arguments.front().get_shape())
 		return invoke_method(implementation, arguments);
 
-	gmt::inline_vector<ObjectInstance, 8> swapped;
+	gmt::small_vector<ObjectInstance, 8> swapped;
 	swapped.push_back(receiver);
 	for (std::size_t i = 1; i < arguments.size(); ++i)
 		swapped.push_back(arguments[i]);
 
-	std::span<const ObjectInstance> span(swapped.get_vector().data(), swapped.get_vector().size());
-	return invoke_method(implementation, span);
+	return invoke_method(implementation, swapped.span());
 }
 
 MethodSymbol* VirtualMachine::resolve_interface_target(std::span<const ObjectInstance> arguments, MethodSymbol* interfaceMethod, std::uint32_t interfaceSlot, ObjectInstance& outReceiver)
@@ -1107,13 +1106,13 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		case OpCode::JUMP_TABLE:
 		{
 			std::uint32_t count = decoder.absorb_uint32();
-			gmt::inline_vector<std::size_t, 16> targets;
+			gmt::small_vector<std::size_t, 16> targets;
 			for (std::uint32_t i = 0; i < count; ++i)
 				targets.push_back(decoder.absorb_jump());
 
 			std::int64_t index = frame->pop_entry().as_integer();
 			if (index >= 0 && index < static_cast<std::int64_t>(count))
-				decoder.set_cursor(static_cast<std::int64_t>(targets.get_vector()[static_cast<std::size_t>(index)]));
+				decoder.set_cursor(static_cast<std::int64_t>(targets[static_cast<std::size_t>(index)]));
 
 			break;
 		}
@@ -1587,11 +1586,11 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			else
 				argumentCount = native_argument_count(method);
 
-			gmt::inline_vector<ObjectInstance, 8> arguments;
+			gmt::small_vector<ObjectInstance, 8> arguments;
 			for (std::size_t i = 0; i < argumentCount; ++i)
 				arguments.push_back(frame->pop_entry());
 
-			std::span<const ObjectInstance> span(arguments.get_vector().data(), arguments.get_vector().size());
+			std::span<const ObjectInstance> span = arguments.span();
 
 			MethodSymbol* target = method;
 			if (interfaceSlot != DirectCallSlot)
@@ -1601,7 +1600,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				if (target == nullptr)
 					break;
 
-				arguments.get_vector()[0] = receiver;
+				arguments[0] = receiver;
 				layout = m_pragmatic.find_frame_layout(target);
 			}
 
@@ -1641,11 +1640,11 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			else
 				argumentCount = native_argument_count(method);
 
-			gmt::inline_vector<ObjectInstance, 8> arguments;
+			gmt::small_vector<ObjectInstance, 8> arguments;
 			for (std::size_t i = 0; i < argumentCount; ++i)
 				arguments.push_back(frame->pop_entry());
 
-			std::span<const ObjectInstance> span(arguments.get_vector().data(), arguments.get_vector().size());
+			std::span<const ObjectInstance> span = arguments.span();
 			ObjectInstance destination = slot == ReturnSlotSentinel
 				? frame->get_return_destination()
 				: frame->ensure_local_storage(slot);
@@ -1711,12 +1710,12 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			MethodSymbol* target = boxType->methods.front();
 			std::size_t parameterCount = delegateType->get_parameters().size();
 
-			gmt::inline_vector<ObjectInstance, 8> arguments;
+			gmt::small_vector<ObjectInstance, 8> arguments;
 			arguments.push_back(delegate);
 			for (std::size_t i = 0; i < parameterCount; ++i)
 				arguments.push_back(frame->pop_entry());
 
-			std::span<const ObjectInstance> span(arguments.get_vector().data(), arguments.get_vector().size());
+			std::span<const ObjectInstance> span = arguments.span();
 
 			ObjectInstance result = invoke_method(target, span);
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
