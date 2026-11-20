@@ -375,3 +375,6 @@ RCa*
 *.txt
 # but keep track of directories ending in .cache
 !CMakeLists.txt
+
+# temporary
+/ShardScript.Framework
