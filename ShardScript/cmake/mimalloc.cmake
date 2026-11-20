@@ -2,3 +2,9 @@
 set(MIMALLOC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/mimalloc/src/static.c
 )
+
+set(MIMALLOC_DEFINES
+    MI_SHARED_LIB
+    MI_SHARED_LIB_EXPORT
+    MI_WIN_NOREDIRECT
+)

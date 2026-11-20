@@ -7,7 +7,7 @@ namespace shard
 	enum class EscapeContract
 	{
 		Global,			// may end up anywhere reachable after the call
-		WithInstance,	// may only be stored into the receiver
-		OnlyReads		// never stored, captured or returned by the callee
+		WithInstance,	// only stored into the receiver, which bounds its lifetime
+		OnlyReads		// never stored, captured or returned, and never hands an element out
 	};
 }

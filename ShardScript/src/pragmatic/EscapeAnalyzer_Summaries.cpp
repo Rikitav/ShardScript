@@ -20,11 +20,10 @@ using namespace shard;
 
 void EscapeAnalyzer::analyze(SyntaxTree& tree)
 {
-	// the walk consults committed callee summaries (is_fresh_invokation), so
-	// the graph is rebuilt per iteration; every update is a monotone join and
-	// the loop terminates once committed summaries stabilize. The graph itself
-	// is a deterministic function of the tree and the committed summaries, so
-	// a stable commit implies a stable graph
+	m_graph.elementsExposed.clear();
+
+	// the walk consults committed callee summaries (is_fresh_invokation),
+	// so the graph is rebuilt per iteration
 	for (int iteration = 0; iteration < 64; ++iteration)
 	{
 		clear_graph();
@@ -69,6 +68,9 @@ ParameterEscapeSummary EscapeAnalyzer::derive_parameter_summary(MethodSymbol* me
 
 	summary.channels = m_graph.channelSets[id];
 	summary.coldChannels = m_graph.coldChannels[id];
+
+	// an element read out of this argument reaches the caller's stored values
+	summary.handsOutElements = m_graph.elementsExposed.find(id) != m_graph.elementsExposed.end();
 
 	const EscapeChannel upward = EscapeChannel::Return | EscapeChannel::Store | EscapeChannel::Capture | EscapeChannel::Exception;
 	bool hasUpwardChannel = (summary.channels & upward) != EscapeChannel::None;
@@ -135,9 +137,12 @@ void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<MethodSymbol*
 		// (libfunc, bodyless member): the trusted conservative default
 		if (summaryPtr == nullptr)
 		{
-			// only a callee that merely reads the value keeps it in the frame;
-			// a receiver store is a container write, which a frame slot cannot serve
+			// a read-only callee retains nothing, and a frame-local container whose
+			// elements never leave the frame shares their lifetime
 			if (declared_contract(exposure.callee, exposure.parameterIndex, exposure.receiver) == EscapeContract::OnlyReads)
+				continue;
+
+			if (stores_into_frame_local(exposure))
 				continue;
 
 			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, EscapeChannel::UnknownCallee, exposure.cold);
@@ -153,6 +158,12 @@ void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<MethodSymbol*
 		}
 
 		const ParameterEscapeSummary& parameter = summary.parameters[exposure.parameterIndex];
+
+		// the callee handed one of the argument's elements out: the caller's stored
+		// values are now observable, so their identity has to be stable
+		if (parameter.handsOutElements)
+			m_graph.elementsExposed.insert(exposure.nodeId);
+
 		if (parameter.escapes)
 			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, parameter.channels, exposure.cold);
 
@@ -182,6 +193,7 @@ bool EscapeAnalyzer::commit_summaries(const gmt::unordered_map<MethodSymbol*, Es
 				same = same && previous.parameters[i].channels == pair.second.parameters[i].channels;
 				same = same && previous.parameters[i].coldChannels == pair.second.parameters[i].coldChannels;
 				same = same && previous.parameters[i].escapes == pair.second.parameters[i].escapes;
+				same = same && previous.parameters[i].handsOutElements == pair.second.parameters[i].handsOutElements;
 			}
 		}
 
@@ -339,6 +351,19 @@ ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, c
 	return ReturnDisposition::Unknown;
 }
 
+bool EscapeAnalyzer::stores_into_frame_local(const Graph::CallExposure& exposure) const
+{
+	if (exposure.receiverId < 0)
+		return false;
+
+	// an element read anywhere makes every stored value observable outside the
+	// container, so it has to own a stable heap identity
+	if (m_graph.elementsExposed.find(exposure.receiverId) != m_graph.elementsExposed.end())
+		return false;
+
+	return declared_contract(exposure.callee, exposure.parameterIndex, exposure.receiver) == EscapeContract::WithInstance;
+}
+
 bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries) const
 {
 	for (const Graph::CallExposure& exposure : m_graph.callExposures)
@@ -353,8 +378,12 @@ bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<MethodSymbol*,
 		EscapeSummary precomputed = m_pragmatic.get_summary(exposure.callee);
 		if (!precomputed.computed)
 		{
-			// an unwalked callee that only reads the value keeps the cone closed
+			// an unwalked callee that only reads the value, or a store into a
+			// frame-local container, keeps the cone closed
 			if (declared_contract(exposure.callee, exposure.parameterIndex, exposure.receiver) == EscapeContract::OnlyReads)
+				continue;
+
+			if (stores_into_frame_local(exposure))
 				continue;
 
 			return false;

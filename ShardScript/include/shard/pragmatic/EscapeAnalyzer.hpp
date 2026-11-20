@@ -24,6 +24,8 @@ namespace shard
 {
 	class SHARD_API EscapeAnalyzer final : public SemanticVisitor
 	{
+		class reference_collector;
+
 		struct ExpressionRefs
 		{
 			gmt::inline_vector<SyntaxSymbol*, 4> locals;
@@ -37,8 +39,6 @@ namespace shard
 			gmt::vector<SyntaxSymbol*> locals;
 			gmt::vector<const ExpressionSyntax*> sites;
 		};
-
-		class reference_collector;
 
 		struct Frame
 		{
@@ -71,6 +71,7 @@ namespace shard
 				std::uint16_t parameterIndex; // 0-based into the callee summary (0 = receiver of an instance method)
 				bool receiver;
 				bool cold;
+				int receiverId = -1; // the receiver's node when it is a local of the calling frame
 			};
 
 			int nextId = 0;
@@ -81,6 +82,7 @@ namespace shard
 			gmt::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
 			gmt::vector<bool> borrowedAlias; // the node stores a reference created outside it
 			gmt::vector<bool> identityExposed;
+			gmt::unordered_set<int> elementsExposed; // sticky across the fixpoint
 			gmt::vector<MethodSymbol*> idOwners;
 			gmt::vector<bool> allocationNodes;
 			gmt::vector<gmt::vector<int>> successors;
@@ -137,7 +139,12 @@ namespace shard
 		bool is_fresh_value(const ExpressionSyntax* expression);
 		void mark_identity(const ExpressionSyntax* expression, bool includeReceivers);
 		void mark_wrap_identity(const ExpressionSyntax* expression);
-		void record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver);
+		void record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver, int receiverId = -1);
+		void contain_receiver(const ExpressionSyntax* receiver, const ExpressionSyntax* value);
+		void mark_elements_exposed(const ExpressionSyntax* container);
+		bool hands_out_elements(const MethodSymbol* callee);
+		int receiver_local_of(const ExpressionSyntax* receiver);
+		bool is_delegate_like(const StructSymbol* type) const;
 		EscapeLevel argument_escape_level(MethodSymbol* callee, std::uint16_t parameterIndex, EscapeLevel base) const;
 		ParameterSymbol* parameter_at(MethodSymbol* callee, std::uint16_t exposureIndex) const;
 		EscapeContract declared_contract(MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver) const;
@@ -160,6 +167,7 @@ namespace shard
 		int classify_local_roots(MethodSymbol* method, SyntaxSymbol* local);
 
 		bool cone_closed(int id, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries) const;
+		bool stores_into_frame_local(const Graph::CallExposure& exposure) const;
 
 		AllocationSiteVerdict classify_node(int id, StructSymbol* nodeType, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
 		AllocationSiteVerdict classify_local(int id, SyntaxSymbol* local, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
@@ -202,6 +210,7 @@ namespace shard
 		void visit_is_expression(const IsExpressionSyntax* node) override;
 		void visit_cast_expression(const CastExpressionSyntax* node) override;
 		void visit_await_expression(const AwaitExpressionSyntax* node) override;
+		void visit_indexator_expression(const IndexatorExpressionSyntax* node) override;
 		void visit_identifier_name_type(const IdentifierNameTypeSyntax* node) override;
 	};
 }

@@ -82,6 +82,14 @@ namespace
 		return type != nullptr && type->get_kind() == SyntaxKind::InterfaceDeclaration;
 	}
 
+	bool is_generic_delegate(const StructSymbol* type)
+	{
+		if (type == nullptr || type->get_kind() != SyntaxKind::GenericType)
+			return false;
+
+		const StructSymbol* underlaying = static_cast<const GenericTypeSymbol*>(type)->get_underlaying_type();
+		return underlaying != nullptr && underlaying->get_kind() == SyntaxKind::DelegateType;
+	}
 }
 
 // collects the locals and allocation sites an expression directly refers to;
@@ -264,6 +272,84 @@ void EscapeAnalyzer::contain_expression(int containerId, const ExpressionSyntax*
 		add_edge(containerId, ensure_site_id(site));
 }
 
+bool EscapeAnalyzer::is_delegate_like(const StructSymbol* type) const
+{
+	if (type == nullptr)
+		return false;
+
+	return type->get_kind() == SyntaxKind::DelegateType || is_generic_delegate(type);
+}
+
+bool EscapeAnalyzer::hands_out_elements(const MethodSymbol* callee)
+{
+	if (callee == nullptr)
+		return true;
+
+	// a reference-shaped result or a callback parameter can carry a stored value out
+	if (get_model().is_reference_shaped(callee->get_return_type()))
+		return true;
+
+	for (ParameterSymbol* parameter : callee->get_parameters())
+	{
+		if (parameter != nullptr && is_delegate_like(parameter->get_type()))
+			return true;
+	}
+
+	return false;
+}
+
+int EscapeAnalyzer::receiver_local_of(const ExpressionSyntax* receiver)
+{
+	if ((receiver == nullptr) || !in_frame())
+		return -1;
+
+	auto receiverRef = ref_from(receiver);
+	if (!receiverRef.has_value())
+		return -1;
+
+	SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(*receiverRef);
+	if (symbol == nullptr || symbol->get_kind() != SyntaxKind::VariableStatement)
+		return -1;
+
+	// a parameter is owned by the caller: storing frame data into it outlives the frame
+	if (current_frame().declared.find(symbol) == current_frame().declared.end())
+		return -1;
+
+	return ensure_local_id(symbol);
+}
+
+void EscapeAnalyzer::mark_elements_exposed(const ExpressionSyntax* container)
+{
+	if (container == nullptr)
+		return;
+
+	// a read that can hand a stored value out of the container lets it leave the frame
+	ExpressionRefs refs;
+	collect_expression_refs(container, refs, true);
+
+	for (SyntaxSymbol* local : refs.locals.get_vector())
+		m_graph.elementsExposed.insert(ensure_local_id(local));
+
+	for (const ExpressionSyntax* site : refs.sites.get_vector())
+		m_graph.elementsExposed.insert(ensure_site_id(site));
+}
+
+void EscapeAnalyzer::contain_receiver(const ExpressionSyntax* receiver, const ExpressionSyntax* value)
+{
+	if ((receiver == nullptr) || (value == nullptr))
+		return;
+
+	// a stored value inherits the receiver's level: if the container dies on the
+	// heap, so must everything it holds
+	ExpressionRefs refs;
+	collect_expression_refs(receiver, refs, true);
+
+	for (SyntaxSymbol* local : refs.locals.get_vector())
+		contain_expression(ensure_local_id(local), value);
+
+	for (const ExpressionSyntax* site : refs.sites.get_vector())
+		contain_expression(ensure_site_id(site), value);
+}
 
 void EscapeAnalyzer::add_edge(int from, int to)
 {
@@ -500,7 +586,7 @@ void EscapeAnalyzer::mark_wrap_identity(const ExpressionSyntax* expression)
 	mark_identity(expression, false);
 }
 
-void EscapeAnalyzer::record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver)
+void EscapeAnalyzer::record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver, int receiverId)
 {
 	if ((expression == nullptr) || (callee == nullptr))
 		return;
@@ -511,10 +597,10 @@ void EscapeAnalyzer::record_call_exposure(const ExpressionSyntax* expression, Me
 	bool cold = m_coldDepth > 0;
 
 	for (SyntaxSymbol* local : refs.locals.get_vector())
-		m_graph.callExposures.push_back({ ensure_local_id(local), callee, parameterIndex, receiver, cold });
+		m_graph.callExposures.push_back({ ensure_local_id(local), callee, parameterIndex, receiver, cold, receiverId });
 
 	for (const ExpressionSyntax* site : refs.sites.get_vector())
-		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver, cold });
+		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver, cold, receiverId });
 }
 
 ParameterSymbol* EscapeAnalyzer::parameter_at(MethodSymbol* callee, std::uint16_t exposureIndex) const
@@ -876,6 +962,17 @@ void EscapeAnalyzer::visit_binary_expression(const BinaryExpressionSyntax* node)
 	SyntaxVisitor::visit_binary_expression(node);
 }
 
+void EscapeAnalyzer::visit_indexator_expression(const IndexatorExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	// an index read returns a stored element (or a reference into it)
+	mark_elements_exposed(node->get_previous());
+
+	SyntaxVisitor::visit_indexator_expression(node);
+}
+
 void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSyntax* node)
 {
 	if (node == nullptr)
@@ -923,14 +1020,19 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 			extensionCallee = extensionCallee && callee->get_parameters().size() == explicitArguments + 1;
 		}
 
+		const int receiverNode = receiver_local_of(receiver);
+
 		if (receiver != nullptr)
 		{
 			expose_expression(receiver, argumentLevel, EscapeChannel::UnknownCallee, true);
 
+			if (hands_out_elements(callee))
+				mark_elements_exposed(receiver);
+
 			if (knownConcrete)
 			{
 				if (instanceCallee || extensionCallee)
-					record_call_exposure(receiver, callee, 0, true);
+					record_call_exposure(receiver, callee, 0, true, receiverNode);
 			}
 			else
 			{
@@ -967,7 +1069,16 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 				expose_expression(argumentExpression, argument_escape_level(callee, parameterIndex, argumentLevel), EscapeChannel::UnknownCallee);
 
 				if (knownConcrete)
-					record_call_exposure(argumentExpression, callee, parameterIndex, false);
+				{
+					record_call_exposure(argumentExpression, callee, parameterIndex, false, receiverNode);
+
+					// a container handed to a storing callee has its elements copied out
+					if (declared_contract(callee, parameterIndex, false) == EscapeContract::WithInstance)
+					{
+						mark_elements_exposed(argumentExpression);
+						contain_receiver(receiver, argumentExpression);
+					}
+				}
 				else
 					mark_identity(argumentExpression, false);
 			}
@@ -1030,7 +1141,16 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 				expose_expression(argumentExpression, argumentLevel, EscapeChannel::UnknownCallee);
 
 				if (hasKnownConstructor)
-					record_call_exposure(argumentExpression, constructor, parameterOffset + static_cast<std::uint16_t>(i), false);
+				{
+					const std::uint16_t parameterIndex = parameterOffset + static_cast<std::uint16_t>(i);
+					record_call_exposure(argumentExpression, constructor, parameterIndex, false);
+
+					if (declared_contract(constructor, parameterIndex, false) == EscapeContract::WithInstance)
+					{
+						mark_elements_exposed(argumentExpression);
+						contain_receiver(nodeRef.has_value() ? *nodeRef : nullptr, argumentExpression);
+					}
+				}
 			}
 		}
 	}

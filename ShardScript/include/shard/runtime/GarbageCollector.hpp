@@ -27,14 +27,6 @@ namespace shard
 	class SHARD_API GarbageCollector
 	{
 	public:
-		// Kept as part of the public surface; nothing ever validated it, so the
-		// header no longer stores it. See GcHeader below.
-		static constexpr std::uint64_t Magic = 0x5348415244474348ULL;
-
-		// The header is read on every allocation, mark and write-back, so it is
-		// kept to three words. Shrinking it further shifts every allocation into
-		// a different allocator size class, which measured ~2x slower on a
-		// growing-string workload, so 24 bytes is the floor.
 		struct GcHeader
 		{
 			const TypeShape* shape;
